@@ -2,7 +2,6 @@
 using DemoShared.Rpc;
 using RpcLib.Model;
 using RpcLib.Server;
-using System;
 using System.Threading.Tasks;
 
 namespace DemoServer.Rpc {
@@ -15,7 +14,7 @@ namespace DemoServer.Rpc {
     /// When there was any problem (client-side exception, network problem, ...) an exception is thrown.
     /// 
     /// This file could be auto-generated later from the <see cref="IDemoRpcClient"/> interface,
-    /// since it simply forwards the method calls to the RPC handler.
+    /// since it simply forwards the method calls to the RPC engine.
     /// </summary>
     public class DemoRpcClientStub : IDemoRpcClient {
 

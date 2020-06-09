@@ -8,8 +8,6 @@ namespace DemoShared.Rpc {
     /// Demo interface for a <see cref="IRpcServer"/>.
     /// This interface defines all methods which can be called
     /// on the server side from RPC calls by the client.
-    /// Each method must return a Task with either a single JSON-serializable class or no data,
-    /// and accept either a single JSON-serializable parameter or none.
     /// </summary>
     public interface IDemoRpcServer : IRpcServer {
 
