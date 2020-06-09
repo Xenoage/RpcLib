@@ -1,7 +1,7 @@
 ﻿using Shared.Model;
 using System.Threading.Tasks;
 
-namespace Shared.Rpc {
+namespace RpcLib.Shared {
 
     /// <summary>
     /// This interface defines all methods which can be called

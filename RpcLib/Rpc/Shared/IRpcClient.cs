@@ -1,7 +1,6 @@
-﻿using Shared.Model;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Shared.Rpc {
+namespace RpcLib.Shared {
 
     /// <summary>
     /// This interface defines all methods which can be called
@@ -13,6 +12,7 @@ namespace Shared.Rpc {
 
         // Demo content:
 
+        /*
         /// <summary>
         /// Says "hello" to the given name on the console.
         /// </summary>
@@ -23,6 +23,7 @@ namespace Shared.Rpc {
         /// Strings are suffixed by "-ClientWasHere", numbers are divided by 2.
         /// </summary>
         Task<SampleData> ProcessData(SampleData baseData);
+        */
 
     }
 
