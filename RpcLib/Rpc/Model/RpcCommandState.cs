@@ -1,9 +1,9 @@
-﻿namespace Shared.Rpc {
+﻿namespace RpcLib.Model {
 
     /// <summary>
     /// The current state of an <see cref="RpcCommand"/>.
     /// </summary>
-    public enum RpcCallState {
+    public enum RpcCommandState {
         /// <summary>
         /// The start state. It was just created.
         /// </summary>

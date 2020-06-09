@@ -1,4 +1,4 @@
-﻿namespace Shared.Model {
+﻿namespace DemoShared.Model {
 
     /// <summary>
     /// Demo model: Data for a greeting, consisting of a name

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Shared.Model {
+namespace DemoShared.Model {
 
     /// <summary>
     /// Demo model: Some more data.

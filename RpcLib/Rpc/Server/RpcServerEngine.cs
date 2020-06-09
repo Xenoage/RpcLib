@@ -1,4 +1,5 @@
-﻿using Shared.Model;
+﻿using RpcLib.Model;
+using Shared.Model;
 using Shared.Rpc;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace RpcServer.Rpc {
             // Handle reported result. Ignore wrong reports (e.g. when received two times or too late)
             if (currentCommand != null && lastResult != null && lastResult.ID == currentCommand.ID) {
                 // Response for this command received.
-                currentCommand.Result = lastResult;
+                currentCommand.Finish(lastResult);
                 clients.FinishCurrentCommand(clientID);
             }
         }

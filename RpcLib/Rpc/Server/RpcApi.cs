@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using RpcLib.Model;
 using Shared.Rpc;
 
 namespace RpcServer.Rpc {
@@ -41,9 +42,11 @@ namespace RpcServer.Rpc {
             // Wait for next command
             long endTime = Utils.TimeNow() + longPollingSeconds * 1000;
             while (Utils.TimeNow() < endTime) {
-                var next = engine.GetClientCommand(clientID);
-                if (next != null)
+                RpcCommand? next = engine.GetClientCommand(clientID);
+                if (next != null) {
+                    next.State = RpcCommandState.Sent;
                     return next;
+                }
                 await Task.Delay(queryMilliseconds);
             }
             // No item during long polling time. Return null.
