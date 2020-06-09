@@ -1,4 +1,4 @@
-﻿namespace Shared.Rpc {
+﻿namespace RpcLib.Model {
 
     /// <summary>
     /// This is the data model which is really sent over the wire.
@@ -7,11 +7,11 @@
     /// </summary>
     public class RpcMessage {
 
-        public RpcCommand? NextCall { get; }
+        public RpcCommand? NextCommand { get; }
         public RpcCommandResult? LastResult { get; }
 
         public RpcMessage(RpcCommand? nextCall, RpcCommandResult? lastResult) {
-            NextCall = nextCall;
+            NextCommand = nextCall;
             LastResult = lastResult;
         }
 

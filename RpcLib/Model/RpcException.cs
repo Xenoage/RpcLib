@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Shared.Rpc {
+namespace RpcLib.Model {
 
     /// <summary>
     /// Exception wrapper for <see cref="RpcFailure"/>.

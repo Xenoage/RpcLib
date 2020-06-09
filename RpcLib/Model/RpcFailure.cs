@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace Shared.Rpc {
+namespace RpcLib.Model {
 
     /// <summary>
     /// Simple exception data class, which is serializeable to JSON.
@@ -18,6 +18,9 @@ namespace Shared.Rpc {
 
     }
 
+    /// <summary>
+    /// Type of RPC failure.
+    /// </summary>
     [JsonConverter(typeof(StringEnumConverter))]
     public enum RpcFailureType {
         /// <summary>

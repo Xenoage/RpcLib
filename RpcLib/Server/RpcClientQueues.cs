@@ -1,10 +1,8 @@
 ﻿using RpcLib.Model;
-using Shared.Rpc;
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace RpcServer.Rpc {
+namespace RpcLib.Server {
 
     /// <summary>
     /// This class stores the message queues for each client.
@@ -48,8 +46,8 @@ namespace RpcServer.Rpc {
                 queues[clientID] = queue = new ConcurrentQueue<RpcCommand>();
             if (queue.Count + 1 > maxQueueSize)
                 throw new RpcException(new RpcFailure(RpcFailureType.LocalQueueOverflow, $"Queue for client {clientID} already full"));
-            command.State = RpcCommandState.Enqueued;
             queue.Enqueue(command);
+            command.SetState(RpcCommandState.Enqueued);
         }
 
     }

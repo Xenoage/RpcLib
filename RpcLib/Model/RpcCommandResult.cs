@@ -9,14 +9,22 @@
     /// </summary>
     public class RpcCommandResult {
 
-        public static RpcCommandResult FromSuccess(ulong callNumber, string? resultJson) =>
-            new RpcCommandResult(callNumber) { ResultJson = resultJson };
+        /// <summary>
+        /// Creates a new result for the given command ID after successful execution, using
+        /// the given return value encoded in JSON (or null for void return type).
+        /// </summary>
+        public static RpcCommandResult FromSuccess(ulong commandID, string? resultJson) =>
+            new RpcCommandResult(commandID) { ResultJson = resultJson };
 
-        public static RpcCommandResult FromFailure(ulong callNumber, RpcFailure failure) =>
-            new RpcCommandResult(callNumber) { Failure = failure };
+        /// <summary>
+        /// Creates a new result for the given command ID after failed execution, using
+        /// the given failure reason.
+        /// </summary>
+        public static RpcCommandResult FromFailure(ulong commandID, RpcFailure failure) =>
+            new RpcCommandResult(commandID) { Failure = failure };
 
-        public RpcCommandResult(ulong callNumber) {
-            ID = callNumber;
+        public RpcCommandResult(ulong commandID) {
+            ID = commandID;
         }
 
         /// <summary>
@@ -25,7 +33,7 @@
         public ulong ID { get; }
 
         /// <summary>
-        /// Only set when there is no <see cref="Exception"/>.
+        /// Only set when there is no <see cref="Failure"/>.
         /// Contains the JSON-encoded response data of the RPC call.
         /// </summary>
         public string? ResultJson { get; private set; } = null;
@@ -38,7 +46,8 @@
         /// <summary>
         /// Returns, whether is object stores a successful or failed result.
         /// </summary>
-        public RpcCallState State => Failure != null ? RpcCallState.Failed : RpcCallState.Successful;
+        public RpcCommandState State =>
+            Failure != null ? RpcCommandState.Failed : RpcCommandState.Successful;
 
     }
 

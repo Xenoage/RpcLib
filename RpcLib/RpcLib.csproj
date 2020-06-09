@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Rpc\Client\" />
+    <Folder Include="Client\" />
   </ItemGroup>
 
   <ItemGroup>

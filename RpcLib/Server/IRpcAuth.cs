@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 
-namespace RpcServer.Rpc {
+namespace RpcLib.Server {
 
     /// <summary>
     /// Client authentication on the server.
-    /// Given a <see cref="HttpRequest"/>, a class implementing this interface must
+    /// Given an <see cref="HttpRequest"/>, a class implementing this interface must
     /// return the ID of the client identified by this request.
     /// </summary>
     public interface IRpcAuth {

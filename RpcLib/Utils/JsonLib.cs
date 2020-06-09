@@ -13,8 +13,8 @@ namespace RpcLib.Rpc.Utils {
         /// <summary>
         /// Deserializes the given JSON string to an object of the given type.
         /// </summary>
-        public static T? FromJson<T>(string json) where T : class =>
-            JsonConvert.DeserializeObject<T>(json, settings);
+        public static T FromJson<T>(string json) where T : class =>
+            JsonConvert.DeserializeObject<T>(json, settings)!;
 
         /// <summary>
         /// Serializes the given object to JSON.

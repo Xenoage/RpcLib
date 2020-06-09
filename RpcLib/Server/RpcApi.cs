@@ -1,12 +1,15 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RpcLib.Model;
-using Shared.Rpc;
+using RpcLib.Utils;
 
-namespace RpcServer.Rpc {
+namespace RpcLib.Server {
 
     /// <summary>
-    /// Web API endpoints for the <see cref="RpcServerEngine"/>
+    /// Web API endpoints for the <see cref="RpcServerEngine"/>.
+    /// The concrete <see cref="IRpcAuth"/> implementation is injected, so it must be
+    /// registered during the ASP.NET Core startup as a service.
     /// </summary>
     [ApiController]
     [Route("rpc")]
@@ -15,7 +18,13 @@ namespace RpcServer.Rpc {
         private const int longPollingSeconds = 90;
         private const int queryMilliseconds = 500;
 
+        private IRpcAuth auth;
+
         RpcServerEngine engine; // TODO
+
+        public RpcApi(IRpcAuth auth) {
+            this.auth = auth;
+        }
 
         /// <summary>
         /// This is the communication channel "from the server to the client".
@@ -34,17 +43,31 @@ namespace RpcServer.Rpc {
         /// even when it was received two times for any reason.
         /// </summary>
         [HttpPost("pull")]
-        public async Task<RpcCommand?> Pull([FromBody] RpcCommandResult lastCommandResult) {
-            string clientID = Request
+        public async Task<IActionResult> Pull([FromBody] RpcCommandResult lastCommandResult) {
+            try {
+                return Ok(await PullTypesafe(lastCommandResult));
+            }
+            catch (UnauthorizedAccessException) {
+                return Unauthorized();
+            }
+        }
+
+        /// <summary>
+        /// See <see cref="Pull"/>.
+        /// </summary>
+        private async Task<RpcCommand?> PullTypesafe(RpcCommandResult lastCommandResult) {
+            // Identify calling client. If now allowed, return RPC failure.
+            string clientID = auth.GetClientID(Request) ??
+                throw new UnauthorizedAccessException();
             // When a result is received, process it
             if (lastCommandResult != null)
                 engine.ReportClientResult(clientID, lastCommandResult);
             // Wait for next command
-            long endTime = Utils.TimeNow() + longPollingSeconds * 1000;
-            while (Utils.TimeNow() < endTime) {
+            long endTime = CoreUtils.TimeNow() + longPollingSeconds * 1000;
+            while (CoreUtils.TimeNow() < endTime) {
                 RpcCommand? next = engine.GetClientCommand(clientID);
                 if (next != null) {
-                    next.State = RpcCommandState.Sent;
+                    next.SetState(RpcCommandState.Sent);
                     return next;
                 }
                 await Task.Delay(queryMilliseconds);
