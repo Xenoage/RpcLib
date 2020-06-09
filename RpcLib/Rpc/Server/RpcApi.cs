@@ -17,10 +17,12 @@ namespace RpcServer.Rpc {
         RpcServerEngine engine; // TODO
 
         /// <summary>
-        /// Returns the next <see cref="RpcCommand"/> in the queue of the calling client,
+        /// This is the communication channel "from the server to the client".
+        /// 
+        /// Returns the current <see cref="RpcCommand"/> in the queue of the calling client,
         /// by "long polling". Because the server can not call the client directly (firewall...),
         /// instead the client continuously calls this method and waits for new data.
-        /// Because the server only responses when there is data available or with null when
+        /// Because the server only responds when there is data available or with null when
         /// a long timeout is hit (e.g. 90 seconds), the traffic in the network is highly limited. 
         /// 
         /// To ensure that a command is received by the client, it contains a unique <see cref="RpcCommand.ID"/>.
@@ -30,9 +32,9 @@ namespace RpcServer.Rpc {
         /// The client can also use this ID to ensure that the command is only evaluated once,
         /// even when it was received two times for any reason.
         /// </summary>
-        [HttpPost("client-poll")]
-        public async Task<RpcCommand?> ClientPoll([FromBody] RpcCommandResult lastCommandResult) {
-            string clientID = "TODO"; // TODO !!!
+        [HttpPost("pull")]
+        public async Task<RpcCommand?> Pull([FromBody] RpcCommandResult lastCommandResult) {
+            string clientID = Request
             // When a result is received, process it
             if (lastCommandResult != null)
                 engine.ReportClientResult(clientID, lastCommandResult);
