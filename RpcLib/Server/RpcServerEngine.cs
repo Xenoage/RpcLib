@@ -12,7 +12,7 @@ namespace RpcLib.Server {
     /// sends the commands as soon as possible and processes the results.
     /// It also receives the calls from the clients and responds to them.
     /// </summary>
-    public static class RpcServerEngine {
+    public class RpcServerEngine {
 
         // Maximum time in seconds a sent command may take to be executed and acknowledged. This
         // includes the time where it is still in the queue.
@@ -22,14 +22,20 @@ namespace RpcLib.Server {
         // no command in the queue.
         private const int longPollingSeconds = 90;
 
-        private static RpcClientQueues clients = new RpcClientQueues();
+        private RpcClientQueues clients = new RpcClientQueues();
 
+        private IRpcServer server;
+
+
+        public RpcServerEngine(IRpcServer server) {
+            this.server = server;
+        }
 
         /// <summary>
         /// Call this method when the client called the "/rpc/push"-endpoint.
         /// It executes the given RPC command immediately and returns the result.
         /// </summary>
-        public static async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command) {
+        public async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command) {
             // Do not run the same command twice. If the command with this ID was already
             // executed, return the cached result. If the cache is not available any more, return a
             // obsolete function call failure.
@@ -37,10 +43,15 @@ namespace RpcLib.Server {
             if (client.GetCachedResult(command.ID) is RpcCommandResult result)
                 return result;
             // Execute the command
-            // TODO
-            result = RpcCommandResult.FromSuccess(command.ID, "{}");
+            try {
+                result = await server.Execute(command);
+            }
+            catch (Exception ex) {
+                result = RpcCommandResult.FromFailure(command.ID,
+                    new RpcFailure(RpcFailureType.RemoteException, ex.Message));
+            }
             // Cache and return result
-            client.CachedResult(result);
+            client.CacheResult(result);
             return result;
         }
 
@@ -61,14 +72,14 @@ namespace RpcLib.Server {
         /// The client can also use this ID to ensure that the command is only evaluated once,
         /// even when it was received two times for any reason.
         /// </summary>
-        public static async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult lastCommandResult) {
+        public async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult lastCommandResult) {
             // When a result is received, process it
             if (lastCommandResult != null)
                 ReportClientResult(clientID, lastCommandResult);
             // Wait for next command
             long endTime = CoreUtils.TimeNow() + longPollingSeconds * 1000;
             while (CoreUtils.TimeNow() < endTime) {
-                RpcCommand? next = clients.GetCurrentCommand(clientID);
+                RpcCommand? next = clients.GetClient(clientID).GetCurrentCommand();
                 if (next != null) {
                     next.SetState(RpcCommandState.Sent);
                     return next;
@@ -82,14 +93,15 @@ namespace RpcLib.Server {
         /// <summary>
         /// Call this method, when the client reported the result of the current command.
         /// </summary>
-        private static void ReportClientResult(string clientID, RpcCommandResult? lastResult) {
+        private void ReportClientResult(string clientID, RpcCommandResult? lastResult) {
             // Get current command on this client
-            RpcCommand? currentCommand = clients.GetCurrentCommand(clientID);
+            var client = clients.GetClient(clientID);
+            RpcCommand? currentCommand = client.GetCurrentCommand();
             // Handle reported result. Ignore wrong reports (e.g. when received two times or too late)
             if (currentCommand != null && lastResult != null && lastResult.ID == currentCommand.ID) {
                 // Response for this command received.
                 currentCommand.Finish(lastResult);
-                clients.FinishCurrentCommand(clientID);
+                client.FinishCurrentCommand();
             }
         }
 
@@ -100,10 +112,10 @@ namespace RpcLib.Server {
         /// The result is stored in the given command itself. If successful, the JSON-encoded return value
         /// is also returned, otherwise an <see cref="RpcException"/> is thrown.
         /// </summary>
-        public static async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command) where T : class {
+        public async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command) where T : class {
             try {
                 // Enqueue (and execute)
-                clients.EnqueueCommand(clientID, command);
+                clients.GetClient(clientID).EnqueueCommand(command);
                 // Wait for result until timeout
                 long timeoutTime = CoreUtils.TimeNow() + clientTimeoutSeconds * 1000;
                 while (false == command.IsFinished && CoreUtils.TimeNow() < timeoutTime)

@@ -6,7 +6,7 @@
     /// </summary>
     public class Greeting {
         public string Name { get; set; } = "Mathilda";
-        public SampleData MoreData { get; set; } = null;
+        public SampleData? MoreData { get; set; } = null;
     }
 
 }

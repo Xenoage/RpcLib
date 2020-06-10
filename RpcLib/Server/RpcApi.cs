@@ -20,6 +20,21 @@ namespace RpcLib.Server {
         }
 
         /// <summary>
+        /// Call this method by the client to execute the given RPC command
+        /// on the server. The result is returned.
+        /// See <see cref="RpcServerEngine.OnClientPush"/> for more details.
+        /// </summary>
+        [HttpPost("push")]
+        public async Task<IActionResult> Pull([FromBody] RpcCommand command) {
+            // Identify calling client. If now allowed, return RPC failure.
+            string? clientID = auth.GetClientID(Request);
+            if (clientID == null)
+                return Unauthorized();
+            // Run command and return the result
+            return Ok(await RpcServerEngine.OnClientPush(clientID, command));
+        }
+
+        /// <summary>
         /// Call this method by the client continuously to report the last result (optional)
         /// and query the next command.
         /// See <see cref="RpcServerEngine.OnClientPull"/> for more details.
