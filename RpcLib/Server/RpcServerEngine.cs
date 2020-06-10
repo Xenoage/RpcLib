@@ -26,6 +26,17 @@ namespace RpcLib.Server {
 
 
         /// <summary>
+        /// Call this method when the client called the "/rpc/push"-endpoint.
+        /// It executes the given RPC command immediately and returns the result.
+        /// </summary>
+        public static async Task<RpcCommand?> OnClientPull(string clientID, RpcCommand command) {
+            // Do not run the same command twice. If the command with this ID was already
+            // executed, return the cached result. If the cache is not available any more, return a
+            // obsolete function call failure.
+            if (clients.)
+        }
+
+        /// <summary>
         /// Call this method when the client called the "/rpc/pull"-endpoint.
         /// It does two things: Reporting the last result (optional) and querying the next command.
         /// 
