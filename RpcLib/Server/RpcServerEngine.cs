@@ -29,11 +29,19 @@ namespace RpcLib.Server {
         /// Call this method when the client called the "/rpc/push"-endpoint.
         /// It executes the given RPC command immediately and returns the result.
         /// </summary>
-        public static async Task<RpcCommand?> OnClientPull(string clientID, RpcCommand command) {
+        public static async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command) {
             // Do not run the same command twice. If the command with this ID was already
             // executed, return the cached result. If the cache is not available any more, return a
             // obsolete function call failure.
-            if (clients.)
+            var client = clients.GetClient(clientID);
+            if (client.GetCachedResult(command.ID) is RpcCommandResult result)
+                return result;
+            // Execute the command
+            // TODO
+            result = RpcCommandResult.FromSuccess(command.ID, "{}");
+            // Cache and return result
+            client.CachedResult(result);
+            return result;
         }
 
         /// <summary>
