@@ -1,25 +1,22 @@
-﻿using RpcLib.Model;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace RpcLib.Server {
+namespace RpcLib.Peers {
 
     /// <summary>
     /// This class stores the message queues and cached results for each client.
     /// </summary>
-    public class RpcClientQueues {
+    public class RpcClientCaches {
 
         // For each client (identified by client ID) its current command queue
-        private IDictionary<string, RpcClientQueue> queues = new Dictionary<string, RpcClientQueue>();
-
+        private IDictionary<string, RpcPeerCache> queues = new Dictionary<string, RpcPeerCache>();
 
         /// <summary>
         /// Gets the queue of the given client.
         /// If the client is unknown yet, it is created.
         /// </summary>
-        public RpcClientQueue GetClient(string clientID) {
+        public RpcPeerCache GetClient(string clientID) {
             if (false == queues.TryGetValue(clientID, out var queue))
-                queues[clientID] = queue = new RpcClientQueue(clientID);
+                queues[clientID] = queue = new RpcPeerCache(clientID);
             return queue;
         }
 

@@ -1,7 +1,9 @@
 ﻿using RpcLib.Rpc.Utils;
+using RpcLib.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace RpcLib.Model {
 
@@ -12,6 +14,10 @@ namespace RpcLib.Model {
     /// As soon as the call finishes (whether successfully or failed), the result is also stored here.
     /// </summary>
     public class RpcCommand {
+
+        // Maximum time in seconds a sent command may take to be executed and acknowledged. This
+        // includes the time where it is still in the queue.
+        private const int timeoutSeconds = 30;
 
         /// <summary>
         /// Creates a new encoded RPC command, using the given method name and parameters.
@@ -77,6 +83,39 @@ namespace RpcLib.Model {
         public void Finish(RpcCommandResult result) {
             State = result.State;
             this.result = result;
+        }
+
+        /// <summary>
+        /// Call this method after enqueuing the command to wait for the result of its execution.
+        /// The returned task finishes when the call was either successfully executed and
+        /// acknowledged, or failed (e.g. because of a timeout).
+        /// The result is stored in the given command itself. If successful, the return value
+        /// is also returned, otherwise an <see cref="RpcException"/> is thrown.
+        /// </summary>
+        public async Task<T> WaitForResult<T>() where T : class {
+            try {
+                // Wait for result until timeout
+                long timeoutTime = CoreUtils.TimeNow() + timeoutSeconds * 1000;
+                while (false == IsFinished && CoreUtils.TimeNow() < timeoutTime)
+                    await Task.Delay(100); // TODO: More elegant waiting then this "active waiting", e.g. by callback
+                // Timeout?
+                if (false == IsFinished)
+                    throw new RpcException(new RpcFailure(RpcFailureType.LocalTimeout, "Timeout"));
+                // Failed? Then throw RPC exception
+                if (Result.Failure is RpcFailure failure)
+                    throw new RpcException(failure);
+                // Return JSON-encoded result (or null for void return type)
+                if (Result.ResultJson is string json)
+                    return JsonLib.FromJson<T>(json);
+                else
+                    return default!;
+            }
+            catch (RpcException) {
+                throw; // Rethrow RPC exception
+            }
+            catch (Exception ex) {
+                throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
+            }
         }
 
         // Helper fields

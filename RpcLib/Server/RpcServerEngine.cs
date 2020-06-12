@@ -1,5 +1,5 @@
 ﻿using RpcLib.Model;
-using RpcLib.Rpc.Utils;
+using RpcLib.Peers;
 using RpcLib.Utils;
 using System;
 using System.Threading.Tasks;
@@ -12,30 +12,26 @@ namespace RpcLib.Server {
     /// sends the commands as soon as possible and processes the results.
     /// It also receives the calls from the clients and responds to them.
     /// </summary>
-    public class RpcServerEngine {
+    public static class RpcServerEngine {
 
-        // Maximum time in seconds a sent command may take to be executed and acknowledged. This
-        // includes the time where it is still in the queue.
-        private const int clientTimeoutSeconds = 30;
+        
 
         // Long polling time in seconds. After this time, the server returns null when there is
         // no command in the queue.
         private const int longPollingSeconds = 90;
 
-        private RpcClientQueues clients = new RpcClientQueues();
+        // The registered clients and their command queues and cached command results
+        private static RpcClientCaches clients = new RpcClientCaches();
 
-        private IRpcServer server;
+        public static IRpcServer server; // TODO: inject this property!
 
-
-        public RpcServerEngine(IRpcServer server) {
-            this.server = server;
-        }
 
         /// <summary>
         /// Call this method when the client called the "/rpc/push"-endpoint.
         /// It executes the given RPC command immediately and returns the result.
+        /// No exception is thrown, but a <see cref="RpcFailure"/> result is set in case of a failure.
         /// </summary>
-        public async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command) {
+        public static async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command) {
             // Do not run the same command twice. If the command with this ID was already
             // executed, return the cached result. If the cache is not available any more, return a
             // obsolete function call failure.
@@ -72,7 +68,7 @@ namespace RpcLib.Server {
         /// The client can also use this ID to ensure that the command is only evaluated once,
         /// even when it was received two times for any reason.
         /// </summary>
-        public async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult lastCommandResult) {
+        public static async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult lastCommandResult) {
             // When a result is received, process it
             if (lastCommandResult != null)
                 ReportClientResult(clientID, lastCommandResult);
@@ -84,7 +80,9 @@ namespace RpcLib.Server {
                     next.SetState(RpcCommandState.Sent);
                     return next;
                 }
-                await Task.Delay(100); // TODO: More elegant waiting then this "active waiting", e.g. by callback
+                else {
+                    await Task.Delay(100); // TODO: More elegant waiting than this "active waiting", e.g. by callback
+                }
             }
             // No item during long polling time. Return null.
             return null;
@@ -93,7 +91,7 @@ namespace RpcLib.Server {
         /// <summary>
         /// Call this method, when the client reported the result of the current command.
         /// </summary>
-        private void ReportClientResult(string clientID, RpcCommandResult? lastResult) {
+        private static void ReportClientResult(string clientID, RpcCommandResult? lastResult) {
             // Get current command on this client
             var client = clients.GetClient(clientID);
             RpcCommand? currentCommand = client.GetCurrentCommand();
@@ -106,31 +104,16 @@ namespace RpcLib.Server {
         }
 
         /// <summary>
-        /// Runs the given RPC command on the client with the given ID as soon as possible.
-        /// The returned task finishes when the call was either successfully executed and
-        /// acknowledged, or failed (e.g. because of timeout).
-        /// The result is stored in the given command itself. If successful, the JSON-encoded return value
-        /// is also returned, otherwise an <see cref="RpcException"/> is thrown.
+        /// Runs the given RPC command on the client with the given ID as soon as possible
+        /// and returns the result or throws an <see cref="RpcException"/>.
+        /// See <see cref="RpcCommand.WaitForResult{T}"/>
         /// </summary>
-        public async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command) where T : class {
+        public static async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command) where T : class {
             try {
                 // Enqueue (and execute)
                 clients.GetClient(clientID).EnqueueCommand(command);
                 // Wait for result until timeout
-                long timeoutTime = CoreUtils.TimeNow() + clientTimeoutSeconds * 1000;
-                while (false == command.IsFinished && CoreUtils.TimeNow() < timeoutTime)
-                    await Task.Delay(100); // TODO: More elegant waiting then this "active waiting", e.g. by callback
-                // Timeout?
-                if (false == command.IsFinished)
-                    throw new RpcException(new RpcFailure(RpcFailureType.LocalTimeout, "Client timeout"));
-                // Failed? Then throw RPC exception
-                if (command.Result.Failure is RpcFailure failure)
-                    throw new RpcException(failure);
-                // Return JSON-encoded result (or null for void return type)
-                if (command.Result.ResultJson is string json)
-                    return JsonLib.FromJson<T>(json);
-                else
-                    return default!;
+                return await command.WaitForResult<T>();
             }
             catch (RpcException) {
                 throw; // Rethrow RPC exception

@@ -14,13 +14,13 @@ namespace DemoShared.Rpc {
         /// <summary>
         /// Says "hello" to the given name on the console of the server.
         /// </summary>
-        Task SayHello(Greeting greeting);
+        Task SayHelloToServer(Greeting greeting);
 
         /// <summary>
         /// Modifies the given data on the server and returns it.
         /// Strings are suffixed by "-ServerWasHere", numbers are multipied by 2.
         /// </summary>
-        Task<SampleData> ProcessData(SampleData baseData);
+        Task<SampleData> ProcessDataOnServer(SampleData baseData);
 
     }
 

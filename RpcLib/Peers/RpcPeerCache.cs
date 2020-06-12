@@ -3,42 +3,46 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RpcLib.Server {
+namespace RpcLib.Peers {
 
     /// <summary>
-    /// This server-side class, which is instantiated for each client, stores
-    /// the message queue for each client and caches the results of the last
-    /// executed commands.
+    /// This class stores the commands queue and the results of the last
+    /// already executed commands of a specific RPC peer.
     /// </summary>
-    public class RpcClientQueue {
+    public class RpcPeerCache {
 
-        // The maximum number of open commands in the queue for each client
+        // The maximum number of open commands in the queue
         private int maxQueueSize = 10;
 
-        // The maximum number of cached command results for each client
+        // The maximum number of cached command results
         private int maxResultCacheSize = 10;
 
-        // The client's current command queue
+        // The next commands to execute on the peer
         private ConcurrentQueue<RpcCommand> queue = new ConcurrentQueue<RpcCommand>();
 
-        // The cached results of the last client's calls
+        // The cached results of the last peer's calls.
+        // If the same command is received again from the peer (because the response get lost), it can be
+        // answered without executing the command again.
         private ConcurrentQueue<RpcCommandResult> cachedResults = new ConcurrentQueue<RpcCommandResult>();
 
-        // The ID of the last executed command, or 0
+        // The ID of the last executed command, or 0. Since the IDs are ascending,
+        // already executed commands can be easily determined.
         private ulong lastExecutedCommandID = 0;
 
-        public RpcClientQueue(string clientID) {
+        /// <summary>
+        /// Creates a cache for the given client ID (or null for the server peer).
+        /// </summary>
+        public RpcPeerCache(string? clientID = null) {
             ClientID = clientID;
         }
 
         /// <summary>
-        /// The ID of this client.
+        /// The ID of this client peer, or null for the server peer.
         /// </summary>
-        public string ClientID { get; }
+        public string? ClientID { get; }
 
         /// <summary>
-        /// Gets the current command in the queue of the this client, or null,
-        /// if there is none.
+        /// Gets the current command in the queue, or null, if there is none.
         /// </summary>
         public RpcCommand? GetCurrentCommand() {
             if (queue.TryPeek(out var command))
@@ -47,22 +51,22 @@ namespace RpcLib.Server {
         }
 
         /// <summary>
-        /// Finishes the current command in the queue of this client,
-        /// i.e. removes it from the queue.
+        /// Finishes the current command in the queue, i.e. removes it from the queue.
         /// </summary>
         public void FinishCurrentCommand() {
             queue.TryDequeue(out _);
         }
 
         /// <summary>
-        /// Enqueues the given command in the queue of this client.
+        /// Enqueues the given command in the queue.
         /// When the queue would become too long, an <see cref="RpcException"/> of type
         /// <see cref="RpcFailureType.LocalQueueOverflow"/> is thrown.
         /// </summary>
         public void EnqueueCommand(RpcCommand command) {
             if (queue.Count + 1 > maxQueueSize)
                 throw new RpcException(new RpcFailure(
-                    RpcFailureType.LocalQueueOverflow, $"Queue for client {ClientID} already full"));
+                    RpcFailureType.LocalQueueOverflow, $"Queue already full " +
+                        (ClientID != null ? "for the client { ClientID}" : "for the server")));
             queue.Enqueue(command);
             command.SetState(RpcCommandState.Enqueued);
         }
@@ -71,7 +75,7 @@ namespace RpcLib.Server {
         /// Gets the cached result of the command with the given ID, if it was executed already,
         /// or null, if it is a new command which has to be executed now.
         /// If the command was already executed, but is too old so that there is no cached result
-        /// any more, an <see cref="RpcException"/> of type <see cref="RpcFailureType.ObsoleteCommandID"/> is thrown.
+        /// any more, a failure result with <see cref="RpcFailureType.ObsoleteCommandID"/> is returned.
         /// </summary>
         public RpcCommandResult? GetCachedResult(ulong commandID) {
             // New command?
@@ -80,8 +84,9 @@ namespace RpcLib.Server {
             // It is an old command. Find the cached result.
             var cachedResults = this.cachedResults.ToList(); // Defensive copy
             var result = cachedResults.Find(it => it.ID == commandID);
-            return result ?? throw new RpcException(new RpcFailure(
-                RpcFailureType.ObsoleteCommandID, $"Command ID {commandID} already executed too long ago on client {ClientID}"));
+            return result ?? RpcCommandResult.FromFailure(command.ID, new RpcFailure(
+                RpcFailureType.ObsoleteCommandID, $"Command ID {commandID} already executed too long ago " +
+                    (ClientID != null ? $"on the client {ClientID}" : "for the server")));
         }
 
         /// <summary>

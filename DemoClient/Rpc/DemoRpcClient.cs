@@ -7,32 +7,32 @@ using RpcLib.Rpc.Utils;
 using System.Linq;
 
 /// <summary>
-/// Implementation of the demo RPC server.
+/// Implementation of the demo RPC client.
 /// </summary>
-public class DemoRpcServer : IDemoRpcServer {
+public class DemoRpcClient : IDemoRpcClient {
 
-    public async Task SayHelloToServer(Greeting greeting) {
+    public async Task SayHelloToClient(Greeting greeting) {
         Console.WriteLine("Hello " + greeting.Name + "!");
         if (greeting.MoreData is SampleData moreData)
             Console.WriteLine("More information for you: " + JsonLib.ToJson(moreData));
     }
 
-    public async Task<SampleData> ProcessDataOnServer(SampleData baseData) {
+    public async Task<SampleData> ProcessDataOnClient(SampleData baseData) {
         return new SampleData {
-            Text = baseData.Text + "-ServerWasHere",
-            Number = baseData.Number * 2,
-            List = baseData.List.Select(it => it + "-ServerWasHere").ToList()
+            Text = baseData.Text + "-ClientWasHere",
+            Number = baseData.Number / 2,
+            List = baseData.List.Select(it => it + "-ClientWasHere").ToList()
         };
     }
 
     public async Task<RpcCommandResult> Execute(RpcCommand command) {
         string? resultJson = null;
         switch (command.MethodName) {
-            case "SayHelloToServer":
-                await SayHelloToServer(JsonLib.FromJson<Greeting>(command.MethodParameters[0]));
+            case "SayHelloToClient":
+                await SayHelloToClient(JsonLib.FromJson<Greeting>(command.MethodParameters[0]));
                 break;
-            case "ProcessDataOnServer":
-                resultJson = JsonLib.ToJson(await ProcessDataOnServer(JsonLib.FromJson<SampleData>(command.MethodParameters[0])));
+            case "ProcessDataOnClient":
+                resultJson = JsonLib.ToJson(await ProcessDataOnClient(JsonLib.FromJson<SampleData>(command.MethodParameters[0])));
                 break;
             default:
                 throw new Exception("Unknown method name: " + command.MethodName);

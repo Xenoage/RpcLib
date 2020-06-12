@@ -17,10 +17,10 @@ namespace DemoServer.Rpc {
     /// </summary>
     public class DemoRpcServerStub : IDemoRpcServer {
 
-        public async Task SayHello(Greeting greeting) =>
+        public async Task SayHelloToServer(Greeting greeting) =>
             await RpcClientEngine.ExecuteOnServer<object>(new RpcCommand("SayHello", greeting)); // <object> for void
 
-        public async Task<SampleData> ProcessData(SampleData baseData) =>
+        public async Task<SampleData> ProcessDataOnServer(SampleData baseData) =>
             await RpcClientEngine.ExecuteOnServer<SampleData>(new RpcCommand("ProcessData", baseData));
 
     }

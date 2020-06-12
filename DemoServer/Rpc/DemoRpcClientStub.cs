@@ -27,10 +27,10 @@ namespace DemoServer.Rpc {
             ClientID = clientID;
         }
 
-        public async Task SayHello(Greeting greeting) =>
+        public async Task SayHelloToClient(Greeting greeting) =>
             await RpcServerEngine.ExecuteOnClient<object>(ClientID, new RpcCommand("SayHello", greeting)); // <object> for void
 
-        public async Task<SampleData> ProcessData(SampleData baseData) =>
+        public async Task<SampleData> ProcessDataOnClient(SampleData baseData) =>
             await RpcServerEngine.ExecuteOnClient<SampleData>(ClientID, new RpcCommand("ProcessData", baseData));
 
     }

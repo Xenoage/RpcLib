@@ -1,13 +1,18 @@
-﻿namespace RpcLib {
+﻿using RpcLib.Model;
+using RpcLib.Peers;
+using System;
+using System.Threading.Tasks;
+
+namespace RpcLib {
 
     /// <summary>
-    /// Interfaces extending this "marker interface" define all methods which can be called
+    /// Interfaces extending this interface define all methods which can be called
     /// on the client side from RPC calls by the server.
     /// Each method must return a Task with either a single JSON-serializable class or no data,
     /// and accept any number of JSON-serializable parameters (or none).
     /// See the DemoShared project, interface IDemoRpcClient, for an example.
     /// </summary>
-    public interface IRpcClient {
+    public interface IRpcClient : IRpcPeer {
     }
 
 }
