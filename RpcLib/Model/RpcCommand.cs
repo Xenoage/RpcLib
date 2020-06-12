@@ -17,7 +17,7 @@ namespace RpcLib.Model {
 
         // Maximum time in seconds a sent command may take to be executed and acknowledged. This
         // includes the time where it is still in the queue.
-        private const int timeoutSeconds = 30;
+        public const int timeoutSeconds = 30;
 
         /// <summary>
         /// Creates a new encoded RPC command, using the given method name and parameters.

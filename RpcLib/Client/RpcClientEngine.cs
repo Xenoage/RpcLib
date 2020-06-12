@@ -1,8 +1,10 @@
 ﻿using RpcLib.Model;
 using RpcLib.Peers;
+using RpcLib.Rpc.Utils;
+using RpcLib.Server;
 using System;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace RpcLib.Client {
@@ -16,55 +18,37 @@ namespace RpcLib.Client {
     /// </summary>
     public static class RpcClientEngine {
 
-        // Queue for the commands and cached command results of the server
-        private static RpcPeerCache server = new RpcPeerCache();
-
-        private static HttpClient http = new HttpClient();
-
-        public static IRpcPeer client; // TODO: inject this property!
-
-        private static bool isRunning = false;
-
-
-        /// <summary>
-        /// Runs the given RPC command on the server as soon as possible
-        /// and returns the result or throws an <see cref="RpcException"/>.
-        /// See <see cref="RpcCommand.WaitForResult{T}"/>
-        /// </summary>
-        public static async Task<T> ExecuteOnServer<T>(RpcCommand command) where T : class {
-            try {
-                // Enqueue (and execute)
-                server.EnqueueCommand(command);
-                // Wait for result until timeout
-                return await command.WaitForResult<T>();
-            }
-            catch (RpcException) {
-                throw; // Rethrow RPC exception
-            }
-            catch (Exception ex) {
-                throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
-            }
-        }
-
         /// <summary>
         /// Call this method at the beginning to enable the communication to the server, so that this client
         /// can both receive commands from the server and send commands to the server.
-        /// An action must be given which authorizes the used HTTP client, e.g. by adding HTTP Basic Auth
-        /// information according to the client.
         /// </summary>
-        public static void Start(Action<HttpClient> authorizeAction) {
+        /// <param name="client">The implementation of the RPC commands on the client</param>
+        /// <param name="clientConfig">The settings of this client</param>
+        /// <param name="authorizeAction">An action which authorizes the used HTTP client, e.g. by adding HTTP Basic Auth
+        /// information according to the client.</param>
+        public static void Start(IRpcClient client, RpcClientConfig clientConfig, Action<HttpClient> authorizeAction) {
             if (isRunning)
                 return;
             isRunning = true;
+            // Remember client and settings
+            RpcClientEngine.client = client;
+            RpcClientEngine.clientConfig = clientConfig;
             // Create and authorize HTTP client
             http = new HttpClient();
+            http.Timeout = TimeSpan.FromSeconds(RpcServerEngine.longPollingSeconds + 10); // Give some more seconds for timeout
             authorizeAction(http);
             // Loop to pull the next command for this client from the server, execute it (if not already executed before)
             // and send the response together with the next pull.
             _ = Task.Run(async () => {
                 RpcCommandResult? lastResult = null;
                 while (isRunning) {
-                    RpcCommand? next = await PullFromServer(lastResult);
+                    RpcCommand? next = null;
+                    try {
+                        next = await PullFromServer(lastResult);
+                    }
+                    catch {
+                        // Could not reach server. Try the same result report again.
+                    }
                     if (next != null) {
                         lastResult = await ExecuteLocallyNow(next);
                     }
@@ -89,6 +73,26 @@ namespace RpcLib.Client {
         }
 
         /// <summary>
+        /// Runs the given RPC command on the server as soon as possible
+        /// and returns the result or throws an <see cref="RpcException"/>.
+        /// See <see cref="RpcCommand.WaitForResult{T}"/>
+        /// </summary>
+        public static async Task<T> ExecuteOnServer<T>(RpcCommand command) where T : class {
+            try {
+                // Enqueue (and execute)
+                server.EnqueueCommand(command);
+                // Wait for result until timeout
+                return await command.WaitForResult<T>();
+            }
+            catch (RpcException) {
+                throw; // Rethrow RPC exception
+            }
+            catch (Exception ex) {
+                throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
+            }
+        }
+
+        /// <summary>
         /// Call this method to stop the communication with the server as soon as possible.
         /// </summary>
         public static void Stop() {
@@ -108,11 +112,26 @@ namespace RpcLib.Client {
         /// Polls the next command to execute locally from the server. The result of the
         /// last executed command must be given, if there is one. The returned Task may block
         /// some time, because the server uses the long polling technique to reduce network traffic.
+        /// If the server can not be reached, an exception is thrown (because the last result
+        /// has to be transmitted again).
         /// </summary>
-        private static async Task<RpcCommand> PullFromServer(RpcCommandResult? lastResult) {
-            // Long polling. The server returns null after the long polling time, but we also
-            // return null in case of a connection problem.
-            var httpResponse = http.GetAsync(Config.Url + "/" + endpoint);
+        private static async Task<RpcCommand?> PullFromServer(RpcCommandResult? lastResult) {
+            // Long polling. The server returns null after the long polling time.
+            var bodyJson = lastResult != null ? JsonLib.ToJson(lastResult) : null;
+            var httpResponse = await http.PostAsync(clientConfig.ServerUrl + "/pull",
+                bodyJson != null ? new StringContent(bodyJson, Encoding.UTF8, "application/json") : null);
+            if (httpResponse.IsSuccessStatusCode) {
+                // Last result was received. The server responded with the next command or null,
+                // if there is currently none.
+                if (httpResponse.Content.Headers.ContentLength > 0)
+                    return JsonLib.FromJson<RpcCommand>(await httpResponse.Content.ReadAsStringAsync());
+                else
+                    return null;
+            }
+            else {
+                // Remote exception.
+                throw new Exception("Server responded with status code " + httpResponse.StatusCode);
+            }
         }
 
         /// <summary>
@@ -137,6 +156,19 @@ namespace RpcLib.Client {
             server.CacheResult(result);
             return result;
         }
+
+        // Queue for the commands and cached command results of the server
+        private static RpcPeerCache server = new RpcPeerCache();
+
+        // HTTP client
+        private static HttpClient http = new HttpClient();
+
+        // RPC client methods and settings
+        private static IRpcPeer client;
+        private static RpcClientConfig clientConfig;
+
+        // True, as long as the client engine is running
+        private static bool isRunning = false;
 
     }
 

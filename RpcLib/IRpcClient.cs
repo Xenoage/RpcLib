@@ -1,7 +1,4 @@
-﻿using RpcLib.Model;
-using RpcLib.Peers;
-using System;
-using System.Threading.Tasks;
+﻿using RpcLib.Peers;
 
 namespace RpcLib {
 

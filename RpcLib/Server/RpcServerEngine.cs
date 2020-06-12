@@ -14,11 +14,9 @@ namespace RpcLib.Server {
     /// </summary>
     public static class RpcServerEngine {
 
-        
-
         // Long polling time in seconds. After this time, the server returns null when there is
         // no command in the queue.
-        private const int longPollingSeconds = 90;
+        public const int longPollingSeconds = 90;
 
         // The registered clients and their command queues and cached command results
         private static RpcClientCaches clients = new RpcClientCaches();
