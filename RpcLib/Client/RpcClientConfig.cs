@@ -12,9 +12,9 @@
 
         /// <summary>
         /// Base URL of the RPC server, including the protocol (http or https),
-        /// and the path of the RPC API endpoints. By default "http://localhost:5000/api/rpc".
+        /// and the path of the RPC API endpoints. By default "http://localhost:5000/rpc".
         /// </summary>
-        public string ServerUrl { get; set; } = "http://localhost:5000/api/rpc";
+        public string ServerUrl { get; set; } = "http://localhost:5000/rpc";
 
     }
 

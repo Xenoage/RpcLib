@@ -24,24 +24,28 @@
             new RpcCommandResult(commandID) { Failure = failure };
 
         public RpcCommandResult(ulong commandID) {
-            ID = commandID;
+            CommandID = commandID;
+        }
+
+        // For deserialization only
+        public RpcCommandResult() {
         }
 
         /// <summary>
         /// The unique <see cref="RpcCommand.ID"/> this response belongs to.
         /// </summary>
-        public ulong ID { get; }
+        public ulong CommandID { get; set; }
 
         /// <summary>
         /// Only set when there is no <see cref="Failure"/>.
         /// Contains the JSON-encoded response data of the RPC call.
         /// </summary>
-        public string? ResultJson { get; private set; } = null;
+        public string? ResultJson { get; set; } = null;
 
         /// <summary>
         /// An exception happened on either the local or the remote side.
         /// </summary>
-        public RpcFailure? Failure { get; private set; } = null;
+        public RpcFailure? Failure { get; set; } = null;
 
         /// <summary>
         /// Returns, whether is object stores a successful or failed result.

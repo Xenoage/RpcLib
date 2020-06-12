@@ -24,6 +24,11 @@ namespace RpcLib.Server {
         public static IRpcServer server; // TODO: inject this property!
 
 
+        // TODO
+        public static void Start(IRpcServer server) {
+            RpcServerEngine.server = server;
+        }
+
         /// <summary>
         /// Call this method when the client called the "/rpc/push"-endpoint.
         /// It executes the given RPC command immediately and returns the result.
@@ -66,7 +71,7 @@ namespace RpcLib.Server {
         /// The client can also use this ID to ensure that the command is only evaluated once,
         /// even when it was received two times for any reason.
         /// </summary>
-        public static async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult lastCommandResult) {
+        public static async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult? lastCommandResult) {
             // When a result is received, process it
             if (lastCommandResult != null)
                 ReportClientResult(clientID, lastCommandResult);
@@ -94,7 +99,7 @@ namespace RpcLib.Server {
             var client = clients.GetClient(clientID);
             RpcCommand? currentCommand = client.GetCurrentCommand();
             // Handle reported result. Ignore wrong reports (e.g. when received two times or too late)
-            if (currentCommand != null && lastResult != null && lastResult.ID == currentCommand.ID) {
+            if (currentCommand != null && lastResult != null && lastResult.CommandID == currentCommand.ID) {
                 // Response for this command received.
                 currentCommand.Finish(lastResult);
                 client.FinishCurrentCommand();

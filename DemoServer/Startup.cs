@@ -1,16 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using DemoServer.Rpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using RpcLib.Server;
+using System.Reflection;
 
 namespace DemoServer {
     public class Startup {
@@ -24,7 +19,9 @@ namespace DemoServer {
         public void ConfigureServices(IServiceCollection services) {
             services.AddControllers();
 
-            // Register RPC authentication
+            // Register RPC
+            RpcServerEngine.Start(new DemoRpcServer());
+            services.AddMvc().AddApplicationPart(Assembly.Load(new AssemblyName("RpcLib")));
             services.AddSingleton<IRpcAuth, DemoRpcAuth>();
 
         }

@@ -37,6 +37,12 @@ namespace RpcLib.Model {
         /// </summary>
         LocalQueueOverflow,
         /// <summary>
+        /// The command was already executed earlier, and the cached result is not available
+        /// any more so that we could it send again. Since we must not execute the command twice,
+        /// we use this failure to notify the remote peer about the problem.
+        /// </summary>
+        ObsoleteCommandID,
+        /// <summary>
         /// Unexpected exception.
         /// </summary>
         Other

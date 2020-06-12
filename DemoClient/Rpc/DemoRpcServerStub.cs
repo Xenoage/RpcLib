@@ -4,7 +4,7 @@ using RpcLib.Client;
 using RpcLib.Model;
 using System.Threading.Tasks;
 
-namespace DemoServer.Rpc {
+namespace DemoClient.Rpc {
 
     /// <summary>
     /// Demo client-side (stub) implementation of the <see cref="IDemoRpcServer"/> functions.
@@ -18,10 +18,10 @@ namespace DemoServer.Rpc {
     public class DemoRpcServerStub : IDemoRpcServer {
 
         public async Task SayHelloToServer(Greeting greeting) =>
-            await RpcClientEngine.ExecuteOnServer<object>(new RpcCommand("SayHello", greeting)); // <object> for void
+            await RpcClientEngine.ExecuteOnServer<object>(new RpcCommand("SayHelloToServer", greeting)); // <object> for void
 
         public async Task<SampleData> ProcessDataOnServer(SampleData baseData) =>
-            await RpcClientEngine.ExecuteOnServer<SampleData>(new RpcCommand("ProcessData", baseData));
+            await RpcClientEngine.ExecuteOnServer<SampleData>(new RpcCommand("ProcessDataOnServer", baseData));
 
     }
 

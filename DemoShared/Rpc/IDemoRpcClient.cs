@@ -1,4 +1,5 @@
 ﻿using DemoShared.Model;
+using RpcLib;
 using RpcLib.Peers;
 using System.Threading.Tasks;
 
@@ -9,7 +10,7 @@ namespace DemoShared.Rpc {
     /// This interface defines all methods which can be called
     /// on the client side from RPC calls by the server.
     /// </summary>
-    public interface IDemoRpcClient : IRpcPeer {
+    public interface IDemoRpcClient : IRpcClient {
 
         /// <summary>
         /// Says "hello" to the given name on the console of the client.

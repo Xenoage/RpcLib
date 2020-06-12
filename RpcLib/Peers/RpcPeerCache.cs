@@ -1,6 +1,6 @@
 ﻿using RpcLib.Model;
+using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace RpcLib.Peers {
@@ -25,9 +25,9 @@ namespace RpcLib.Peers {
         // answered without executing the command again.
         private ConcurrentQueue<RpcCommandResult> cachedResults = new ConcurrentQueue<RpcCommandResult>();
 
-        // The ID of the last executed command, or 0. Since the IDs are ascending,
+        // The ID of the last command, which result was cached, or 0. Since the IDs are ascending,
         // already executed commands can be easily determined.
-        private ulong lastExecutedCommandID = 0;
+        private ulong lastCachedResultCommandID = 0;
 
         /// <summary>
         /// Creates a cache for the given client ID (or null for the server peer).
@@ -79,12 +79,12 @@ namespace RpcLib.Peers {
         /// </summary>
         public RpcCommandResult? GetCachedResult(ulong commandID) {
             // New command?
-            if (commandID > lastExecutedCommandID)
+            if (commandID > lastCachedResultCommandID)
                 return null;
             // It is an old command. Find the cached result.
             var cachedResults = this.cachedResults.ToList(); // Defensive copy
-            var result = cachedResults.Find(it => it.ID == commandID);
-            return result ?? RpcCommandResult.FromFailure(command.ID, new RpcFailure(
+            var result = cachedResults.Find(it => it.CommandID == commandID);
+            return result ?? RpcCommandResult.FromFailure(commandID, new RpcFailure(
                 RpcFailureType.ObsoleteCommandID, $"Command ID {commandID} already executed too long ago " +
                     (ClientID != null ? $"on the client {ClientID}" : "for the server")));
         }
@@ -94,6 +94,7 @@ namespace RpcLib.Peers {
         /// command ID can be answered without executing the command again.
         /// </summary>
         public void CacheResult(RpcCommandResult result) {
+            lastCachedResultCommandID = Math.Max(lastCachedResultCommandID, result.CommandID);
             cachedResults.Enqueue(result);
             while (cachedResults.Count > maxResultCacheSize)
                 cachedResults.TryDequeue(out _);

@@ -25,46 +25,53 @@ namespace RpcLib.Model {
         /// </summary>
         public RpcCommand(string methodName, params object[] methodParameters) {
             lock(syncLock) {
-                ID = lastNumber;
                 lastNumber++;
+                ID = lastNumber;
             }
             MethodName = methodName;
             MethodParameters = methodParameters.Select(it => JsonLib.ToJson(it)).ToList();
         }
 
         /// <summary>
-        /// Unique ID of this command, ascending over time
+        /// Default constructor. For JSON deserialization only.
         /// </summary>
-        public ulong ID { get; }
+        public RpcCommand() {
+        }
+
+        /// <summary>
+        /// Unique ID of this command.
+        /// The next ID will be the last ID + 1.
+        /// </summary>
+        public ulong ID { get; set; }
 
         /// <summary>
         /// The name of the method.
         /// </summary>
-        public string MethodName { get; }
+        public string MethodName { get; set; }
 
         /// <summary>
         /// The list of JSON-encoded parameters.
         /// See <see cref="JsonLib"/> how the parameters are encoded.
         /// </summary>
-        public List<string> MethodParameters { get; }
+        public List<string> MethodParameters { get; set; }
 
         /// <summary>
         /// The current state of this command.
         /// The RPC engine calls <see cref="SetState"/> and <see cref="Finish"/> to update
         /// the state while it processes the command.
         /// </summary>
-        public RpcCommandState State { get; private set; } = RpcCommandState.Created;
+        public RpcCommandState State { get; set; } = RpcCommandState.Created;
 
         /// <summary>
         /// Returns true, iff the result or exception for the command call was already received.
         /// </summary>
-        public bool IsFinished =>
+        public bool IsFinished() =>
             State == RpcCommandState.Successful || State == RpcCommandState.Failed;
 
         /// <summary>
         /// The result of the call, which is available as soon as <see cref="IsFinished"/> is true.
         /// </summary>
-        public RpcCommandResult Result =>
+        public RpcCommandResult GetResult() =>
             result ?? throw new Exception("Command not finished yet");
 
         /// <summary>
@@ -96,16 +103,17 @@ namespace RpcLib.Model {
             try {
                 // Wait for result until timeout
                 long timeoutTime = CoreUtils.TimeNow() + timeoutSeconds * 1000;
-                while (false == IsFinished && CoreUtils.TimeNow() < timeoutTime)
+                while (false == IsFinished() && CoreUtils.TimeNow() < timeoutTime)
                     await Task.Delay(100); // TODO: More elegant waiting then this "active waiting", e.g. by callback
                 // Timeout?
-                if (false == IsFinished)
+                if (false == IsFinished())
                     throw new RpcException(new RpcFailure(RpcFailureType.LocalTimeout, "Timeout"));
                 // Failed? Then throw RPC exception
-                if (Result.Failure is RpcFailure failure)
+                var result = GetResult();
+                if (result.Failure is RpcFailure failure)
                     throw new RpcException(failure);
                 // Return JSON-encoded result (or null for void return type)
-                if (Result.ResultJson is string json)
+                if (result.ResultJson is string json)
                     return JsonLib.FromJson<T>(json);
                 else
                     return default!;

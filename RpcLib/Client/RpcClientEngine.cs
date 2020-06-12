@@ -24,9 +24,9 @@ namespace RpcLib.Client {
         /// </summary>
         /// <param name="client">The implementation of the RPC commands on the client</param>
         /// <param name="clientConfig">The settings of this client</param>
-        /// <param name="authorizeAction">An action which authorizes the used HTTP client, e.g. by adding HTTP Basic Auth
+        /// <param name="authAction">An action which authenticates the used HTTP client, e.g. by adding HTTP Basic Auth
         /// information according to the client.</param>
-        public static void Start(IRpcClient client, RpcClientConfig clientConfig, Action<HttpClient> authorizeAction) {
+        public static void Start(IRpcClient client, RpcClientConfig clientConfig, Action<HttpClient> authAction) {
             if (isRunning)
                 return;
             isRunning = true;
@@ -36,7 +36,7 @@ namespace RpcLib.Client {
             // Create and authorize HTTP client
             http = new HttpClient();
             http.Timeout = TimeSpan.FromSeconds(RpcServerEngine.longPollingSeconds + 10); // Give some more seconds for timeout
-            authorizeAction(http);
+            authAction(http);
             // Loop to pull the next command for this client from the server, execute it (if not already executed before)
             // and send the response together with the next pull.
             _ = Task.Run(async () => {
@@ -52,9 +52,7 @@ namespace RpcLib.Client {
                     if (next != null) {
                         lastResult = await ExecuteLocallyNow(next);
                     }
-                    else {
-                        await Task.Delay(100); // TODO: More elegant waiting than this "active waiting", e.g. by callback
-                    }
+                    await Task.Delay(100); // TODO: More elegant waiting than this "active waiting", e.g. by callback
                 }
             });
             // Loop to execute (i.e. send to server) the next command in the queue.
@@ -63,11 +61,15 @@ namespace RpcLib.Client {
                     RpcCommand? next = server.GetCurrentCommand();
                     if (next != null) {
                         next.SetState(RpcCommandState.Sent);
-                        await ExecuteOnServerNow(next);
+                        try {
+                            await ExecuteOnServerNow(next);
+                            server.FinishCurrentCommand();
+                        }
+                        catch {
+                            // Could not reach server. Try the same command again.
+                        }
                     }
-                    else {
-                        await Task.Delay(100); // TODO: More elegant waiting than this "active waiting", e.g. by callback
-                    }
+                    await Task.Delay(100); // TODO: More elegant waiting than this "active waiting", e.g. by callback
                 }
             });
         }
@@ -102,10 +104,24 @@ namespace RpcLib.Client {
         /// <summary>
         /// Sends the given command to the server now, reads the result or catches the
         /// exception, and sets the command's state accordingly.
-        /// This method does not throw exceptions.
+        /// This method does only throw an exception, when there was a problem reaching the server.
+        /// In this case, the command should be repeated. When there was an exception on the server,
+        /// the command should not be repeated, and so we do not throw an exception here, but store
+        /// the failure in the command's response state.
         /// </summary>
         private static async Task ExecuteOnServerNow(RpcCommand command) {
-            // TODO
+            var bodyJson = JsonLib.ToJson(command);
+            var httpResponse = await http.PostAsync(clientConfig.ServerUrl + "/push",
+                new StringContent(bodyJson, Encoding.UTF8, "application/json"));
+            if (httpResponse.IsSuccessStatusCode) {
+                // Response (either success or remote failure) received.
+                var result = JsonLib.FromJson<RpcCommandResult>(await httpResponse.Content.ReadAsStringAsync());
+                command.Finish(result);
+            }
+            else {
+                // Remote exception.
+                throw new Exception("Server responded with status code " + httpResponse.StatusCode);
+            }
         }
 
         /// <summary>
