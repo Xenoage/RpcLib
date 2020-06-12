@@ -79,7 +79,7 @@ namespace RpcLib.Client {
         /// and returns the result or throws an <see cref="RpcException"/>.
         /// See <see cref="RpcCommand.WaitForResult{T}"/>
         /// </summary>
-        public static async Task<T> ExecuteOnServer<T>(RpcCommand command) where T : class {
+        public static async Task<T> ExecuteOnServer<T>(RpcCommand command) {
             try {
                 // Enqueue (and execute)
                 server.EnqueueCommand(command);

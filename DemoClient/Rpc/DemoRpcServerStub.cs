@@ -10,7 +10,7 @@ namespace DemoClient.Rpc {
     /// Demo client-side (stub) implementation of the <see cref="IDemoRpcServer"/> functions.
     /// 
     /// The returned tasks are completed when the response of the server was received.
-    /// When there was any problem (server-side exception, network problem, ...) an exception is thrown.
+    /// When there was any problem (server-side exception, network problem, ...) an <see cref="RpcException"/> is thrown.
     /// 
     /// This file could be auto-generated later from the <see cref="IDemoRpcServer"/> interface,
     /// since it simply forwards the method calls to the RPC engine.
@@ -23,6 +23,8 @@ namespace DemoClient.Rpc {
         public async Task<SampleData> ProcessDataOnServer(SampleData baseData) =>
             await RpcClientEngine.ExecuteOnServer<SampleData>(new RpcCommand("ProcessDataOnServer", baseData));
 
+        public async Task<int> AddNumbers(int number1, int number2) =>
+            await RpcClientEngine.ExecuteOnServer<int>(new RpcCommand("AddNumbers", number1, number2));
     }
 
 }

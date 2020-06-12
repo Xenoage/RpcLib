@@ -99,7 +99,7 @@ namespace RpcLib.Model {
         /// The result is stored in the given command itself. If successful, the return value
         /// is also returned, otherwise an <see cref="RpcException"/> is thrown.
         /// </summary>
-        public async Task<T> WaitForResult<T>() where T : class {
+        public async Task<T> WaitForResult<T>() {
             try {
                 // Wait for result until timeout
                 long timeoutTime = CoreUtils.TimeNow() + timeoutSeconds * 1000;

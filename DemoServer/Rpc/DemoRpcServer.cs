@@ -25,6 +25,10 @@ public class DemoRpcServer : IDemoRpcServer {
         };
     }
 
+    public async Task<int> AddNumbers(int number1, int number2) {
+        return number1 + number2;
+    }
+
     public async Task<RpcCommandResult> Execute(RpcCommand command) {
         string? resultJson = null;
         switch (command.MethodName) {
@@ -34,10 +38,14 @@ public class DemoRpcServer : IDemoRpcServer {
             case "ProcessDataOnServer":
                 resultJson = JsonLib.ToJson(await ProcessDataOnServer(JsonLib.FromJson<SampleData>(command.MethodParameters[0])));
                 break;
+            case "AddNumbers":
+                resultJson = JsonLib.ToJson(await AddNumbers(
+                    JsonLib.FromJson<int>(command.MethodParameters[0]), JsonLib.FromJson<int>(command.MethodParameters[1])));
+                break;
             default:
                 throw new Exception("Unknown method name: " + command.MethodName);
         }
         return RpcCommandResult.FromSuccess(command.ID, resultJson);
     }
-
+    
 }

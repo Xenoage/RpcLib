@@ -22,6 +22,11 @@ namespace DemoShared.Rpc {
         /// </summary>
         Task<SampleData> ProcessDataOnServer(SampleData baseData);
 
+        /// <summary>
+        /// Returns the sum of the given two numbers.
+        /// </summary>
+        Task<int> AddNumbers(int number1, int number2);
+
     }
 
 }
