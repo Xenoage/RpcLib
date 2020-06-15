@@ -95,6 +95,13 @@ namespace RpcLib.Client {
         }
 
         /// <summary>
+        /// Like <see cref="ExecuteOnServer{T}(RpcCommand)"/> but without return value.
+        /// </summary>
+        public static async Task ExecuteOnServer(RpcCommand command) {
+            await ExecuteOnServer<object>(command);
+        }
+
+        /// <summary>
         /// Call this method to stop the communication with the server as soon as possible.
         /// </summary>
         public static void Stop() {

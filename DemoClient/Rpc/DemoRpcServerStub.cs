@@ -18,7 +18,7 @@ namespace DemoClient.Rpc {
     public class DemoRpcServerStub : IDemoRpcServer {
 
         public async Task SayHelloToServer(Greeting greeting) =>
-            await RpcClientEngine.ExecuteOnServer<object>(new RpcCommand("SayHelloToServer", greeting)); // <object> for void
+            await RpcClientEngine.ExecuteOnServer(new RpcCommand("SayHelloToServer", greeting));
 
         public async Task<SampleData> ProcessDataOnServer(SampleData baseData) =>
             await RpcClientEngine.ExecuteOnServer<SampleData>(new RpcCommand("ProcessDataOnServer", baseData));

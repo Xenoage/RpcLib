@@ -7,7 +7,7 @@ namespace DemoShared.Rpc {
     /// <summary>
     /// Demo interface for a <see cref="IRpcServer"/>.
     /// This interface defines all methods which can be called
-    /// on the server side from RPC calls by the client.
+    /// on the server by RPC calls from the client.
     /// </summary>
     public interface IDemoRpcServer : IRpcServer {
 
