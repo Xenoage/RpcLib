@@ -74,18 +74,12 @@ namespace RpcLib.Server {
         public static async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult? lastCommandResult) {
             // When a result is received, process it
             if (lastCommandResult != null)
-                ReportClientResult(clientID, lastCommandResult);
+                await ReportClientResult(clientID, lastCommandResult);
             // Wait for next command
-            long endTime = CoreUtils.TimeNow() + longPollingSeconds * 1000;
-            while (CoreUtils.TimeNow() < endTime) {
-                RpcCommand? next = clients.GetClient(clientID).GetCurrentCommand();
-                if (next != null) {
-                    next.SetState(RpcCommandState.Sent);
-                    return next;
-                }
-                else {
-                    await Task.Delay(100); // TODO: More elegant waiting than this "active waiting", e.g. by callback
-                }
+            RpcCommand? next = await clients.GetClient(clientID).GetCurrentCommand(longPollingSeconds * 1000);
+            if (next != null) {
+                next.SetState(RpcCommandState.Sent);
+                return next;
             }
             // No item during long polling time. Return null.
             return null;
@@ -94,15 +88,15 @@ namespace RpcLib.Server {
         /// <summary>
         /// Call this method, when the client reported the result of the current command.
         /// </summary>
-        private static void ReportClientResult(string clientID, RpcCommandResult? lastResult) {
+        private static async Task ReportClientResult(string clientID, RpcCommandResult? lastResult) {
             // Get current command on this client
             var client = clients.GetClient(clientID);
-            RpcCommand? currentCommand = client.GetCurrentCommand();
+            RpcCommand? currentCommand = await client.GetCurrentCommand(timeoutMs: 0); // Zero timeout, result should be there
             // Handle reported result. Ignore wrong reports (e.g. when received two times or too late)
             if (currentCommand != null && lastResult != null && lastResult.CommandID == currentCommand.ID) {
                 // Response for this command received.
                 currentCommand.Finish(lastResult);
-                client.FinishCurrentCommand();
+                await client.FinishCurrentCommand();
             }
         }
 

@@ -48,28 +48,28 @@ namespace RpcLib.Client {
                     }
                     catch {
                         // Could not reach server. Try the same result report again.
+                        await Task.Delay(1000); // Wait a second before trying again
                     }
                     if (next != null) {
                         lastResult = await ExecuteLocallyNow(next);
                     }
-                    await Task.Delay(100); // TODO: More elegant waiting than this "active waiting", e.g. by callback
                 }
             });
             // Loop to execute (i.e. send to server) the next command in the queue.
             _ = Task.Run(async () => {
                 while (isRunning) {
-                    RpcCommand? next = server.GetCurrentCommand();
+                    RpcCommand? next = await server.GetCurrentCommand(timeoutMs: -1); // No timeout
                     if (next != null) {
                         next.SetState(RpcCommandState.Sent);
                         try {
                             await ExecuteOnServerNow(next);
-                            server.FinishCurrentCommand();
+                            await server.FinishCurrentCommand();
                         }
                         catch {
                             // Could not reach server. Try the same command again.
+                            await Task.Delay(1000); // Wait a second before trying again
                         }
                     }
-                    await Task.Delay(100); // TODO: More elegant waiting than this "active waiting", e.g. by callback
                 }
             });
         }

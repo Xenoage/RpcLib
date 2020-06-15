@@ -22,7 +22,7 @@ namespace RpcLibTest {
             // Can be increased to 500 e.g. on a machine with 32GB RAM. This is not a limitation of RPCLib
             // (it should work with thousands of clients), but of the test machine which has to run hundreds of
             // individual .NET Core App instances.
-            var clientsCount = 100; 
+            var clientsCount = 10; 
 
             // Remove all *.calclog files
             var thisDir = new DirectoryInfo(".");
@@ -33,7 +33,6 @@ namespace RpcLibTest {
             Process server = null;
 
             // Start clients
-            
             var clients = new List<Process>();
             var baseDir = new DirectoryInfo(thisDir.FullName).Parent.Parent.Parent.Parent;
             for (int i = 0; i < clientsCount; i++) {
@@ -49,8 +48,8 @@ namespace RpcLibTest {
                 Thread.Sleep(200);
             }
 
-            // Run for 60 seconds, then close all processes
-            Thread.Sleep(60 * 1000);
+            // Run for 10 seconds, then close all processes
+            Thread.Sleep(10 * 1000);
             server.Kill();
             foreach (var client in clients)
                 client.Kill();

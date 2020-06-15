@@ -54,7 +54,7 @@ namespace DemoClient {
                 await Task.Delay(random.Next(4000, 6000));
             } */
 
-            // Each 0-1000 ms, send a simple calculation task to the server: a + b = ?
+            // Each 0-100 ms, send a simple calculation task to the server: a + b = ?
             // a is an ascending number, starting from clientNumber * 1000
             // b is a random number between 1 and 100.
             // Write the calculations in the file "{clientID}.calclog" (used in the RpcLibTest project)
@@ -70,14 +70,15 @@ namespace DemoClient {
                     long timeStart = CoreUtils.TimeNow();
                     int result = await server.AddNumbers(a, b);
                     long rpcTime = CoreUtils.TimeNow() - timeStart;
-                    Log.Write($"Result received: {result}");
-                    LogToFile(filename, $"{a}+{b}={result}//responsetime={rpcTime}ms");
+                    var log = $"{a}+{b}={result} //responsetime={rpcTime}ms";
+                    Log.Write($"Result received: {log}");
+                    LogToFile(filename, log);
                 }
                 catch (RpcException ex) {
                     Log.Write("Error when sending calculation: " + ex.Failure.Type + ": " + ex.Message);
                     LogToFile(filename, "error:" + ex.Failure.Type + ":" + ex.Message);
                 }
-                await Task.Delay(random.Next(0, 1000));
+                await Task.Delay(random.Next(0, 100));
             }
         }
 

@@ -90,6 +90,7 @@ namespace RpcLib.Model {
         public void Finish(RpcCommandResult result) {
             State = result.State;
             this.result = result;
+            runningTask.SetResult(result);
         }
 
         /// <summary>
@@ -102,9 +103,7 @@ namespace RpcLib.Model {
         public async Task<T> WaitForResult<T>() {
             try {
                 // Wait for result until timeout
-                long timeoutTime = CoreUtils.TimeNow() + timeoutSeconds * 1000;
-                while (false == IsFinished() && CoreUtils.TimeNow() < timeoutTime)
-                    await Task.Delay(100); // TODO: More elegant waiting then this "active waiting", e.g. by callback
+                await Task.WhenAny(runningTask.Task, Task.Delay(timeoutSeconds * 1000));
                 // Timeout?
                 if (false == IsFinished())
                     throw new RpcException(new RpcFailure(RpcFailureType.LocalTimeout, "Timeout"));
@@ -125,6 +124,7 @@ namespace RpcLib.Model {
                 throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
             }
         }
+        private TaskCompletionSource<RpcCommandResult> runningTask = new TaskCompletionSource<RpcCommandResult>();
 
         // Helper fields
         private static ulong lastNumber = 0;

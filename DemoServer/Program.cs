@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace DemoServer {
     public class Program {
+
         public static void Main(string[] args) {
             CreateHostBuilder(args).Build().Run();
         }
