@@ -2,9 +2,11 @@
 
   <PropertyGroup>
     <PackageId>Xenoage.RpcLib</PackageId>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <Authors>Andreas Wenger</Authors>
     <Company>Xenoage Software</Company>
+    <RepositoryUrl>https://github.com/Xenoage/RpcLib</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <TargetFramework>netstandard2.1</TargetFramework>
     <nullable>Enable</nullable>
   </PropertyGroup>

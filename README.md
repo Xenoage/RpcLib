@@ -1,24 +1,35 @@
 # RpcLib
 
+[![NuGet version (Xenoage.RpcLib)](https://img.shields.io/nuget/v/Xenoage.RpcLib.svg?style=flat-square)](https://www.nuget.org/packages/Xenoage.RpcLib/)
+
 _Early alpha version - more documentation will follow._
 
 Simple .NET Core RPC library for bidirectional communication based on an ASP.NET Core server and clients behind firewall
 
 ## Usage
 
-### 1) Define RPC methods
+Before adding the library to your own project, we recommend to have a look at the provided [example](https://github.com/Xenoage/RpcLib) code and follow the following steps.
 
-1. In a shared class library project (or in any source folder both the server and the client can access)
-   define the interfaces containing the methods which are available on the server
-   (see [example](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Rpc/IDemoRpcServer.cs)) and on the client
-   (see [example](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Rpc/IDemoRpcClient.cs)).
+### 1) Project setup
+
+1. You need at least two projects: the server and the client. In our [example](https://github.com/Xenoage/RpcLib) code, these projects are named `DemoServer` and `DemoClient`.
+   * The server project must be an ASP.NET Core project, since the RPC handler on the server side is based on an ASP.NET Core Web API controller.
+   * The client project can be of any kind, e.g. a simple console application.
+2. An additional class library project is recommended, which is referenced by both the client and the server. This project is called `DemoShared` in the example code.
+3. Add a reference to this library to your projects, e.g. by using the NuGet GUI or by calling `dotnet add package Xenoage.RpcLib`
+
+### 2) Define RPC methods
+
+1. In the shared class library project (or in any source folder both the server and the client can access) define the interfaces containing the methods which are available on the server (see [example](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Rpc/IDemoRpcServer.cs)) and on the client (see [example](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Rpc/IDemoRpcClient.cs)).
+   * All methods must return a `Task` or a `Task<T>`, because they are called asynchronously.
+   * Both the return type (if any) and the parameters (if any) must be (de)serializable to/from JSON. Internally, we use the Newtonsoft.JSON library for (de)serialization. 
    
-### 2) Implement the server side
+### 3) Implement the server side
 
 1. _TODO_
 
 
-### 3) Implement the client side
+### 4) Implement the client side
 
 1. On the client side, a so called "stub" for the server interface is needed. Within this stub class, the method
    calls are simply encoded and forwarded to the RPC engine, which runs the commands on the server and returns
