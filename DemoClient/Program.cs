@@ -63,20 +63,21 @@ namespace DemoClient {
             int a = clientNumber * 1000;
             var random = new Random();
             while (true) {
+                long timeStart = CoreUtils.TimeNow(); ;
+                a++;
+                int b = random.Next(1, 100);
                 try {
-                    a++;
-                    int b = random.Next(1, 100);
-                    Log.Write($"Sending calculation: {a} + {b} = ?");
-                    long timeStart = CoreUtils.TimeNow();
                     int result = await server.AddNumbers(a, b);
                     long rpcTime = CoreUtils.TimeNow() - timeStart;
-                    var log = $"{a}+{b}={result} //responsetime={rpcTime}ms";
-                    Log.Write($"Result received: {log}");
-                    LogToFile(filename, log);
+                    var log = $"{a}+{b}={result} | {rpcTime} ms";
+                    Log.Write(log);
+                    Log.WriteToFile(filename, log);
                 }
                 catch (RpcException ex) {
-                    Log.Write("Error when sending calculation: " + ex.Failure.Type + ": " + ex.Message);
-                    LogToFile(filename, "error:" + ex.Failure.Type + ":" + ex.Message);
+                    long rpcTime = CoreUtils.TimeNow() - timeStart;
+                    var log = $"{a}+{b}=? | {rpcTime} ms | Fail: {ex.Type}: {ex.Message}";
+                    Log.Write(log);
+                    Log.WriteToFile(filename, log);
                 }
                 await Task.Delay(random.Next(0, 100));
             }
@@ -89,10 +90,6 @@ namespace DemoClient {
             // Set HTTP Basic Auth header
             var auth = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}"));
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", auth);
-        }
-
-        private static void LogToFile(string filename, string line) {
-            File.AppendAllText(filename, line + "\n");
         }
 
     }

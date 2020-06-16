@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace DemoShared {
 
@@ -10,6 +11,14 @@ namespace DemoShared {
         public static void Write(string message) {
             Console.WriteLine(DateTime.Now.ToString().PadRight(20) + message);
         }
+
+        public static void WriteToFile(string filename, string line) {
+            lock (lockObj) {
+                File.AppendAllText(filename, line + "\n");
+            }
+        }
+
+        private static object lockObj = new object();
 
     }
 

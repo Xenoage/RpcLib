@@ -19,10 +19,10 @@ namespace RpcLibTest {
         public void TestCalculations() {
 
             // Number of clients.
-            // Can be increased to 500 e.g. on a machine with 32GB RAM. This is not a limitation of RPCLib
-            // (it should work with thousands of clients), but of the test machine which has to run hundreds of
+            // Can be increased on machines with much RAM and computing power. This is not a limitation of RPCLib
+            // (it should work with thousands of clients), but of the test machine which has to run lots of
             // individual .NET Core App instances.
-            var clientsCount = 1; 
+            var clientsCount = 100; 
 
             // Remove all *.calclog files
             var thisDir = new DirectoryInfo(".");
@@ -63,7 +63,7 @@ namespace RpcLibTest {
             psi.Arguments = arguments;
 
             // Uncomment the following lines to make all program consoles visible (slow!)
-            //*
+            /*
             psi.UseShellExecute = true;
             psi.CreateNoWindow = false;
             psi.WindowStyle = ProcessWindowStyle.Normal; //*/
