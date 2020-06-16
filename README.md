@@ -28,4 +28,6 @@ Simple .NET Core RPC library for bidirectional communication based on an ASP.NET
    it in a later version of this library from the server interface!).
 2. Implement the client interface with the "real" logic. See this
    [example](https://github.com/Xenoage/RpcLib/blob/master/DemoClient/Rpc/DemoRpcClient.cs).
-3. Initialize the RPC library on the client side: _TODO_
+3. Initialize the RPC library on the client side (see [example](https://github.com/Xenoage/RpcLib/blob/master/DemoClient/Program.cs), after "`// Connect to the server`"):
+   * Create an instance of your server stub class and use it wherever you want to call the server.
+   * Create an instance of your client implementation class, the client configuration (including the unique client ID and the URL of the server endpoint) and an authentication method (e.g. HTTP Basic Auth) and start the RPC client engine with these settings.
