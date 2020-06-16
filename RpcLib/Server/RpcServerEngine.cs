@@ -1,7 +1,8 @@
-﻿using RpcLib.Model;
+﻿using Microsoft.Extensions.DependencyInjection;
+using RpcLib.Model;
 using RpcLib.Peers;
-using RpcLib.Utils;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RpcLib.Server {
@@ -23,11 +24,18 @@ namespace RpcLib.Server {
 
         public static IRpcServer server; // TODO: inject this property!
 
-
-        // TODO
+        /// <summary>
+        /// Starts the server-side RPC handler, using the given RPC server functions.
+        /// </summary>
         public static void Start(IRpcServer server) {
             RpcServerEngine.server = server;
         }
+
+        /// <summary>
+        /// Gets the list of all client IDs which are or were connected to the server.
+        /// </summary>
+        public static List<string> GetClientIDs() =>
+            clients.GetClientIDs();
 
         /// <summary>
         /// Call this method when the client called the "/rpc/push"-endpoint.

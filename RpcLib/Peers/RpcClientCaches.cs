@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace RpcLib.Peers {
 
@@ -9,6 +10,12 @@ namespace RpcLib.Peers {
 
         // For each client (identified by client ID) its current command queue
         private IDictionary<string, RpcPeerCache> queues = new Dictionary<string, RpcPeerCache>();
+
+        /// <summary>
+        /// Gets the list of the IDs of all clients which are or were connected to the server.
+        /// </summary>
+        public List<string> GetClientIDs() =>
+            queues.Keys.ToList();
 
         /// <summary>
         /// Gets the queue of the given client.
