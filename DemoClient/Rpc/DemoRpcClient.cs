@@ -27,20 +27,18 @@ namespace DemoClient.Rpc {
             };
         }
 
-        public async Task<RpcCommandResult> Execute(RpcCommand command) {
-            string? resultJson = null;
-            switch (command.MethodName) {
-                case "SayHelloToClient":
-                    await SayHelloToClient(JsonLib.FromJson<Greeting>(command.MethodParameters[0]));
-                    break;
-                case "ProcessDataOnClient":
-                    resultJson = JsonLib.ToJson(await ProcessDataOnClient(JsonLib.FromJson<SampleData>(command.MethodParameters[0])));
-                    break;
-                default:
-                    throw new Exception("Unknown method name: " + command.MethodName);
-            }
-            return RpcCommandResult.FromSuccess(command.ID, resultJson);
+        public async Task<int> DivideNumbers(int dividend, int divisor) {
+            return dividend / divisor; // DivideByZeroException when divisor is 0, this is ok and great for testing
         }
+
+        // Mapping of RpcCommand to real method calls (boilerplate code; we could auto-generate this method later)
+        public async Task<RpcCommandResult> Execute(RpcCommand command) =>
+            RpcCommandResult.FromSuccess(command.ID, await (command.MethodName switch {
+                "SayHelloToClient" => SayHelloToClient(command.GetParam<Greeting>(0)).ToJson(),
+                "ProcessDataOnClient" => ProcessDataOnClient(command.GetParam<SampleData>(0)).ToJson(),
+                "DivideNumbers" => DivideNumbers(command.GetParam<int>(0), command.GetParam<int>(1)).ToJson(),
+                _ => throw new Exception("Unknown method name: " + command.MethodName)
+            }));
 
     }
 

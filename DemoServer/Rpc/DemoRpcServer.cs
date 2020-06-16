@@ -29,23 +29,14 @@ public class DemoRpcServer : IDemoRpcServer {
         return number1 + number2;
     }
 
-    public async Task<RpcCommandResult> Execute(RpcCommand command) {
-        string? resultJson = null;
-        switch (command.MethodName) {
-            case "SayHelloToServer":
-                await SayHelloToServer(JsonLib.FromJson<Greeting>(command.MethodParameters[0]));
-                break;
-            case "ProcessDataOnServer":
-                resultJson = JsonLib.ToJson(await ProcessDataOnServer(JsonLib.FromJson<SampleData>(command.MethodParameters[0])));
-                break;
-            case "AddNumbers":
-                resultJson = JsonLib.ToJson(await AddNumbers(
-                    JsonLib.FromJson<int>(command.MethodParameters[0]), JsonLib.FromJson<int>(command.MethodParameters[1])));
-                break;
-            default:
-                throw new Exception("Unknown method name: " + command.MethodName);
-        }
-        return RpcCommandResult.FromSuccess(command.ID, resultJson);
-    }
+    // Mapping of RpcCommand to real method calls (boilerplate code; we could auto-generate this method later)
+    public async Task<RpcCommandResult> Execute(RpcCommand command) =>
+        RpcCommandResult.FromSuccess(command.ID, await (command.MethodName switch
+        {
+            "SayHelloToServer" => SayHelloToServer(command.GetParam<Greeting>(0)).ToJson(),
+            "ProcessDataOnServer" => ProcessDataOnServer(command.GetParam<SampleData>(0)).ToJson(),
+            "AddNumbers" => AddNumbers(command.GetParam<int>(0), command.GetParam<int>(1)).ToJson(),
+            _ => throw new Exception("Unknown method name: " + command.MethodName)
+        }));
     
 }

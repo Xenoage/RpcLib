@@ -23,6 +23,11 @@ namespace DemoShared.Rpc {
         /// </summary>
         Task<SampleData> ProcessDataOnClient(SampleData baseData);
 
+        /// <summary>
+        /// Returns the quotient of the given two numbers.
+        /// </summary>
+        Task<int> DivideNumbers(int dividend, int divisor);
+
     }
 
 }

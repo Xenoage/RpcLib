@@ -56,6 +56,12 @@ namespace RpcLib.Model {
         public List<string> MethodParameters { get; set; }
 
         /// <summary>
+        /// Gets the decoded message parameter with the given index.
+        /// </summary>
+        public T GetParam<T>(int index) =>
+            JsonLib.FromJson<T>(MethodParameters[index]);
+
+        /// <summary>
         /// The current state of this command.
         /// The RPC engine calls <see cref="SetState"/> and <see cref="Finish"/> to update
         /// the state while it processes the command.
