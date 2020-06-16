@@ -1,14 +1,16 @@
-# RpcLib
+# Xenoage.RpcLib
+
+*A simple .NET Core RPC library for bidirectional communication between an ASP.NET Core server with HTTP(S) Web API endpoints and clients behind a firewall.*
 
 [![NuGet version (Xenoage.RpcLib)](https://img.shields.io/nuget/v/Xenoage.RpcLib.svg?style=flat-square)](https://www.nuget.org/packages/Xenoage.RpcLib/)
 
 _Early alpha version - more documentation will follow._
 
-Simple .NET Core RPC library for bidirectional communication based on an ASP.NET Core server and clients behind firewall
+
 
 ## Usage
 
-Before adding the library to your own project, we recommend to have a look at the provided [example](https://github.com/Xenoage/RpcLib) code and follow the following steps.
+Before adding the library to your own project, we recommend having a look at the provided [example](https://github.com/Xenoage/RpcLib) code and following these steps:
 
 ### 1) Project setup
 
