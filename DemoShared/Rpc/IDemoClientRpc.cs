@@ -1,6 +1,5 @@
 ﻿using DemoShared.Model;
 using RpcLib;
-using RpcLib.Server;
 using System.Threading.Tasks;
 
 namespace DemoShared.Rpc {

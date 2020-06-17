@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using RpcLib.Server;
 
 namespace RpcLib.Model {
 

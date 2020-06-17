@@ -13,7 +13,6 @@ using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using RpcLib.Server;
 using DemoShared.Rpc;
 using RpcLib;
 
@@ -37,7 +36,8 @@ namespace DemoClient {
             Log.Write("Welcome to the RPCLib Demo Client: " + clientID);
 
             // RPC initialization
-            var server = new DemoServerRpcStub();
+            var serverDemo = new DemoServerRpcStub();
+            var serverCalc = new CalcRpcStub();
             var demoRpcConfig = new RpcClientConfig {
                 ClientID = clientID,
                 ServerUrl = "http://localhost:5000/rpc"
@@ -63,7 +63,7 @@ namespace DemoClient {
             } */
 
             // Say hello to the server
-            await server.SayHelloToServer(new Greeting { Name = "Andi" });
+            await serverDemo.SayHelloToServer(new Greeting { Name = "Andi" });
 
             // Each 0-100 ms, send a simple calculation task to the server: a + b = ?
             // a is an ascending number, starting from clientNumber * 1000
@@ -78,7 +78,7 @@ namespace DemoClient {
                 a++;
                 int b = random.Next(1, 100);
                 try {
-                    int result = await server.AddNumbers(a, b);
+                    int result = await serverCalc.AddNumbers(a, b);
                     long rpcTime = CoreUtils.TimeNow() - timeStart;
                     var log = $"{a}+{b}={result} | {rpcTime} ms";
                     Log.Write(log);

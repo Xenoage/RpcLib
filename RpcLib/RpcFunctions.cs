@@ -1,7 +1,7 @@
 ﻿using RpcLib.Model;
 using System.Threading.Tasks;
 
-namespace RpcLib.Server {
+namespace RpcLib {
 
     /// <summary>
     /// Base class for real <see cref="IRpcFunctions"/> implementations (not stubs).

@@ -5,7 +5,7 @@ using DemoShared.Rpc;
 using RpcLib.Model;
 using RpcLib.Rpc.Utils;
 using System.Linq;
-using RpcLib.Server;
+using RpcLib;
 
 namespace DemoClient.Rpc {
 

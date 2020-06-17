@@ -1,6 +1,6 @@
-﻿using RpcLib.Model;
+﻿using RpcLib;
+using RpcLib.Model;
 using RpcLib.Rpc.Utils;
-using RpcLib.Server;
 using System.Threading.Tasks;
 
 namespace DemoShared.Rpc {

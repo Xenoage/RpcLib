@@ -1,10 +1,9 @@
 ﻿using DemoShared.Rpc;
 using RpcLib.Model;
-using RpcLib.Peers.Server;
 using RpcLib.Server.Client;
 using System.Threading.Tasks;
 
-namespace DemoServer.Rpc {
+namespace DemoClient.Rpc {
 
     /// <summary>
     /// Demo client-side (stub) implementation of the <see cref="ICalcRpc"/> functions.
