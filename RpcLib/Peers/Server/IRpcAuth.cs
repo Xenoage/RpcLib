@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 
-namespace RpcLib.Server.Server {
+namespace RpcLib.Peers.Server {
 
     /// <summary>
     /// Client authentication on the server.

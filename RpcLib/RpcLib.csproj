@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Xenoage.RpcLib</PackageId>
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
     <Authors>Andreas Wenger</Authors>
     <Company>Xenoage Software</Company>
     <RepositoryUrl>https://github.com/Xenoage/RpcLib</RepositoryUrl>

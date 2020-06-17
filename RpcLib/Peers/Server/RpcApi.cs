@@ -3,10 +3,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RpcLib.Model;
 using RpcLib.Peers;
-using RpcLib.Peers.Server;
 using RpcLib.Rpc.Utils;
 
-namespace RpcLib.Server.Server {
+namespace RpcLib.Peers.Server {
 
     /// <summary>
     /// Web API endpoints for the <see cref="RpcServerEngine"/>.
