@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using RpcLib.Server;
+using System.Collections.Generic;
 using System.Linq;
 
-namespace RpcLib.Peers {
+namespace RpcLib.Peers.Server {
 
     /// <summary>
-    /// This class stores the message queues and cached results for each client.
+    /// This server-side class stores the message queues and cached results for each client.
     /// </summary>
     public class RpcClientCaches {
 

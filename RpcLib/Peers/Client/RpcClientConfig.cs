@@ -1,4 +1,4 @@
-﻿namespace RpcLib.Client {
+﻿namespace RpcLib.Server.Client {
 
     /// <summary>
     /// Settings of an RPC client.

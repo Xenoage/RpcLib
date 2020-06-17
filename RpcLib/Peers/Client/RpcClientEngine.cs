@@ -1,13 +1,15 @@
 ﻿using RpcLib.Model;
-using RpcLib.Peers;
 using RpcLib.Rpc.Utils;
-using RpcLib.Server;
 using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using RpcLib.Peers.Server;
+using System.Collections;
+using System.Collections.Generic;
+using RpcLib.Peers;
 
-namespace RpcLib.Client {
+namespace RpcLib.Server.Client {
 
     /// <summary>
     /// This is the core part of the RPC engine on the client side.
@@ -22,16 +24,16 @@ namespace RpcLib.Client {
         /// Call this method at the beginning to enable the communication to the server, so that this client
         /// can both receive commands from the server and send commands to the server.
         /// </summary>
-        /// <param name="client">The implementation of the RPC commands on the client</param>
+        /// <param name="clientMethods">A function which returns new instances of the client's RPC method implementations</param>
         /// <param name="clientConfig">The settings of this client</param>
         /// <param name="authAction">An action which authenticates the used HTTP client, e.g. by adding HTTP Basic Auth
         /// information according to the client.</param>
-        public static void Start(IRpcClient client, RpcClientConfig clientConfig, Action<HttpClient> authAction) {
+        public static void Start(Func<IEnumerable<RpcFunctions>> clientMethods, RpcClientConfig clientConfig, Action<HttpClient> authAction) {
             if (isRunning)
                 return;
             isRunning = true;
-            // Remember client and settings
-            RpcClientEngine.client = client;
+            // Remember client factory and settings
+            RpcClientEngine.clientMethods = clientMethods;
             RpcClientEngine.clientConfig = clientConfig;
             // Create and authorize HTTP client
             http = new HttpClient();
@@ -169,7 +171,8 @@ namespace RpcLib.Client {
                 return result;
             // Execute the command
             try {
-                result = await client.Execute(command);
+                var runner = new RpcCommandRunner(clientMethods(), null);
+                result = await runner.Execute(clientConfig.ClientID, command);
             }
             catch (Exception ex) {
                 result = RpcCommandResult.FromFailure(command.ID,
@@ -187,7 +190,7 @@ namespace RpcLib.Client {
         private static HttpClient http = new HttpClient();
 
         // RPC client methods and settings
-        private static IRpcPeer client;
+        private static Func<IEnumerable<RpcFunctions>> clientMethods;
         private static RpcClientConfig clientConfig;
 
         // True, as long as the client engine is running

@@ -4,8 +4,15 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using RpcLib.Server;
+using RpcLib.Server.Server;
 using System.Reflection;
+using DemoShared.Rpc;
+using RpcLib.Server;
+using RpcLib.Peers;
+using RpcLib;
+using System.Collections.Generic;
+using System;
+using DemoServer.Services;
 
 namespace DemoServer {
     public class Startup {
@@ -17,13 +24,16 @@ namespace DemoServer {
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services) {
-            services.AddControllers();
+            var mvc = services.AddControllers();
 
-            // Register RPC
-            RpcServerEngine.Start(new DemoRpcServer());
-            services.AddMvc().AddApplicationPart(Assembly.Load(new AssemblyName("RpcLib")));
-            services.AddSingleton<IRpcAuth, DemoRpcAuth>();
+            // RPC initialization
+            services.InitRpcServer(mvc, typeof(DemoRpcAuth), new List<Type> {
+                typeof(DemoServerRpc),
+                typeof(CalcRpc)
+            });
 
+            // Demo service for testing
+            services.AddSingleton<DemoService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -5,13 +5,14 @@ using DemoShared.Rpc;
 using RpcLib.Model;
 using RpcLib.Rpc.Utils;
 using System.Linq;
+using RpcLib.Server;
 
 namespace DemoClient.Rpc {
 
     /// <summary>
     /// Implementation of the demo RPC client.
     /// </summary>
-    public class DemoRpcClient : IDemoRpcClient {
+    public class DemoClientRpc : RpcFunctions, IDemoClientRpc {
 
         public async Task SayHelloToClient(Greeting greeting) {
             Console.WriteLine("Hello " + greeting.Name + "!");
@@ -27,18 +28,12 @@ namespace DemoClient.Rpc {
             };
         }
 
-        public async Task<int> DivideNumbers(int dividend, int divisor) {
-            return dividend / divisor; // DivideByZeroException when divisor is 0, this is ok and great for testing
-        }
-
         // Mapping of RpcCommand to real method calls (boilerplate code; we could auto-generate this method later)
-        public async Task<RpcCommandResult> Execute(RpcCommand command) =>
-            RpcCommandResult.FromSuccess(command.ID, await (command.MethodName switch {
-                "SayHelloToClient" => SayHelloToClient(command.GetParam<Greeting>(0)).ToJson(),
-                "ProcessDataOnClient" => ProcessDataOnClient(command.GetParam<SampleData>(0)).ToJson(),
-                "DivideNumbers" => DivideNumbers(command.GetParam<int>(0), command.GetParam<int>(1)).ToJson(),
-                _ => throw new Exception("Unknown method name: " + command.MethodName)
-            }));
+        public override Task<string?>? Execute(RpcCommand command) => command.MethodName switch {
+            "SayHelloToClient" => SayHelloToClient(command.GetParam<Greeting>(0)).ToJson(),
+            "ProcessDataOnClient" => ProcessDataOnClient(command.GetParam<SampleData>(0)).ToJson(),
+            _ => null
+        };
 
     }
 

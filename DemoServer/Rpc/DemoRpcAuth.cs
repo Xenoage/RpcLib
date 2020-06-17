@@ -1,6 +1,6 @@
 ﻿using DemoServer.Utils;
 using Microsoft.AspNetCore.Http;
-using RpcLib.Server;
+using RpcLib.Server.Server;
 
 namespace DemoServer.Rpc {
 

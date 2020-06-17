@@ -43,4 +43,4 @@ Before adding the library to your own project, we recommend having a look at the
    [example](https://github.com/Xenoage/RpcLib/blob/master/DemoClient/Rpc/DemoRpcClient.cs).
 3. Initialize the RPC library on the client side (see [example](https://github.com/Xenoage/RpcLib/blob/master/DemoClient/Program.cs), after "`// Connect to the server`"):
    * Create an instance of your server stub class and use it wherever you want to call the server.
-   * Create an instance of your client implementation class, the client configuration (including the unique client ID and the URL of the server endpoint) and an authentication method (e.g. HTTP Basic Auth) and start the RPC client engine with these settings.
+   * Create a factory method for instantiating your client implementation, the client configuration (including the unique client ID and the URL of the server endpoint) and an authentication method (e.g. HTTP Basic Auth) and start the RPC client engine with these settings.

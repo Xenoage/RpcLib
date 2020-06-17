@@ -48,8 +48,8 @@ namespace RpcLibTest {
                 Thread.Sleep(200);
             }
 
-            // Run for 10 seconds, then close all processes
-            Thread.Sleep(10 * 1000);
+            // Run for 30 seconds, then close all processes
+            Thread.Sleep(30 * 1000);
             server.Kill();
             foreach (var client in clients)
                 client.Kill();
@@ -63,7 +63,7 @@ namespace RpcLibTest {
             psi.Arguments = arguments;
 
             // Uncomment the following lines to make all program consoles visible (slow!)
-            /*
+            //*
             psi.UseShellExecute = true;
             psi.CreateNoWindow = false;
             psi.WindowStyle = ProcessWindowStyle.Normal; //*/

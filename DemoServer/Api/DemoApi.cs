@@ -18,7 +18,7 @@ namespace DemoServer.Api {
         /// </summary>
         [HttpPost("greet")]
         public async Task Greet([FromQuery] string name, [FromQuery] string clientID) {
-            var client = new DemoRpcClientStub(clientID);
+            var client = new DemoClientRpcStub(clientID);
             Log.Write($"Sending greeting to name {name} to client {clientID}");
             try {
                 await client.SayHelloToClient(new DemoShared.Model.Greeting { Name = name });

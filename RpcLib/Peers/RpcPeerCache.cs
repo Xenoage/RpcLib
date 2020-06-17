@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace RpcLib.Peers {
+namespace RpcLib.Server {
 
     /// <summary>
     /// This class stores the commands queue and the results of the last

@@ -3,9 +3,9 @@
     /// <summary>
     /// Result of an <see cref="RpcCommand"/>. There a three mutually exclusive scenarios:
     /// 1) Success. Return value is null (for void return values) or the JSON-encoded return data.
-    /// 2) Remote failure. An exception happened on the remote side.
+    /// 2) Remote failure. An exception happened on the remote side. Do not run the same command again.
     /// 3) Local failure. Normally a networking problem, e.g. the request could not be sent
-    ///    or no response was received before the timeout.
+    ///    or no response was received before the timeout. The command should be retried within the timeout period.
     /// </summary>
     public class RpcCommandResult {
 

@@ -2,9 +2,11 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RpcLib.Model;
+using RpcLib.Peers;
+using RpcLib.Peers.Server;
 using RpcLib.Rpc.Utils;
 
-namespace RpcLib.Server {
+namespace RpcLib.Server.Server {
 
     /// <summary>
     /// Web API endpoints for the <see cref="RpcServerEngine"/>.
@@ -16,9 +18,11 @@ namespace RpcLib.Server {
     public class RpcApi : ControllerBase {
 
         private IRpcAuth auth;
+        private RpcCommandRunner runner;
 
-        public RpcApi(IRpcAuth auth) {
+        public RpcApi(IRpcAuth auth, RpcCommandRunner runner) {
             this.auth = auth;
+            this.runner = runner;
         }
 
         /// <summary>
@@ -40,7 +44,7 @@ namespace RpcLib.Server {
                 if (body.Length > 0) {
                     // Run command and return the result
                     var command = JsonLib.FromJson<RpcCommand>(body);
-                    return Ok(await RpcServerEngine.OnClientPush(clientID, command));
+                    return Ok(await RpcServerEngine.OnClientPush(clientID, command, runner));
                 }
             }
             // Command missing

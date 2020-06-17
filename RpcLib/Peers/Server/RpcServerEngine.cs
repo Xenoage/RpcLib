@@ -1,11 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using RpcLib.Model;
-using RpcLib.Peers;
+﻿using RpcLib.Model;
+using RpcLib.Server;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace RpcLib.Server {
+namespace RpcLib.Peers.Server {
 
     /// <summary>
     /// This is the core part of the RPC engine on the server side.
@@ -13,7 +12,7 @@ namespace RpcLib.Server {
     /// sends the commands as soon as possible and processes the results.
     /// It also receives the calls from the clients and responds to them.
     /// </summary>
-    public static class RpcServerEngine {
+    public class RpcServerEngine {
 
         // Long polling time in seconds. After this time, the server returns null when there is
         // no command in the queue.
@@ -21,15 +20,6 @@ namespace RpcLib.Server {
 
         // The registered clients and their command queues and cached command results
         private static RpcClientCaches clients = new RpcClientCaches();
-
-        public static IRpcServer server; // TODO: inject this property!
-
-        /// <summary>
-        /// Starts the server-side RPC handler, using the given RPC server functions.
-        /// </summary>
-        public static void Start(IRpcServer server) {
-            RpcServerEngine.server = server;
-        }
 
         /// <summary>
         /// Gets the list of all client IDs which are or were connected to the server.
@@ -42,7 +32,7 @@ namespace RpcLib.Server {
         /// It executes the given RPC command immediately and returns the result.
         /// No exception is thrown, but a <see cref="RpcFailure"/> result is set in case of a failure.
         /// </summary>
-        public static async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command) {
+        public static async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command, RpcCommandRunner runner) {
             // Do not run the same command twice. If the command with this ID was already
             // executed, return the cached result. If the cache is not available any more, return a
             // obsolete function call failure.
@@ -51,7 +41,7 @@ namespace RpcLib.Server {
                 return result;
             // Execute the command
             try {
-                result = await server.Execute(command);
+                result = await runner.Execute(clientID, command);
             }
             catch (Exception ex) {
                 result = RpcCommandResult.FromFailure(command.ID,

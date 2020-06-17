@@ -3,7 +3,7 @@ using DemoShared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using RpcLib.Model;
-using RpcLib.Server;
+using RpcLib.Peers.Server;
 using RpcLib.Utils;
 using System;
 using System.IO;
@@ -30,7 +30,7 @@ namespace DemoServer {
                     _ = Task.Run(async () => {
                         long startTime = CoreUtils.TimeNow();
                         try {
-                            var result = await new DemoRpcClientStub(clientID).DivideNumbers(a, b);
+                            var result = await new CalcRpcStub(clientID).DivideNumbers(a, b);
                             long rpcTime = CoreUtils.TimeNow() - startTime;
                             Log.WriteToFile(filename, $"{clientID} | {a}/{b}={result} | {rpcTime} ms");
                         }

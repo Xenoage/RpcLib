@@ -1,8 +1,8 @@
 ﻿using DemoClient.Rpc;
 using DemoShared;
 using DemoShared.Model;
-using RpcLib.Client;
 using RpcLib.Model;
+using RpcLib.Server.Client;
 using RpcLib.Rpc.Utils;
 using RpcLib.Utils;
 using System;
@@ -12,6 +12,10 @@ using System.Net.Http.Headers;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using RpcLib.Server;
+using DemoShared.Rpc;
+using RpcLib;
 
 namespace DemoClient {
 
@@ -31,14 +35,18 @@ namespace DemoClient {
             clientID += "-" + clientNumber;
             // Welcome message
             Log.Write("Welcome to the RPCLib Demo Client: " + clientID);
-            // Connect to the server
-            var server = new DemoRpcServerStub();
-            var client = new DemoRpcClient();
+
+            // RPC initialization
+            var server = new DemoServerRpcStub();
             var demoRpcConfig = new RpcClientConfig {
                 ClientID = clientID,
                 ServerUrl = "http://localhost:5000/rpc"
             };
-            RpcClientEngine.Start(client, demoRpcConfig, AuthenticateClient);
+            RpcInit.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
+                new DemoClientRpc(),
+                new CalcRpc()
+            });
+
             /* // Each few seconds, send commands to the server. Log the result.
             var random = new Random();
             while (true) {
@@ -53,6 +61,9 @@ namespace DemoClient {
                 }
                 await Task.Delay(random.Next(4000, 6000));
             } */
+
+            // Say hello to the server
+            await server.SayHelloToServer(new Greeting { Name = "Andi" });
 
             // Each 0-100 ms, send a simple calculation task to the server: a + b = ?
             // a is an ascending number, starting from clientNumber * 1000

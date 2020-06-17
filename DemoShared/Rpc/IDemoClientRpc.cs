@@ -1,16 +1,16 @@
 ﻿using DemoShared.Model;
 using RpcLib;
-using RpcLib.Peers;
+using RpcLib.Server;
 using System.Threading.Tasks;
 
 namespace DemoShared.Rpc {
 
     /// <summary>
-    /// Demo interface for a <see cref="IRpcPeer"/>.
-    /// This interface defines all methods which can be called
+    /// Demo interface for client-side <see cref="RpcFunctions"/>.
+    /// This interface defines some methods which can be called
     /// on the client by RPC calls from the server.
     /// </summary>
-    public interface IDemoRpcClient : IRpcClient {
+    public interface IDemoClientRpc : IRpcFunctions {
 
         /// <summary>
         /// Says "hello" to the given name on the console of the client.
@@ -22,11 +22,6 @@ namespace DemoShared.Rpc {
         /// Strings are suffixed by "-ClientWasHere", numbers are divided by 2.
         /// </summary>
         Task<SampleData> ProcessDataOnClient(SampleData baseData);
-
-        /// <summary>
-        /// Returns the quotient of the given two numbers.
-        /// </summary>
-        Task<int> DivideNumbers(int dividend, int divisor);
 
     }
 
