@@ -22,9 +22,6 @@ namespace DemoClient.Rpc {
 
         public async Task<SampleData> ProcessDataOnServer(SampleData baseData) =>
             await RpcClientEngine.ExecuteOnServer<SampleData>(new RpcCommand("ProcessDataOnServer", baseData));
-
-        public async Task<int> AddNumbers(int number1, int number2) =>
-            await RpcClientEngine.ExecuteOnServer<int>(new RpcCommand("AddNumbers", number1, number2));
     }
 
 }
