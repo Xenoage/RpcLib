@@ -25,7 +25,7 @@ namespace RpcLib {
             // Register command runner
             services.AddScoped<RpcCommandRunner>();
             // Register authentication method
-            services.AddSingleton(typeof(IRpcAuth), auth);
+            services.AddScoped(typeof(IRpcAuth), auth);
             // Register given RPC functions
             foreach (var rpcFunction in rpcFunctions)
                 services.AddScoped(typeof(RpcFunctions), rpcFunction);
