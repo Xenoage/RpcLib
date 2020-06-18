@@ -21,7 +21,7 @@ namespace RpcLib {
         /// <summary>
         /// Removes the first command from the queue of the given client (or null for the server).
         /// </summary>
-        void FinishCommand(string? clientID);
+        bool FinishCommand(string? clientID);
 
         /// <summary>
         /// Adds the given command to the queue of the given client (or null for the server).
@@ -29,7 +29,7 @@ namespace RpcLib {
         /// (<see cref="RpcRetryStrategy.RetryNewestWhenOnline"/>), all commands with the
         /// same command name are removed from the queue.
         /// </summary>
-        void Enqueue(string clientID, RpcCommand command, RpcRetryStrategy retryStrategy);
+        void Enqueue(string? clientID, RpcCommand command, RpcRetryStrategy retryStrategy);
 
     }
 

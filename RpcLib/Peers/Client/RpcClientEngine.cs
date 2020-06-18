@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using RpcLib.Peers.Server;
-using System.Collections;
 using System.Collections.Generic;
 using RpcLib.Peers;
 
@@ -18,7 +17,13 @@ namespace RpcLib.Server.Client {
     /// It also pulls the commands for this client from the server,
     /// executes them and responds with the results.
     /// </summary>
-    public static class RpcClientEngine {
+    public class RpcClientEngine {
+
+        /// <summary>
+        /// There is exactly one instance of this class.
+        /// </summary>
+        public static RpcClientEngine Instance { get; } = new RpcClientEngine();
+
 
         /// <summary>
         /// Call this method at the beginning to enable the communication to the server, so that this client
@@ -28,13 +33,18 @@ namespace RpcLib.Server.Client {
         /// <param name="clientConfig">The settings of this client</param>
         /// <param name="authAction">An action which authenticates the used HTTP client, e.g. by adding HTTP Basic Auth
         /// information according to the client.</param>
-        public static void Start(Func<IEnumerable<RpcFunctions>> clientMethods, RpcClientConfig clientConfig, Action<HttpClient> authAction) {
+        /// <param name="commandBacklog">The backlog for storing failed commands to retry them later. May be null,
+        ///     when only <see cref="RpcRetryStrategy.None"/> will be used.</param>
+        public void Start(Func<IEnumerable<RpcFunctions>> clientMethods, RpcClientConfig clientConfig,
+                Action<HttpClient> authAction, IRpcCommandBacklog? commandBacklog) {
             if (isRunning)
                 return;
             isRunning = true;
             // Remember client factory and settings
-            RpcClientEngine.clientMethods = clientMethods;
-            RpcClientEngine.clientConfig = clientConfig;
+            this.clientMethods = clientMethods;
+            this.clientConfig = clientConfig;
+            this.commandBacklog = commandBacklog;
+            serverCache = new RpcPeerCache(clientID: null, commandBacklog);
             // Create and authorize HTTP client
             http = new HttpClient();
             http.Timeout = TimeSpan.FromSeconds(RpcServerEngine.longPollingSeconds + 10); // Give some more seconds for timeout
@@ -60,12 +70,12 @@ namespace RpcLib.Server.Client {
             // Loop to execute (i.e. send to server) the next command in the queue.
             _ = Task.Run(async () => {
                 while (isRunning) {
-                    RpcCommand? next = await server.GetCurrentCommand(timeoutMs: -1); // No timeout
+                    RpcCommand? next = await serverCache.GetCurrentCommand(timeoutMs: -1); // No timeout
                     if (next != null) {
                         next.SetState(RpcCommandState.Sent);
                         try {
                             await ExecuteOnServerNow(next);
-                            await server.FinishCurrentCommand();
+                            await serverCache.FinishCurrentCommand();
                         }
                         catch {
                             // Could not reach server. Try the same command again.
@@ -79,18 +89,21 @@ namespace RpcLib.Server.Client {
         /// <summary>
         /// Runs the given RPC command on the server as soon as possible
         /// and returns the result or throws an <see cref="RpcException"/>.
-        /// See <see cref="RpcCommand.WaitForResult{T}"/>
+        /// An individual timeout in milliseconds can be given (or null for default).
+        /// When a retry strategy is given, commands which failed because of RPC problems
+        /// will be retried automatically.
         /// </summary>
-        public static async Task<T> ExecuteOnServer<T>(RpcCommand command, RpcRetryStrategy retryStrategy) {
+        public async Task<T> ExecuteOnServer<T>(RpcCommand command, int? timeoutMs, RpcRetryStrategy retryStrategy) {
             try {
                 // Enqueue (and execute)
-                server.EnqueueCommand(command);
+                serverCache.EnqueueCommand(command);
                 // Wait for result until timeout
-                return await command.WaitForResult<T>();
+                return await command.WaitForResult<T>(timeoutMs);
             }
             catch (RpcException ex) {
                 if (ex.IsRpcProblem && retryStrategy != RpcRetryStrategy.None) {
-                    // TODO: enqueue in retry queue
+                    // Enqueue in retry queue
+                    CommandBacklog.Enqueue(clientID: null, command, retryStrategy);
                 }
                 throw; // Rethrow RPC exception
             }
@@ -102,7 +115,7 @@ namespace RpcLib.Server.Client {
         /// <summary>
         /// Call this method to stop the communication with the server as soon as possible.
         /// </summary>
-        public static void Stop() {
+        public void Stop() {
             isRunning = false;
         }
 
@@ -114,7 +127,7 @@ namespace RpcLib.Server.Client {
         /// the command should not be repeated, and so we do not throw an exception here, but store
         /// the failure in the command's response state.
         /// </summary>
-        private static async Task ExecuteOnServerNow(RpcCommand command) {
+        private async Task ExecuteOnServerNow(RpcCommand command) {
             var bodyJson = JsonLib.ToJson(command);
             var httpResponse = await http.PostAsync(clientConfig.ServerUrl + "/push",
                 new StringContent(bodyJson, Encoding.UTF8, "application/json"));
@@ -136,7 +149,7 @@ namespace RpcLib.Server.Client {
         /// If the server can not be reached, an exception is thrown (because the last result
         /// has to be transmitted again).
         /// </summary>
-        private static async Task<RpcCommand?> PullFromServer(RpcCommandResult? lastResult) {
+        private async Task<RpcCommand?> PullFromServer(RpcCommandResult? lastResult) {
             // Long polling. The server returns null after the long polling time.
             var bodyJson = lastResult != null ? JsonLib.ToJson(lastResult) : null;
             var httpResponse = await http.PostAsync(clientConfig.ServerUrl + "/pull",
@@ -159,11 +172,11 @@ namespace RpcLib.Server.Client {
         /// Executes the given RPC command locally on the client immediately and returns the result.
         /// No exception is thrown, but a <see cref="RpcFailure"/> result is set in case of a failure.
         /// </summary>
-        public static async Task<RpcCommandResult> ExecuteLocallyNow(RpcCommand command) {
+        public async Task<RpcCommandResult> ExecuteLocallyNow(RpcCommand command) {
             // Do not run the same command twice. If the command with this ID was already
             // executed, return the cached result. If the cache is not available any more, return a
             // obsolete function call failure.
-            if (server.GetCachedResult(command.ID) is RpcCommandResult result)
+            if (serverCache.GetCachedResult(command.ID) is RpcCommandResult result)
                 return result;
             // Execute the command
             try {
@@ -175,22 +188,29 @@ namespace RpcLib.Server.Client {
                     new RpcFailure(RpcFailureType.RemoteException, ex.Message));
             }
             // Cache and return result
-            server.CacheResult(result);
+            serverCache.CacheResult(result);
             return result;
         }
 
+        /// <summary>
+        /// Gets the registered backlog for retrying failed commands, or throws an exception if there is none.
+        /// </summary>
+        private IRpcCommandBacklog CommandBacklog =>
+            commandBacklog ?? throw new Exception(nameof(IRpcCommandBacklog) + " required, but none was provided");
+        private IRpcCommandBacklog? commandBacklog;
+
         // Queue for the commands and cached command results of the server
-        private static RpcPeerCache server = new RpcPeerCache();
+        private RpcPeerCache serverCache = new RpcPeerCache(null, null);
 
         // HTTP client
-        private static HttpClient http = new HttpClient();
+        private HttpClient http = new HttpClient();
 
         // RPC client methods and settings
-        private static Func<IEnumerable<RpcFunctions>> clientMethods;
-        private static RpcClientConfig clientConfig;
+        private Func<IEnumerable<RpcFunctions>> clientMethods;
+        private RpcClientConfig clientConfig;
 
         // True, as long as the client engine is running
-        private static bool isRunning = false;
+        private bool isRunning = false;
 
     }
 

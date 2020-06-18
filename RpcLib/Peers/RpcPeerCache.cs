@@ -16,8 +16,11 @@ namespace RpcLib.Server {
         // The maximum number of items in the queues
         private const int maxQueueSize = 10;
 
-        // The next commands to execute on the peer, at maximum 10 items.
+        // The next commands to execute on the peer
         private BlockingQueue<RpcCommand> queue = new BlockingQueue<RpcCommand>(size: maxQueueSize);
+
+        // Backlog of failed commands for retrying
+        private IRpcCommandBacklog? commandBacklog;
 
         // The cached results of the last peer's calls, at maximum 10 items.
         // If the same command is received again from the peer (because the response get lost), it can be
@@ -28,11 +31,16 @@ namespace RpcLib.Server {
         // already executed commands can be easily determined.
         private ulong lastCachedResultCommandID = 0;
 
+        // True, iff the current command was read from the backlog instead of the normal queue
+        private bool isCurrentCommandFromBacklog = false;
+
         /// <summary>
-        /// Creates a cache for the given client ID (or null for the server peer).
+        /// Creates a cache for the given client ID (or null for the server peer)
+        /// and optionally a backlog for the failed commands for retrying.
         /// </summary>
-        public RpcPeerCache(string? clientID = null) {
+        public RpcPeerCache(string? clientID, IRpcCommandBacklog? commandBacklog) {
             ClientID = clientID;
+            this.commandBacklog = commandBacklog;
         }
 
         /// <summary>
@@ -41,19 +49,31 @@ namespace RpcLib.Server {
         public string? ClientID { get; }
 
         /// <summary>
-        /// Gets the current command in the queue, or null, if there is none.
+        /// Gets the current command in the backlog or queue, or null, if there is none.
         /// The method returns as soon as there is a value, or with null when the
         /// given timeout in milliseconds is hit.
         /// </summary>
         public async Task<RpcCommand?> GetCurrentCommand(int timeoutMs) {
+            // When there is a non-empty command backlog, return its first item
+            if (commandBacklog?.GetCommand(ClientID) is RpcCommand backlogCommand) {
+                isCurrentCommandFromBacklog = true;
+                return backlogCommand;
+            }
+            // Otherwise, wait for next item in the normal queue
+            isCurrentCommandFromBacklog = false;
             return await queue.Peek(timeoutMs);
         }
 
         /// <summary>
-        /// Finishes the current command in the queue, i.e. removes it from the queue.
+        /// Finishes the current command, i.e. removes it from the backlog or queue.
         /// </summary>
         public async Task FinishCurrentCommand() {
-            await queue.Dequeue(0); // Should be removed immediately, because we called GetCurrentCommand before
+            // Remove from command backlog, when from there
+            if (isCurrentCommandFromBacklog)
+                commandBacklog?.FinishCommand(ClientID);
+            // Otherwise, remove from normal queue
+            else
+                await queue.Dequeue(0); // Should be removed immediately, because we called GetCurrentCommand before
         }
 
         /// <summary>
@@ -68,7 +88,7 @@ namespace RpcLib.Server {
             }
             catch {
                 throw new RpcException(new RpcFailure(
-                    RpcFailureType.LocalQueueOverflow, $"Queue already full " +
+                    RpcFailureType.QueueOverflow, $"Queue already full " +
                         (ClientID != null ? "for the client { ClientID}" : "for the server")));
             }
         }

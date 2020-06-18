@@ -15,9 +15,9 @@ namespace RpcLib.Model {
     /// </summary>
     public class RpcCommand {
 
-        // Maximum time in seconds a sent command may take to be executed and acknowledged. This
+        // Maximum time in milliseconds a sent command may take to be executed and acknowledged. This
         // includes the time where it is still in the queue.
-        public const int timeoutSeconds = 30;
+        public const int timeoutMs = 30_000;
 
         /// <summary>
         /// Creates a new encoded RPC command, using the given method name and parameters.
@@ -103,16 +103,17 @@ namespace RpcLib.Model {
         /// Call this method after enqueuing the command to wait for the result of its execution.
         /// The returned task finishes when the call was either successfully executed and
         /// acknowledged, or failed (e.g. because of a timeout).
+        /// An individual timeout can be given, otherwise <see cref="RpcCommand.timeoutMs"/> is used.
         /// The result is stored in the given command itself. If successful, the return value
         /// is also returned, otherwise an <see cref="RpcException"/> is thrown.
         /// </summary>
-        public async Task<T> WaitForResult<T>() {
+        public async Task<T> WaitForResult<T>(int? timeoutMs) {
             try {
                 // Wait for result until timeout
-                await Task.WhenAny(runningTask.Task, Task.Delay(timeoutSeconds * 1000));
+                await Task.WhenAny(runningTask.Task, Task.Delay(timeoutMs ?? RpcCommand.timeoutMs));
                 // Timeout?
                 if (false == IsFinished())
-                    throw new RpcException(new RpcFailure(RpcFailureType.LocalTimeout, "Timeout"));
+                    throw new RpcException(new RpcFailure(RpcFailureType.Timeout, "Timeout"));
                 // Failed? Then throw RPC exception
                 var result = GetResult();
                 if (result.Failure is RpcFailure failure)

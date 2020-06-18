@@ -43,7 +43,7 @@ namespace RpcLib.Peers.Server {
                 if (body.Length > 0) {
                     // Run command and return the result
                     var command = JsonLib.FromJson<RpcCommand>(body);
-                    return Ok(await RpcServerEngine.OnClientPush(clientID, command, runner));
+                    return Ok(await RpcServerEngine.Instance.OnClientPush(clientID, command, runner));
                 }
             }
             // Command missing
@@ -71,7 +71,7 @@ namespace RpcLib.Peers.Server {
                     lastResult = JsonLib.FromJson<RpcCommandResult>(body);
             }
             // Report result and query next method
-            return Ok(await RpcServerEngine.OnClientPull(clientID, lastResult));
+            return Ok(await RpcServerEngine.Instance.OnClientPull(clientID, lastResult));
         }
 
     }

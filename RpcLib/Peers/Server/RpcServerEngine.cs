@@ -13,17 +13,15 @@ namespace RpcLib.Peers.Server {
     /// </summary>
     public class RpcServerEngine {
 
-        // Long polling time in seconds. After this time, the server returns null when there is
-        // no command in the queue.
-        public const int longPollingSeconds = 90;
-
-        // The registered clients and their command queues and cached command results
-        private static RpcClientCaches clients = new RpcClientCaches();
+        /// <summary>
+        /// There is exactly one instance of this class.
+        /// </summary>
+        public static RpcServerEngine Instance { get; } = new RpcServerEngine();
 
         /// <summary>
         /// Gets the list of all client IDs which are or were connected to the server.
         /// </summary>
-        public static List<string> GetClientIDs() =>
+        public List<string> GetClientIDs() =>
             clients.GetClientIDs();
 
         /// <summary>
@@ -31,11 +29,11 @@ namespace RpcLib.Peers.Server {
         /// It executes the given RPC command immediately and returns the result.
         /// No exception is thrown, but a <see cref="RpcFailure"/> result is set in case of a failure.
         /// </summary>
-        public static async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command, RpcCommandRunner runner) {
+        public async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command, RpcCommandRunner runner) {
             // Do not run the same command twice. If the command with this ID was already
             // executed, return the cached result. If the cache is not available any more, return a
             // obsolete function call failure.
-            var client = clients.GetClient(clientID);
+            var client = clients.GetClient(clientID, commandBacklog);
             if (client.GetCachedResult(command.ID) is RpcCommandResult result)
                 return result;
             // Execute the command
@@ -68,12 +66,12 @@ namespace RpcLib.Peers.Server {
         /// The client can also use this ID to ensure that the command is only evaluated once,
         /// even when it was received two times for any reason.
         /// </summary>
-        public static async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult? lastCommandResult) {
+        public async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult? lastCommandResult) {
             // When a result is received, process it
             if (lastCommandResult != null)
                 await ReportClientResult(clientID, lastCommandResult);
             // Wait for next command
-            RpcCommand? next = await clients.GetClient(clientID).GetCurrentCommand(longPollingSeconds * 1000);
+            RpcCommand? next = await clients.GetClient(clientID, commandBacklog).GetCurrentCommand(longPollingSeconds * 1000);
             if (next != null) {
                 next.SetState(RpcCommandState.Sent);
                 return next;
@@ -85,9 +83,9 @@ namespace RpcLib.Peers.Server {
         /// <summary>
         /// Call this method, when the client reported the result of the current command.
         /// </summary>
-        private static async Task ReportClientResult(string clientID, RpcCommandResult? lastResult) {
+        private async Task ReportClientResult(string clientID, RpcCommandResult? lastResult) {
             // Get current command on this client
-            var client = clients.GetClient(clientID);
+            var client = clients.GetClient(clientID, commandBacklog);
             RpcCommand? currentCommand = await client.GetCurrentCommand(timeoutMs: 0); // Zero timeout, result should be there
             // Handle reported result. Ignore wrong reports (e.g. when received two times or too late)
             if (currentCommand != null && lastResult != null && lastResult.CommandID == currentCommand.ID) {
@@ -100,23 +98,44 @@ namespace RpcLib.Peers.Server {
         /// <summary>
         /// Runs the given RPC command on the client with the given ID as soon as possible
         /// and returns the result or throws an <see cref="RpcException"/>.
-        /// See <see cref="RpcCommand.WaitForResult{T}"/>
+        /// An individual timeout in milliseconds can be given (or null for default).
+        /// When a retry strategy is given, commands which failed because of RPC problems
+        /// will be retried automatically.
         /// </summary>
-        public static async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command, RpcRetryStrategy retryStrategy) {
+        public async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command,
+                int? timeoutMs, RpcRetryStrategy retryStrategy) {
             try {
-                retryStrategy // TODO
                 // Enqueue (and execute)
-                clients.GetClient(clientID).EnqueueCommand(command);
+                clients.GetClient(clientID, commandBacklog).EnqueueCommand(command);
                 // Wait for result until timeout
-                return await command.WaitForResult<T>();
+                return await command.WaitForResult<T>(timeoutMs);
             }
-            catch (RpcException) {
+            catch (RpcException ex) {
+                if (ex.IsRpcProblem && retryStrategy != RpcRetryStrategy.None) {
+                    // Enqueue in retry queue
+                    CommandBacklog.Enqueue(clientID: null, command, retryStrategy);
+                }
                 throw; // Rethrow RPC exception
             }
             catch (Exception ex) {
                 throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
             }
         }
+
+        /// <summary>
+        /// Gets the registered backlog for retrying failed commands, or throws an exception if there is none.
+        /// </summary>
+        private IRpcCommandBacklog CommandBacklog =>
+            commandBacklog ?? throw new Exception(nameof(IRpcCommandBacklog) + " required, but none was provided");
+        public void SetCommandBacklog(IRpcCommandBacklog? commandBacklog) => this.commandBacklog = commandBacklog;
+        private IRpcCommandBacklog? commandBacklog;
+
+        // Long polling time in seconds. After this time, the server returns null when there is
+        // no command in the queue.
+        public const int longPollingSeconds = 90;
+
+        // The registered clients and their command queues and cached command results
+        private RpcClientCaches clients = new RpcClientCaches();
 
     }
 

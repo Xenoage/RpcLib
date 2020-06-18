@@ -24,7 +24,7 @@ namespace DemoServer {
             // Run all tasks in parallel.
             var random = new Random();
             for (int i = 0; true; i++) {
-                foreach (var clientID in RpcServerEngine.GetClientIDs()) {
+                foreach (var clientID in RpcServerEngine.Instance.GetClientIDs()) { // TIDY
                     int a = i;
                     int b = random.Next(0, 10);
                     _ = Task.Run(async () => {
@@ -32,11 +32,15 @@ namespace DemoServer {
                         try {
                             var result = await new CalcRpcStub(clientID).DivideNumbers(a, b);
                             long rpcTime = CoreUtils.TimeNow() - startTime;
-                            Log.WriteToFile(filename, $"{clientID} | {a}/{b}={result} | {rpcTime} ms");
+                            var log = $"{clientID} | {a}/{b}={result} | {rpcTime} ms";
+                            Log.Write(log);
+                            Log.WriteToFile(filename, log);
                         }
                         catch (RpcException ex) {
                             long rpcTime = CoreUtils.TimeNow() - startTime;
-                            Log.WriteToFile(filename, $"{clientID} | {a}/{b}=? | {rpcTime} ms | Fail: {ex.Type}: {ex.Message}");
+                            var log = $"{clientID} | {a}/{b}=? | {rpcTime} ms | Fail: {ex.Type}: {ex.Message}";
+                            Log.Write(log);
+                            Log.WriteToFile(filename, log);
                         }
                     });
                 }
