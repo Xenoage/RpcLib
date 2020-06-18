@@ -16,12 +16,13 @@ public class DemoServerRpc : RpcFunctions, IDemoServerRpc {
 
     public async Task SayHelloToServer(Greeting greeting) {
         Console.WriteLine(Context.ClientID + " says: Hello " + greeting.Name + "!");
-        if (greeting.MoreData is SampleData moreData)
-            Console.WriteLine("More information for you: " + JsonLib.ToJson(moreData));
+        if (greeting.MoreData is SampleData moreData && moreData.Text.Length > 0)
+            Console.WriteLine("More information for you: " + moreData.Text);
         // Test service injection
         using (var services = Context.ServiceScopeFactory!.CreateScope()) {
             var demoService = services.ServiceProvider.GetService<DemoService>();
-            Console.WriteLine("And the demo service says: " + demoService.CallService("How are you"));
+            Console.WriteLine("And the demo ASP.NET Core service says: " +
+                demoService.CallService("How are you"));
         }
     }
 

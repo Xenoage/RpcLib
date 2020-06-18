@@ -1,4 +1,4 @@
-using DemoServer.Rpc;
+using DemoServer.Rpc.Stubs;
 using DemoShared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;

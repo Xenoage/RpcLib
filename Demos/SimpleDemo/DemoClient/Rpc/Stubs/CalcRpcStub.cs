@@ -1,18 +1,13 @@
 ﻿using DemoShared.Rpc;
 using RpcLib.Model;
 using RpcLib.Peers.Client;
-using RpcLib.Server.Client;
 using System.Threading.Tasks;
 
-namespace DemoServer.Rpc {
+namespace DemoClient.Rpc.Stubs {
 
     /// <summary>
     /// Demo client-side (stub) implementation of the <see cref="ICalcRpc"/> functions.
-    /// 
-    /// The returned tasks are completed when the response of the server was received.
-    /// When there was any problem (server-side exception, network problem, ...) an <see cref="RpcException"/> is thrown.
-    /// 
-    /// This file could be auto-generated later from the <see cref="ICalcRpc"/> interface,
+    /// This file could be auto-generated later from its interface,
     /// since it simply forwards the method calls to the RPC engine.
     /// </summary>
     public class CalcRpcStub : RpcServerStub, ICalcRpc {

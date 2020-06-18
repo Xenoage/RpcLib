@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using RpcLib.Auth;
 using RpcLib.Model;
 using RpcLib.Peers;
 using RpcLib.Utils;

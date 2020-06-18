@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using RpcLib.Auth;
 using RpcLib.Peers;
 using RpcLib.Peers.Server;
 using RpcLib.Server.Client;

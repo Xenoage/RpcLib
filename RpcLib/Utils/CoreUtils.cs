@@ -5,7 +5,7 @@ namespace RpcLib.Utils {
     /// <summary>
     /// Useful functions.
     /// </summary>
-    public class CoreUtils {
+    public static class CoreUtils {
 
         /// <summary>
         /// Current Unix timestamp in milliseconds.
