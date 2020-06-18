@@ -3,11 +3,11 @@ using System;
 using DemoShared.Model;
 using DemoShared.Rpc;
 using RpcLib.Model;
-using RpcLib.Rpc.Utils;
 using System.Linq;
 using RpcLib;
+using RpcLib.Utils;
 
-namespace DemoClient.Rpc {
+namespace DemoServer.Rpc {
 
     /// <summary>
     /// Implementation of the demo RPC client.

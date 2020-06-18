@@ -80,10 +80,21 @@ Normally, when an RPC command is called, it has a defined time period to execute
 
 This can be changed for important commands, which should reach the other side as soon as it is online again, maybe even after restarting the computer. For this, when instantiating a stub class, an additional [`RpcRetryStrategy`](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Model/RpcRetryStrategy.cs) parameter can be given, which is `None` by default. There are two other strategies:
 
-* `RetryWhenOnline`: Runs the command as soon as the other peer is online again. When 10 commands with this flag are called, all 10 commands will be executed later in exactly this order. Example use case: A method to add or remove credit (when adding 5, 10 and 30 ct, at the very end the other peer should have received all 45 ct).
+* `RetryWhenOnline`: Runs the command as soon as the other peer is online again. When 10 commands with this flag are called, all 10 commands will be executed later in exactly this order. Example use case: A method to add credit to a bank account (when adding 5, 10 and 30 ct, at the very end the other peer should have received all 45 ct). See [`IBankAccountRpc.AddMoney`](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Rpc/IBankAccountRps.cs) for an example.
   
-* `RetryNewestWhenOnline`: Runs the command as soon as the other peer is online again, but only the newest call with the same method name is retried. Example use case: A method to set a configuration file (when first setting the name to "MyFirstName", then to "MySecondName" and finally to "MyThirdName", only "MyThirdName" will be sent to the other peer as soon it is online again).
+* `RetryNewestWhenOnline`: Runs the command as soon as the other peer is online again, but only the newest call with the same method name is retried. Example use case: A method to change a specific configuration (when first setting the name to "MyFirstName", then to "MySecondName" and finally to "MyThirdName", only "MyThirdName" will be sent to the other peer as soon it is online again). See [`IBankAccountRpc.ChangeOwnerName`](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Rpc/IBankAccountRps.cs) for an example.
 
 When the other peer is online again, first the commands in this queue will be sent, and after that the recently called "normal" commands will be sent (if their timeout was not already hit).
 
-The RPC engine needs some way to persist the remembered commands, but does not include an own database for this. So, when using one of the above strategies, an implementation of the `IRpcCommandBacklog` interface has to be provided when initializing the RPC peer. See `DemoRpcCommandBacklog` for a very simple implementation using a JSON file for persisting the queue.
+The RPC engine needs some way to persist the remembered commands, but does not include an own database for this. So, when using one of the above strategies, an implementation of the `IRpcCommandBacklog` interface has to be provided when initializing the RPC peer. See `DemoRpcCommandBacklog` for a very simple implementation using JSON files for persisting the queue.
+
+## Customers
+
+This library was created for the [iovent](https://www.iovent.net) project and is used there for communication between the IoT devices and the backend servers.
+
+## Open issues
+
+This library is very new and changes will happen frequently. Contributions are welcome. The next steps:
+
+* Split into different demo solutions, because the single demo solution has become overloaded
+* For choosing individal timeouts and retry strategies, find a cleaner way than creating new stubs for each call, e.g. use method attributes like `[RpcOptions(timeoutMs=100, retry="RetryWhenOnline")]`

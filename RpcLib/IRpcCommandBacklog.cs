@@ -21,7 +21,7 @@ namespace RpcLib {
         /// <summary>
         /// Removes the first command from the queue of the given client (or null for the server).
         /// </summary>
-        bool FinishCommand(string? clientID);
+        void FinishCommand(string? clientID);
 
         /// <summary>
         /// Adds the given command to the queue of the given client (or null for the server).

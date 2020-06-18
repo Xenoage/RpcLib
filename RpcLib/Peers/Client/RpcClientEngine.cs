@@ -1,5 +1,4 @@
 ﻿using RpcLib.Model;
-using RpcLib.Rpc.Utils;
 using System;
 using System.Net.Http;
 using System.Text;
@@ -7,6 +6,7 @@ using System.Threading.Tasks;
 using RpcLib.Peers.Server;
 using System.Collections.Generic;
 using RpcLib.Peers;
+using RpcLib.Utils;
 
 namespace RpcLib.Server.Client {
 

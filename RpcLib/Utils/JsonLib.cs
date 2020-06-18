@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace RpcLib.Rpc.Utils {
+namespace RpcLib.Utils {
 
     /// <summary>
     /// Serialization to JSON and deserialization from JSON.
@@ -36,7 +36,7 @@ namespace RpcLib.Rpc.Utils {
         /// </summary>
         public static async Task<string?> ToJson<T>(this Task<T> task) {
             var ret = await task;
-            return ret != null ? JsonLib.ToJson(ret) : null;
+            return ret != null ? ToJson(ret) : null;
         }
 
         private static readonly JsonSerializerSettings settings = new JsonSerializerSettings {

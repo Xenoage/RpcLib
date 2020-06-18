@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RpcLib.Model;
 using RpcLib.Peers;
-using RpcLib.Rpc.Utils;
+using RpcLib.Utils;
 
 namespace RpcLib.Peers.Server {
 

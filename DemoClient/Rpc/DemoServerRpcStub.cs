@@ -5,7 +5,7 @@ using RpcLib.Peers.Client;
 using RpcLib.Server.Client;
 using System.Threading.Tasks;
 
-namespace DemoClient.Rpc {
+namespace DemoServer.Rpc {
 
     /// <summary>
     /// Demo client-side (stub) implementation of the <see cref="IDemoServerRpc"/> functions.

@@ -1,22 +1,20 @@
-﻿using DemoClient.Rpc;
+﻿using DemoServer.Rpc;
 using DemoShared;
 using DemoShared.Model;
 using RpcLib.Model;
 using RpcLib.Server.Client;
-using RpcLib.Rpc.Utils;
 using RpcLib.Utils;
 using System;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using DemoShared.Rpc;
 using RpcLib;
 
-namespace DemoClient {
+namespace DemoServer {
 
     /// <summary>
     /// Simple demo client. Periodically calls methods on the server
