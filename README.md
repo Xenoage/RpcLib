@@ -6,9 +6,33 @@
 
 _Early alpha version - more documentation will follow._
 
+## Overview
 
+_TODO: Illustration of the infrastructure: 1 server with HTTP(S) endpoints, N clients, direct client-to-server calls, indirect server-to-client calls (long polling)_
 
 ## Usage
+
+After integrating the library in your project as described below, it is very easy to call methods on the remote peer. It feels very natural, just like calling them on the local side! If you are calling from the client to the server or the other way, the code looks the same. A shortened example just to get a feeling:
+
+```
+interface IRemoteCalculator : IRpcFunctions {
+   Task<int> AddNumbers(int n1, int n2);
+}
+
+IRemoteCalculator calc = ...;
+try {
+   int sum = await calc.AddNumbers(5, 10);
+   Console.WriteLine("Result should be 15: " + sum);
+}
+catch (RpcException ex) {
+   if (ex.IsRpcProblem)
+      Console.WriteLine("Could not reach the remote peer. Try again later.");
+   else
+      Console.WriteLine("The remote peer threw an exception: " + ex.Message);
+}
+```
+
+## Integration into in your project
 
 Before adding the library to your own project, we recommend having a look at the provided [example](https://github.com/Xenoage/RpcLib) code and following these steps:
 
@@ -43,3 +67,19 @@ Before adding the library to your own project, we recommend having a look at the
    * Call the `RpcInit.InitRpcServer` method for instantiating the RPC engine, using the ASP.NET Core services, an authentication method (e.g. HTTP Basic Auth) and a list of the types of the
    implementations of your server-side methods.
 4. To call the clients, create instances of your client stubs and call their methods. To get a list of the currently connected client IDs, call `RpcServerEngine.GetClientIDs()`
+
+## Special features
+
+### Run remote functions as soon as the other peer is online
+
+Normally, when an RPC command is called, it has a defined time period to execute. During this time, the call is retried several times automatically. But when the timeout is hit (by default 30 seconds), the RPC command returns a timeout failure and is not tried automatically again.
+
+This can be changed for important commands, which should reach the other side as soon as it is online again, maybe even after restarting the computer. For this, when executing an `RpcCommand`, an additional [`RpcRetryStrategy`](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Model/RpcRetryStrategy.cs) parameter can be given, which is `None` by default. There are two other strategies:
+
+* `RetryWhenOnline`: Runs the command as soon as the other peer is online again. When 10 commands with this flag are called, all 10 commands will be executed later in exactly this order. Example use case: A method to add or remove credit (when adding 5, 10 and 30 ct, at the very end the other peer should have received all 45 ct).
+  
+* `RetryNewestWhenOnline`: Runs the command as soon as the other peer is online again, but only the newest call with the same method name is retried. Example use case: A method to set a configuration file (when first setting the name to "MyFirstName", then to "MySecondName" and finally to "MyThirdName", only "MyThirdName" will be sent to the other peer as soon it is online again).
+
+When the other peer is online again, first the commands in this queue will be sent, and after that the recently called "normal" commands will be sent (if their timeout was not already hit).
+
+The RPC engine needs some way to persist the remembered commands, but does not include an own database for this. So, when using one of the above strategies, an implementation of the `IRpcCommandBacklog` interface has to be provided when initializing the RPC peer. See `DemoRpcCommandBacklog` for a very simple implementation using a JSON file for persisting the queue.

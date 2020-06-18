@@ -81,26 +81,22 @@ namespace RpcLib.Server.Client {
         /// and returns the result or throws an <see cref="RpcException"/>.
         /// See <see cref="RpcCommand.WaitForResult{T}"/>
         /// </summary>
-        public static async Task<T> ExecuteOnServer<T>(RpcCommand command) {
+        public static async Task<T> ExecuteOnServer<T>(RpcCommand command, RpcRetryStrategy retryStrategy) {
             try {
                 // Enqueue (and execute)
                 server.EnqueueCommand(command);
                 // Wait for result until timeout
                 return await command.WaitForResult<T>();
             }
-            catch (RpcException) {
+            catch (RpcException ex) {
+                if (ex.IsRpcProblem && retryStrategy != RpcRetryStrategy.None) {
+                    // TODO: enqueue in retry queue
+                }
                 throw; // Rethrow RPC exception
             }
             catch (Exception ex) {
                 throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
             }
-        }
-
-        /// <summary>
-        /// Like <see cref="ExecuteOnServer{T}(RpcCommand)"/> but without return value.
-        /// </summary>
-        public static async Task ExecuteOnServer(RpcCommand command) {
-            await ExecuteOnServer<object>(command);
         }
 
         /// <summary>

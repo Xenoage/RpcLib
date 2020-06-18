@@ -1,5 +1,6 @@
 ﻿using DemoShared.Rpc;
 using RpcLib.Model;
+using RpcLib.Peers.Client;
 using RpcLib.Server.Client;
 using System.Threading.Tasks;
 
@@ -14,13 +15,13 @@ namespace DemoClient.Rpc {
     /// This file could be auto-generated later from the <see cref="ICalcRpc"/> interface,
     /// since it simply forwards the method calls to the RPC engine.
     /// </summary>
-    public class CalcRpcStub : ICalcRpc {
+    public class CalcRpcStub : RpcServerStub, ICalcRpc {
 
-        public async Task<int> AddNumbers(int number1, int number2) =>
-            await RpcClientEngine.ExecuteOnServer<int>(new RpcCommand("AddNumbers", number1, number2));
+        public Task<int> AddNumbers(int number1, int number2) =>
+            ExecuteOnServer<int>(new RpcCommand("AddNumbers", number1, number2));
 
-        public async Task<int> DivideNumbers(int dividend, int divisor) =>
-            await RpcClientEngine.ExecuteOnServer<int>(new RpcCommand("DivideNumbers", dividend, divisor));
+        public Task<int> DivideNumbers(int dividend, int divisor) =>
+            ExecuteOnServer<int>(new RpcCommand("DivideNumbers", dividend, divisor));
     }
 
 }

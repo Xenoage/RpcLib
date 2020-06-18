@@ -20,5 +20,12 @@ namespace RpcLib.Model {
         public override string Message =>
             Failure.Message;
 
+        /// <summary>
+        /// See <see cref="RpcFailure.IsRpcProblem"/>.
+        /// </summary>
+        public bool IsRpcProblem =>
+            Failure.IsRpcProblem;
+        
+
     }
 }

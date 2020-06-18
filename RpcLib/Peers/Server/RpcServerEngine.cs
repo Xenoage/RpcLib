@@ -102,8 +102,9 @@ namespace RpcLib.Peers.Server {
         /// and returns the result or throws an <see cref="RpcException"/>.
         /// See <see cref="RpcCommand.WaitForResult{T}"/>
         /// </summary>
-        public static async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command) {
+        public static async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command, RpcRetryStrategy retryStrategy) {
             try {
+                retryStrategy // TODO
                 // Enqueue (and execute)
                 clients.GetClient(clientID).EnqueueCommand(command);
                 // Wait for result until timeout
@@ -115,13 +116,6 @@ namespace RpcLib.Peers.Server {
             catch (Exception ex) {
                 throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
             }
-        }
-
-        /// <summary>
-        /// Like <see cref="ExecuteOnClient{T}(string, RpcCommand)"/> but without return value.
-        /// </summary>
-        public static async Task ExecuteOnClient(string clientID, RpcCommand command) {
-            await ExecuteOnClient<object>(clientID, command);
         }
 
     }
