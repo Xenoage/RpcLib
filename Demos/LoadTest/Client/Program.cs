@@ -1,5 +1,4 @@
-﻿using DemoServer.Rpc;
-using DemoShared;
+﻿using DemoShared;
 using DemoShared.Model;
 using RpcLib.Model;
 using RpcLib.Server.Client;
@@ -13,6 +12,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using DemoShared.Rpc;
 using RpcLib;
+using Client.Rpc.Stubs;
 
 namespace DemoServer {
 
@@ -22,46 +22,30 @@ namespace DemoServer {
     /// </summary>
     public class Program {
 
-        private static string clientID = "DemoClient";
+        private static string clientID = "Client";
 
         static async Task Main(string[] args) {
-            // First argument: client number (used in the RpcLibTest project), otherwise 0
+
+            // First argument: client number
             int clientNumber = 0;
             if (args.Length > 0 && int.TryParse(args[0], out int it))
                 clientNumber = it;
+            else
+                throw new Exception("Must be started with client number as parameter");
             clientID += "-" + clientNumber;
+
             // Welcome message
-            Log.Write("Welcome to the RPCLib Demo Client: " + clientID);
+            Log.Write("Welcome to the test client: " + clientID);
 
             // RPC initialization
-            var serverDemo = new DemoServerRpcStub();
             var serverCalc = new CalcRpcStub();
             var demoRpcConfig = new RpcClientConfig {
                 ClientID = clientID,
                 ServerUrl = "http://localhost:5000/rpc"
             };
             RpcInit.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
-                new DemoClientRpc(),
                 new CalcRpc()
             });
-
-            /* // Each few seconds, send commands to the server. Log the result.
-            var random = new Random();
-            while (true) {
-                try {
-                    Log.Write("Sending greeting...");
-                    var greeting = new Greeting { Name = $"from {clientID} at " + CoreUtils.TimeNow() };
-                    await server.SayHelloToServer(greeting);
-                    Log.Write("Successfully greeted: " + JsonLib.ToJson(greeting));
-                }
-                catch (RpcException ex) {
-                    Log.Write("Error when greeting: " + ex.Failure.Type + ": " + ex.Message);
-                }
-                await Task.Delay(random.Next(4000, 6000));
-            } */
-
-            // Say hello to the server
-            await serverDemo.SayHelloToServer(new Greeting { Name = "Andi" });
 
             // Each 0-100 ms, send a simple calculation task to the server: a + b = ?
             // a is an ascending number, starting from clientNumber * 1000

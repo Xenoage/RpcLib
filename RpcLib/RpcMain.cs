@@ -11,9 +11,9 @@ using System.Reflection;
 namespace RpcLib {
 
     /// <summary>
-    /// Initialization of the RPC engine for the server and the client.
+    /// Initialization and basic information of the RPC engine for the server and the client.
     /// </summary>
-    public static class RpcInit {
+    public static class RpcMain {
 
         /// <summary>
         /// Initialize the RPC server with the given ASP.NET Core MVC builder, authentication method
@@ -43,6 +43,13 @@ namespace RpcLib {
                 Func<List<RpcFunctions>> rpcFunctions, IRpcCommandBacklog? commandBacklog = null) {
             RpcClientEngine.Instance.Start(rpcFunctions, config, auth, commandBacklog);
         }
+
+        /// <summary>
+        /// On the server, returns the IDs of all clients which are or were
+        /// connected to the server since it started.
+        /// </summary>
+        public static List<string> GetClientIDs() =>
+            RpcServerEngine.Instance.GetClientIDs();
 
     }
 }

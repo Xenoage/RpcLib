@@ -35,7 +35,7 @@ namespace DemoServer {
                 ClientID = clientID,
                 ServerUrl = "http://localhost:5000/rpc"
             };
-            RpcInit.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
+            RpcMain.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
                 new DemoClientRpc(),
                 new CalcRpc()
             });
