@@ -14,7 +14,7 @@ using DemoShared.Rpc;
 using RpcLib;
 using DemoClient.Rpc.Stubs;
 
-namespace DemoServer {
+namespace DemoClient {
 
     /// <summary>
     /// Simple demo client. Periodically calls methods on the server
@@ -47,8 +47,10 @@ namespace DemoServer {
 
                     // Send greeting
                     Log.Write("Sending greeting...");
-                    var greeting = new Greeting { Name = "Andi",
-                        MoreData = new SampleData { Text = $"Hi server, now it is {DateTime.Now}" }};
+                    var greeting = new Greeting {
+                        Name = "Andi",
+                        MoreData = new SampleData { Text = $"Hi server, now it is {DateTime.Now}" }
+                    };
                     await serverDemo.SayHelloToServer(greeting);
 
                     // Send calculation task. May fail on the remote side, when there is division by zero.
