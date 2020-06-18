@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RpcLib\RpcLib.csproj" />
+    <ProjectReference Include="..\..\..\RpcLib\RpcLib.csproj" />
   </ItemGroup>
 
 </Project>

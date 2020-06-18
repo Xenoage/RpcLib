@@ -3,15 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30128.74
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RpcLib", "RpcLib\RpcLib.csproj", "{23D27CCB-8E8B-4F11-BC58-757063230FAA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RpcLib", "..\..\RpcLib\RpcLib.csproj", "{23D27CCB-8E8B-4F11-BC58-757063230FAA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoServer", "DemoServer\DemoServer.csproj", "{5C49FEDD-BF4D-408D-AB8B-E11C97646B48}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoClient", "DemoClient\DemoClient.csproj", "{D5601AF7-CFBC-4991-9360-C1716FA347F3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoShared", "DemoShared\DemoShared.csproj", "{3B8981DC-0B3E-466B-BD83-06477A597BEF}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RpcLibTest", "RpcLibTest\RpcLibTest.csproj", "{BE198241-7F23-477B-A19E-02928227625E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
