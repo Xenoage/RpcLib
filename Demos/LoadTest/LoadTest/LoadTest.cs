@@ -7,13 +7,13 @@ using System.Threading;
 namespace RpcLibTest {
 
     /// <summary>
-    /// Test based on the demo projects. One server is started and several hundreds of clients are spawned.
+    /// Simple load test. One server is started and several hundreds of clients are spawned.
     /// Simple calculation tasks are sent between the peers and are logged in files.
     /// After some time, all peers are closed and the log files are evaluated. Sine the numbers of the
     /// calculations follow a certain rule, it can be checked that no command was left out or executed twice.
     /// </summary>
     [TestClass]
-    public class Test {
+    public class LoadTest {
 
         [TestMethod]
         public void TestCalculations() {
@@ -40,10 +40,10 @@ namespace RpcLibTest {
                 // After first 20% of clients, start server
                 if (i == clientsCount / 5)
                     server = Launch(Path.Combine(baseDir.FullName,
-                        "DemoServer/bin/Debug/netcoreapp3.1/DemoServer.exe"));
+                        "Server/bin/Debug/netcoreapp3.1/Server.exe"));
 
                 var client = Launch(Path.Combine(baseDir.FullName,
-                    "DemoClient/bin/Debug/netcoreapp3.1/DemoClient.exe"), $"{i}");
+                    "Client/bin/Debug/netcoreapp3.1/Client.exe"), $"{i}");
                 clients.Add(client);
                 Thread.Sleep(200);
             }
@@ -62,7 +62,7 @@ namespace RpcLibTest {
             psi.FileName = path;
             psi.Arguments = arguments;
 
-            // Uncomment the following lines to make all program consoles visible (slow!)
+            // Uncomment the following lines to make all program consoles visible (very slow!)
             /*
             psi.UseShellExecute = true;
             psi.CreateNoWindow = false;

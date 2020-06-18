@@ -3,11 +3,10 @@ using RpcLib.Model;
 using RpcLib.Utils;
 using System.Threading.Tasks;
 
-namespace DemoShared.Rpc {
+namespace Shared.Rpc {
 
     /// <summary>
-    /// Implementation of the <see cref="ICalcRpc"/> interface, in the DemoShared project
-    /// to demonstrate that the same code can be used both on the client side and the server side.
+    /// Implementation of the <see cref="ICalcRpc"/> interface.
     /// </summary>
     public class CalcRpc : RpcFunctions, ICalcRpc {
 
@@ -20,7 +19,8 @@ namespace DemoShared.Rpc {
         }
 
         // Mapping of RpcCommand to real method calls (boilerplate code; we could auto-generate this method later)
-        public override Task<string?>? Execute(RpcCommand command) => command.MethodName switch {
+        public override Task<string?>? Execute(RpcCommand command) => command.MethodName switch
+        {
             "AddNumbers" => AddNumbers(command.GetParam<int>(0), command.GetParam<int>(1)).ToJson(),
             "DivideNumbers" => DivideNumbers(command.GetParam<int>(0), command.GetParam<int>(1)).ToJson(),
             _ => null

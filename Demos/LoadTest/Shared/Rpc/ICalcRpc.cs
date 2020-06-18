@@ -1,14 +1,10 @@
 ﻿using RpcLib;
 using System.Threading.Tasks;
 
-namespace DemoShared.Rpc {
+namespace Shared.Rpc {
 
     /// <summary>
-    /// Demo interface for some additional calculation <see cref="RpcFunctions"/>, both client-side and server-side.
-    /// This demonstrates, that
-    /// * multiple interfaces can be registered to distribute the registered
-    ///   functions over several interfaces/classes
-    /// * the same interfaces/classes can be used both on the client side and the server side
+    /// Calculation <see cref="RpcFunctions"/> for the load test.
     /// </summary>
     public interface ICalcRpc : IRpcFunctions {
 

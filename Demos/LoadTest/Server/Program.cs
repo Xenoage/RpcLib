@@ -1,15 +1,15 @@
-using DemoServer.Rpc;
-using DemoShared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using RpcLib;
 using RpcLib.Model;
-using RpcLib.Peers.Server;
 using RpcLib.Utils;
+using Server.Rpc.Stubs;
+using Shared;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace DemoServer {
+namespace Server {
 
     public class Program {
 
@@ -17,14 +17,14 @@ namespace DemoServer {
             _ = CreateHostBuilder(args).Build().RunAsync();
 
             // File logging
-            string filename = $"DemoServer.calclog";
+            string filename = $"Server.calclog";
             File.Delete(filename);
 
             // Send calculation tasks to all connected clients all 500-1000 milliseconds.
             // Run all tasks in parallel.
             var random = new Random();
             for (int i = 0; true; i++) {
-                foreach (var clientID in RpcServerEngine.Instance.GetClientIDs()) { // TIDY
+                foreach (var clientID in RpcMain.GetClientIDs()) {
                     int a = i;
                     int b = random.Next(0, 10);
                     _ = Task.Run(async () => {

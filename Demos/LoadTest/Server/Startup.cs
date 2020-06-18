@@ -1,17 +1,18 @@
-using DemoServer.Rpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using DemoShared.Rpc;
 using RpcLib;
 using System.Collections.Generic;
 using System;
-using DemoServer.Services;
+using Shared.Rpc;
+using Server.Rpc;
 
-namespace DemoServer {
+namespace Server {
+
     public class Startup {
+
         public Startup(IConfiguration configuration) {
             Configuration = configuration;
         }
@@ -24,12 +25,9 @@ namespace DemoServer {
 
             // RPC initialization
             services.InitRpcServer(mvc, typeof(DemoRpcAuth), new List<Type> {
-                typeof(DemoServerRpc),
                 typeof(CalcRpc)
             });
 
-            // Demo service for testing
-            services.AddSingleton<DemoService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

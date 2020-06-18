@@ -1,6 +1,6 @@
-﻿using DemoShared.Rpc;
-using RpcLib.Model;
+﻿using RpcLib.Model;
 using RpcLib.Peers.Client;
+using Shared.Rpc;
 using System.Threading.Tasks;
 
 namespace Client.Rpc.Stubs {

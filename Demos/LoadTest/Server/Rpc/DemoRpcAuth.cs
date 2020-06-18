@@ -1,8 +1,7 @@
-﻿using DemoServer.Utils;
-using Microsoft.AspNetCore.Http;
-using RpcLib.Peers.Server;
+﻿using Microsoft.AspNetCore.Http;
+using RpcLib.Auth;
 
-namespace DemoServer.Rpc {
+namespace Server.Rpc {
 
     /// <summary>
     /// Simple demo implementation of the <see cref="IRpcAuth"/> interface, using the information

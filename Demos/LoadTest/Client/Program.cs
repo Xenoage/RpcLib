@@ -1,6 +1,4 @@
-﻿using DemoShared;
-using DemoShared.Model;
-using RpcLib.Model;
+﻿using RpcLib.Model;
 using RpcLib.Server.Client;
 using RpcLib.Utils;
 using System;
@@ -10,11 +8,12 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using DemoShared.Rpc;
 using RpcLib;
 using Client.Rpc.Stubs;
+using Shared.Rpc;
+using Shared;
 
-namespace DemoServer {
+namespace Client {
 
     /// <summary>
     /// Simple demo client. Periodically calls methods on the server
@@ -43,7 +42,7 @@ namespace DemoServer {
                 ClientID = clientID,
                 ServerUrl = "http://localhost:5000/rpc"
             };
-            RpcInit.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
+            RpcMain.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
                 new CalcRpc()
             });
 
@@ -56,28 +55,24 @@ namespace DemoServer {
             int a = clientNumber * 1000;
             var random = new Random();
             while (true) {
-                long timeStart = CoreUtils.TimeNow(); ;
+                long startTime = CoreUtils.TimeNow(); ;
                 a++;
                 int b = random.Next(1, 100);
                 try {
                     int result = await serverCalc.AddNumbers(a, b);
-                    long rpcTime = CoreUtils.TimeNow() - timeStart;
-                    var log = $"{a}+{b}={result} | {rpcTime} ms";
-                    Log.Write(log);
-                    Log.WriteToFile(filename, log);
+                    long runTime = CoreUtils.TimeNow() - startTime;
+                    Log.WriteToFile(filename, $"{a}+{b}={result} | {runTime}ms");
                 }
                 catch (RpcException ex) {
-                    long rpcTime = CoreUtils.TimeNow() - timeStart;
-                    var log = $"{a}+{b}=? | {rpcTime} ms | Fail: {ex.Type}: {ex.Message}";
-                    Log.Write(log);
-                    Log.WriteToFile(filename, log);
+                    long runTime = CoreUtils.TimeNow() - startTime;
+                    Log.WriteToFile(filename, $"{a}+{b}=? | {runTime}ms | Fail: {ex.Type}: {ex.Message}");
                 }
                 await Task.Delay(random.Next(0, 100));
             }
         }
 
         public static void AuthenticateClient(HttpClient httpClient) {
-            // Authentication as defined in the class DemoRpcAuth in the DemoServer project
+            // Authentication as defined in the class DemoRpcAuth in the Server project
             var username = clientID;
             var password = clientID + "-PW";
             // Set HTTP Basic Auth header
