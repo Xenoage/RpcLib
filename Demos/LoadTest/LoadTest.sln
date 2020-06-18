@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoClient", "DemoClient\De
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoShared", "DemoShared\DemoShared.csproj", "{3B8981DC-0B3E-466B-BD83-06477A597BEF}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RpcLibTest", "RpcLibTest\RpcLibTest.csproj", "{71450A16-E194-4AF9-AB45-B73D56CD659A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{3B8981DC-0B3E-466B-BD83-06477A597BEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B8981DC-0B3E-466B-BD83-06477A597BEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3B8981DC-0B3E-466B-BD83-06477A597BEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71450A16-E194-4AF9-AB45-B73D56CD659A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71450A16-E194-4AF9-AB45-B73D56CD659A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71450A16-E194-4AF9-AB45-B73D56CD659A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71450A16-E194-4AF9-AB45-B73D56CD659A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
