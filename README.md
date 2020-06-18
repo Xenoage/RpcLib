@@ -70,11 +70,15 @@ Before adding the library to your own project, we recommend having a look at the
 
 ## Special features
 
+### Individual timeouts
+
+By default, there is a timeout for a RPC command of 30 seconds. Individual timeouts may be used, e.g. for commands which make only sense if they can be executed within a short period like one or two seconds. For this, simply use the `timeoutMs` parameter when instantiating your stub class.
+
 ### Run remote functions as soon as the other peer is online
 
 Normally, when an RPC command is called, it has a defined time period to execute. During this time, the call is retried several times automatically. But when the timeout is hit (by default 30 seconds), the RPC command returns a timeout failure and is not tried automatically again.
 
-This can be changed for important commands, which should reach the other side as soon as it is online again, maybe even after restarting the computer. For this, when executing an `RpcCommand`, an additional [`RpcRetryStrategy`](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Model/RpcRetryStrategy.cs) parameter can be given, which is `None` by default. There are two other strategies:
+This can be changed for important commands, which should reach the other side as soon as it is online again, maybe even after restarting the computer. For this, when instantiating a stub class, an additional [`RpcRetryStrategy`](https://github.com/Xenoage/RpcLib/blob/master/DemoShared/Model/RpcRetryStrategy.cs) parameter can be given, which is `None` by default. There are two other strategies:
 
 * `RetryWhenOnline`: Runs the command as soon as the other peer is online again. When 10 commands with this flag are called, all 10 commands will be executed later in exactly this order. Example use case: A method to add or remove credit (when adding 5, 10 and 30 ct, at the very end the other peer should have received all 45 ct).
   
