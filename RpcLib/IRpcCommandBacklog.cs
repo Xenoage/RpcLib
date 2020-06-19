@@ -3,18 +3,24 @@
 namespace RpcLib {
 
     /// <summary>
-    /// Interface for saving commands that should be retried as soon as the other
-    /// peer is reachable again. See <see cref="RpcRetryStrategy"/>.
+    /// Interface for saving commands that should be retried until they were
+    /// executed on the remote peer. See <see cref="RpcRetryStrategy"/>.
     /// When the implementation of this interface is using persistent storage (file, database, ...),
     /// the retry strategy still works after reboot.
     /// </summary>
     public interface IRpcCommandBacklog {
 
         /// <summary>
-        /// Dequeues and returns the first command from the queue of the given client
+        /// Returns (but does not dequeue) the first command from the queue of the given client
         /// (or null for the server), or null when the queue is empty.
         /// </summary>
-        RpcCommand? DequeueCommand(string? clientID);
+        RpcCommand? PeekCommand(string? clientID);
+
+        /// <summary>
+        /// Dequeues the first command from the queue of the given client
+        /// (or null for the server).
+        /// </summary>
+        void DequeueCommand(string? clientID);
 
         /// <summary>
         /// Adds the given command to the queue of the given client (or null for the server).

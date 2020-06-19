@@ -1,12 +1,6 @@
-using BankShared;
 using DemoServer;
-using DemoServer.Rpc;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
-using RpcLib.Model;
-using RpcLib.Peers.Server;
-using RpcLib.Utils;
-using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -24,7 +18,7 @@ namespace BankClient {
             // To understand the actions in the following lines, read the testing
             // strategy described in the RetryTest class in the RetryTest project.
 
-
+            await Task.Delay(100000);
 
         }
 

@@ -14,26 +14,29 @@ namespace BankShared.Rpc {
     /// In your real world project, use a database instead.
     /// 
     /// File naming:
-    /// ./RpcBacklog/{clientID|"Server"}/{unix time in ms}{counter}-{command name}
+    /// ./RpcBacklog/{clientID|"Server"}/{command ID}-{command name}
     /// </summary>
     public class DemoRpcCommandBacklog : IRpcCommandBacklog {
 
-        public RpcCommand? DequeueCommand(string? clientID) {
+        public RpcCommand? PeekCommand(string? clientID) {
             lock (syncLock) {
-                if (GetLatestFile(clientID) is FileInfo file) {
-                    var ret = JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
-                    file.Delete();
-                    return ret;
-                }
-                else {
+                if (GetLatestFile(clientID) is FileInfo file)
+                    return JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
+                else
                     return null;
-                }
+            }
+        }
+
+        public void DequeueCommand(string? clientID) {
+            lock (syncLock) {
+                if (GetLatestFile(clientID) is FileInfo file)
+                    file.Delete();
             }
         }
 
         public void EnqueueCommand(string? clientID, RpcCommand command) {
             lock (syncLock) {
-                var dir = GetOrCreateDirectory(clientID);
+                var dir = GetDirectory(clientID);
                 // Apply strategy
                 var strategy = command.RetryStrategy;
                 if (strategy == null || strategy == RpcRetryStrategy.None) {
@@ -48,12 +51,8 @@ namespace BankShared.Rpc {
                     foreach (var file in GetFilesByCommandName(clientID, command.MethodName))
                         file.Delete();
                 }
-                var filename = CoreUtils.TimeNow() + counter + "-" + command.MethodName;
+                var filename = command.ID + "-" + command.MethodName;
                 File.WriteAllText(Path.Combine(dir.FullName, filename), JsonLib.ToJson(command));
-                // Increment counter
-                counter++;
-                if (counter > 9999)
-                    counter = 1000;
             }
         }
 
@@ -64,18 +63,14 @@ namespace BankShared.Rpc {
         private FileInfo[] GetFilesByCommandName(string? clientID, string commandName) =>
             GetDirectory(clientID).GetFiles("*-" + commandName);
 
-        private DirectoryInfo GetOrCreateDirectory(string? clientID) {
-            var dir = GetDirectory(clientID);
+        private DirectoryInfo GetDirectory(string? clientID) {
+            var dir = new DirectoryInfo("RpcBacklog/" + (clientID ?? "Server"));
             if (false == dir.Exists)
                 Directory.CreateDirectory(dir.FullName);
             return dir;
         }
-
-        private DirectoryInfo GetDirectory(string? clientID) =>
-            new DirectoryInfo("RpcBacklog/" + (clientID ?? "Server"));
-
+        
         private readonly object syncLock = new object();
-        private long counter = 1000; // Between 1000 and 9999 to create unique IDs within the same millisecond
 
     }
 

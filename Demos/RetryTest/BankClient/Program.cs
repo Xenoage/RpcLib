@@ -46,20 +46,40 @@ namespace BankClient {
             // See the RetryTest test project to understand what we are doing now.
 
             // Send an increasing amount(1 ct, 2ct, 3ct, ...)
-            // to the bank, which is still offline. This is done for 10 seconds.
+            // to the bank, which is still offline. This is done for 20 seconds.
+            // After each 5 seconds, change the owner name.
             string filename = $"{clientID}.banklog";
-            for (int i = 1; i <= 10; i++) {
+            // TODO bankServer.OnAddMoneyRetryFinished = (command) =>
+            //    Log.WriteToFile(filename, $"{command.GetParam<int>(1)} | {command.GetResult().ResultJson} | retried");
+            for (int i = 1; i <= 20; i++) {
 
+                // Add money
                 long startTime = CoreUtils.TimeNow(); ;
                 try {
                     int newCents = await bankServer.AddMoney(clientNumber, i);
                     long runTime = CoreUtils.TimeNow() - startTime;
-                    Log.WriteToFile(filename, $"{i} | {newCents} | {runTime}ms");
+                    Log.WriteToFile(filename, $"Add | {i} | {newCents} | {runTime}ms");
                 }
                 catch (RpcException ex) {
                     long runTime = CoreUtils.TimeNow() - startTime;
-                    Log.WriteToFile(filename, $"{i} | Fail: {ex.Type}: {ex.Message}");
+                    Log.WriteToFile(filename, $"Add | {i} | Fail: {ex.Type}: {ex.Message}");
                 }
+
+                // Change owner name
+                if (i % 5 == 0) {
+                    startTime = CoreUtils.TimeNow();
+                    string newName = "MyName-" + (i / 5);
+                    try {
+                        await bankServer.ChangeOwnerName(clientNumber, newName);
+                        long runTime = CoreUtils.TimeNow() - startTime;
+                        Log.WriteToFile(filename, $"Name | {newName} | {runTime}ms");
+                    }
+                    catch (RpcException ex) {
+                        long runTime = CoreUtils.TimeNow() - startTime;
+                        Log.WriteToFile(filename, $"Name | {newName} | Fail: {ex.Type}: {ex.Message}");
+                    }
+                }
+
                 await Task.Delay(1000);
             }
 

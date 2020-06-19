@@ -1,6 +1,8 @@
-﻿using BankShared.Rpc;
+﻿using BankShared;
+using BankShared.Rpc;
 using RpcLib.Model;
 using RpcLib.Peers.Client;
+using System;
 using System.Threading.Tasks;
 
 namespace BankClient.Rpc.Stubs {
@@ -14,10 +16,14 @@ namespace BankClient.Rpc.Stubs {
             ExecuteOnServer<int>(new RpcCommand("GetBalance", accountNumber));
 
         public Task<int> AddMoney(int accountNumber, int cents) =>
-            ExecuteOnServer<int>(new RpcCommand("AddMoney", accountNumber, cents) { RetryStrategy = RpcRetryStrategy.RetryWhenOnline });
+            ExecuteOnServer<int>(new RpcCommand("AddMoney", accountNumber, cents) {
+                RetryStrategy = RpcRetryStrategy.RetryWhenOnline
+            });
 
         public Task ChangeOwnerName(int accountNumber, string ownerName) =>
-            ExecuteOnServer(new RpcCommand("ChangeOwnerName", accountNumber, ownerName) { RetryStrategy = RpcRetryStrategy.RetryNewestWhenOnline });
+            ExecuteOnServer(new RpcCommand("ChangeOwnerName", accountNumber, ownerName) {
+                RetryStrategy = RpcRetryStrategy.RetryNewestWhenOnline
+            });
 
     }
 

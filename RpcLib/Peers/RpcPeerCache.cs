@@ -31,6 +31,9 @@ namespace RpcLib.Server {
         // already executed commands can be easily determined.
         private ulong lastCachedResultCommandID = 0;
 
+        // True, when the current command was peeked from the command backlog
+        private bool isCurrentCommandFromBacklog = false;
+
         /// <summary>
         /// Creates a cache for the given client ID (or null for the server peer)
         /// and optionally a backlog for the failed commands for retrying.
@@ -58,12 +61,13 @@ namespace RpcLib.Server {
         /// </summary>
         public async Task<RpcCommand?> DequeueCommand(int timeoutMs) {
             // When there is a non-empty command backlog, dequeue and return its first item
-            if (commandBacklog?.DequeueCommand(ClientID) is RpcCommand backlogCommand) {
-                backlogCommand.MovedToBacklog = false;
+            if (commandBacklog?.PeekCommand(ClientID) is RpcCommand backlogCommand) {
+                isCurrentCommandFromBacklog = true; // Remember, because only peeked, not dequeued
                 CurrentCommand = backlogCommand;
             }
             // Otherwise, wait for next item in the normal queue
             else {
+                isCurrentCommandFromBacklog = false;
                 CurrentCommand = await queue.Dequeue(timeoutMs);
             }
             return CurrentCommand;
@@ -84,6 +88,15 @@ namespace RpcLib.Server {
                     RpcFailureType.QueueOverflow, $"Queue already full " +
                         (ClientID != null ? "for the client { ClientID}" : "for the server")));
             }
+        }
+
+        /// <summary>
+        /// Call this method, when the <see cref="CurrentCommand"/> was executed on the remote peer,
+        /// whether successful or not. Do not call it, when the command failed because of an network problem.
+        /// </summary>
+        public void FinishCurrentCommand() {
+            if (isCurrentCommandFromBacklog)
+                commandBacklog?.DequeueCommand(ClientID);
         }
 
         /// <summary>

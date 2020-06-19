@@ -24,8 +24,10 @@ namespace RpcLib.Model {
         /// </summary>
         public RpcCommand(string methodName, params object[] methodParameters) {
             lock(syncLock) {
-                lastNumber++;
-                ID = lastNumber;
+                loop++;
+                if (loop > 999)
+                    loop = 0;
+                ID = ((ulong) CoreUtils.TimeNow()) * 1000 + loop;
             }
             MethodName = methodName;
             MethodParameters = methodParameters.Select(it => JsonLib.ToJson(it)).ToList();
@@ -39,7 +41,8 @@ namespace RpcLib.Model {
 
         /// <summary>
         /// Unique ID of this command.
-        /// The next ID will be the last ID + 1.
+        /// The ID looks like this: ({unix time in ms}{000-999}),
+        /// i.e. ascending over time.
         /// </summary>
         public ulong ID { get; set; }
 
@@ -111,12 +114,6 @@ namespace RpcLib.Model {
         }
 
         /// <summary>
-        /// True, when this command failes and it was already moved into the command backlog
-        /// for retrying it automatically.
-        /// </summary>
-        public bool? MovedToBacklog { get; set; } = null;
-
-        /// <summary>
         /// Call this method after enqueuing the command to wait for the result of its execution.
         /// The returned task finishes when the call was either successfully executed and
         /// acknowledged, or failed (e.g. because of a timeout).
@@ -150,7 +147,7 @@ namespace RpcLib.Model {
         private TaskCompletionSource<RpcCommandResult> runningTask = new TaskCompletionSource<RpcCommandResult>();
 
         // Helper fields
-        private static ulong lastNumber = 0;
+        private static ulong loop = 0; // Looping between 0 and 999 to allow up to 1000 commands per ms
         private static readonly object syncLock = new object();
         private RpcCommandResult? result = null;
 

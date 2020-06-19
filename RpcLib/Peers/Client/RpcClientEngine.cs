@@ -91,14 +91,16 @@ namespace RpcLib.Server.Client {
         /// </summary>
         public async Task<T> ExecuteOnServer<T>(RpcCommand command) {
             try {
+                // When it is a command which should be retried in case of network failure, enqueue it in the command backlog.
+                // We do this even before it failed, because when the program is stopped during the call, the command would be lost.
+                if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
+                    CommandBacklog.EnqueueCommand(clientID: null, command);
                 // Enqueue (and execute)
                 serverCache.EnqueueCommand(command);
                 // Wait for result until timeout
                 return await command.WaitForResult<T>();
             }
             catch (RpcException ex) {
-                // When failed because of a network problem and automatic retry is activated, enqueue in command backlog
-                MoveToBacklogIfNetworkFailed(command, ex.Failure);
                 // Rethrow RPC exception
                 throw;
             }
@@ -141,22 +143,11 @@ namespace RpcLib.Server.Client {
                 result = RpcCommandResult.FromFailure(command.ID,
                     new RpcFailure(RpcFailureType.Timeout, "Could not reach the server"));
             }
-            // When failed because of a network problem and automatic retry is activated, enqueue in command backlog
-            if (result.Failure != null)
-                MoveToBacklogIfNetworkFailed(command, result.Failure);
+            // When a result was received (i.e. when there was no network problem), the command is finished
+            if (false == (result.Failure?.IsNetworkProblem == true) && command.ID == serverCache.CurrentCommand?.ID)
+                serverCache.FinishCurrentCommand();
             // Finish command
             command.Finish(result);
-        }
-
-        /// <summary>
-        /// Moves the given command to the backlog, when the given response is in failed state because of a network problem
-        /// and when automatic retry is activated.
-        /// </summary>
-        private void MoveToBacklogIfNetworkFailed(RpcCommand command, RpcFailure failure) {
-            if (failure.IsNetworkProblem && command.RetryStrategy != RpcRetryStrategy.None && command.MovedToBacklog != true) {
-                command.MovedToBacklog = true;
-                CommandBacklog.EnqueueCommand(clientID: null, command);
-            }
         }
 
         /// <summary>
@@ -204,8 +195,9 @@ namespace RpcLib.Server.Client {
                 result = RpcCommandResult.FromFailure(command.ID,
                     new RpcFailure(RpcFailureType.RemoteException, ex.Message));
             }
-            // Cache and return result
-            serverCache.CacheResult(result);
+            // Cache result, if there was no network problem
+            if (false == (result.Failure?.IsNetworkProblem == true))
+                serverCache.CacheResult(result);
             return result;
         }
 

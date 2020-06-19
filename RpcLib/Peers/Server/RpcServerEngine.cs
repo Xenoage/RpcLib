@@ -44,8 +44,9 @@ namespace RpcLib.Peers.Server {
                 result = RpcCommandResult.FromFailure(command.ID,
                     new RpcFailure(RpcFailureType.RemoteException, ex.Message));
             }
-            // Cache and return result
-            client.CacheResult(result);
+            // Cache result, if there was no network problem
+            if (false == (result.Failure?.IsNetworkProblem == true))
+                client.CacheResult(result);
             return result;
         }
 

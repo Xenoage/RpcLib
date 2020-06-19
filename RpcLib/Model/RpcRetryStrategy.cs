@@ -5,7 +5,7 @@ namespace RpcLib.Model {
 
     /// <summary>
     /// If and how to retry commands which could not be finished because of an
-    /// <see cref="RpcException.IsRpcProblem"/> failure.
+    /// <see cref="RpcException.IsNetworkProblem"/> failure.
     /// </summary>
     [JsonConverter(typeof(StringEnumConverter))]
     public enum RpcRetryStrategy {
