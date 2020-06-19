@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BankClient", "BankClient\Ba
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BankShared", "BankShared\BankShared.csproj", "{3B8981DC-0B3E-466B-BD83-06477A597BEF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RetryTest", "RetryTest\RetryTest.csproj", "{0370A43C-8EE1-46A7-9DBA-1FDC02EC2857}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RetryOnClient", "RetryOnClientTest\RetryOnClient.csproj", "{CD548AF8-939F-49CE-A91E-637BEB85CC55}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +35,10 @@ Global
 		{3B8981DC-0B3E-466B-BD83-06477A597BEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B8981DC-0B3E-466B-BD83-06477A597BEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3B8981DC-0B3E-466B-BD83-06477A597BEF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0370A43C-8EE1-46A7-9DBA-1FDC02EC2857}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0370A43C-8EE1-46A7-9DBA-1FDC02EC2857}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0370A43C-8EE1-46A7-9DBA-1FDC02EC2857}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0370A43C-8EE1-46A7-9DBA-1FDC02EC2857}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD548AF8-939F-49CE-A91E-637BEB85CC55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD548AF8-939F-49CE-A91E-637BEB85CC55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD548AF8-939F-49CE-A91E-637BEB85CC55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD548AF8-939F-49CE-A91E-637BEB85CC55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

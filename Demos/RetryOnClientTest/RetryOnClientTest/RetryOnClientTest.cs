@@ -11,10 +11,13 @@ namespace RpcLibTest {
 
     /// <summary>
     /// Test of the different retry strategies, see <see cref="RpcRetryStrategy"/>.
+    /// Here, in "RetryOnClientTest", the bank is the server and the customer is the client behind the firewall.
+    /// To test the other way, see the "RetryOnServerTest" demo.
+    /// 
     /// See the comments within this test what we do and what we expect.
     /// </summary>
     [TestClass]
-    public class RetryTest {
+    public class RetryOnClientTest {
 
         [TestInitialize]
         public void Cleanup() {
