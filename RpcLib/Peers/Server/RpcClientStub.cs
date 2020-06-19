@@ -27,7 +27,7 @@ namespace RpcLib.Peers.Server {
         /// and returns the result or throws an <see cref="RpcException"/>.
         /// </summary>
         protected Task<T> ExecuteOnClient<T>(RpcCommand command) =>
-            RpcServerEngine.Instance.ExecuteOnClient<T>(ClientID, command, TimeoutMs, RetryStrategy);
+            RpcServerEngine.Instance.ExecuteOnClient<T>(ClientID, command);
 
         /// <summary>
         /// Like <see cref="ExecuteOnServer{T}(RpcCommand)"/> but without return value.

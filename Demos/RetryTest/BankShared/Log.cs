@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
 
-namespace DemoShared {
+namespace BankShared {
 
     /// <summary>
-    /// Simple console logging for the demo projects.
+    /// Simple console and file logging for the demo projects.
     /// </summary>
     public static class Log {
 
@@ -13,6 +13,7 @@ namespace DemoShared {
         }
 
         public static void WriteToFile(string filename, string line) {
+            Write(line);
             lock (lockObj) {
                 File.AppendAllText(filename, line + "\n");
             }

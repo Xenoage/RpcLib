@@ -11,25 +11,18 @@ namespace RpcLib {
     public interface IRpcCommandBacklog {
 
         /// <summary>
-        /// Returns the first command from the queue of the given client (or null for the server),
-        /// or null when the queue is empty.
-        /// The command is not removed from the queue by calling this command.
-        /// Call <see cref="FinishCommand"/> when it has been finished.
+        /// Dequeues and returns the first command from the queue of the given client
+        /// (or null for the server), or null when the queue is empty.
         /// </summary>
-        RpcCommand? GetCommand(string? clientID);
-
-        /// <summary>
-        /// Removes the first command from the queue of the given client (or null for the server).
-        /// </summary>
-        void FinishCommand(string? clientID);
+        RpcCommand? DequeueCommand(string? clientID);
 
         /// <summary>
         /// Adds the given command to the queue of the given client (or null for the server).
-        /// When the given strategy allows only a single command of this type
+        /// When the retry strategy of the given command allows only a single command of this type
         /// (<see cref="RpcRetryStrategy.RetryNewestWhenOnline"/>), all commands with the
         /// same command name are removed from the queue.
         /// </summary>
-        void Enqueue(string? clientID, RpcCommand command, RpcRetryStrategy retryStrategy);
+        void EnqueueCommand(string? clientID, RpcCommand command);
 
     }
 

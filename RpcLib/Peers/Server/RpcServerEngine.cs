@@ -71,7 +71,7 @@ namespace RpcLib.Peers.Server {
             if (lastCommandResult != null)
                 await ReportClientResult(clientID, lastCommandResult);
             // Wait for next command
-            RpcCommand? next = await clients.GetClient(clientID, commandBacklog).GetCurrentCommand(longPollingSeconds * 1000);
+            RpcCommand? next = await clients.GetClient(clientID, commandBacklog).DequeueCommand(longPollingSeconds * 1000);
             if (next != null) {
                 next.SetState(RpcCommandState.Sent);
                 return next;
@@ -86,34 +86,28 @@ namespace RpcLib.Peers.Server {
         private async Task ReportClientResult(string clientID, RpcCommandResult? lastResult) {
             // Get current command on this client
             var client = clients.GetClient(clientID, commandBacklog);
-            RpcCommand? currentCommand = await client.GetCurrentCommand(timeoutMs: 0); // Zero timeout, result should be there
             // Handle reported result. Ignore wrong reports (e.g. when received two times or too late)
-            if (currentCommand != null && lastResult != null && lastResult.CommandID == currentCommand.ID) {
+            if (lastResult != null && client.CurrentCommand is RpcCommand command && lastResult.CommandID == command.ID) {
                 // Response for this command received.
-                currentCommand.Finish(lastResult);
-                await client.FinishCurrentCommand();
+                command.Finish(lastResult);
             }
         }
 
         /// <summary>
         /// Runs the given RPC command on the client with the given ID as soon as possible
         /// and returns the result or throws an <see cref="RpcException"/>.
-        /// An individual timeout in milliseconds can be given (or null for default).
-        /// When a retry strategy is given, commands which failed because of RPC problems
-        /// will be retried automatically.
         /// </summary>
-        public async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command,
-                int? timeoutMs, RpcRetryStrategy retryStrategy) {
+        public async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command) {
             try {
                 // Enqueue (and execute)
                 clients.GetClient(clientID, commandBacklog).EnqueueCommand(command);
                 // Wait for result until timeout
-                return await command.WaitForResult<T>(timeoutMs);
+                return await command.WaitForResult<T>();
             }
             catch (RpcException ex) {
-                if (ex.IsRpcProblem && retryStrategy != RpcRetryStrategy.None) {
+                if (ex.IsNetworkProblem && command.RetryStrategy != RpcRetryStrategy.None) {
                     // Enqueue in retry queue
-                    CommandBacklog.Enqueue(clientID: null, command, retryStrategy);
+                    CommandBacklog.EnqueueCommand(clientID: null, command);
                 }
                 throw; // Rethrow RPC exception
             }

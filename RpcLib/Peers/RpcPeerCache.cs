@@ -31,9 +31,6 @@ namespace RpcLib.Server {
         // already executed commands can be easily determined.
         private ulong lastCachedResultCommandID = 0;
 
-        // True, iff the current command was read from the backlog instead of the normal queue
-        private bool isCurrentCommandFromBacklog = false;
-
         /// <summary>
         /// Creates a cache for the given client ID (or null for the server peer)
         /// and optionally a backlog for the failed commands for retrying.
@@ -49,31 +46,27 @@ namespace RpcLib.Server {
         public string? ClientID { get; }
 
         /// <summary>
-        /// Gets the current command in the backlog or queue, or null, if there is none.
+        /// The currently executing command. This property is updated whenever
+        /// <see cref="DequeueCommand"/> returns a new result.
+        /// </summary>
+        public RpcCommand? CurrentCommand { get; private set; } = null;
+
+        /// <summary>
+        /// Dequeues and returns the current command in the backlog or queue, or null, if there is none.
         /// The method returns as soon as there is a value, or with null when the
         /// given timeout in milliseconds is hit.
         /// </summary>
-        public async Task<RpcCommand?> GetCurrentCommand(int timeoutMs) {
-            // When there is a non-empty command backlog, return its first item
-            if (commandBacklog?.GetCommand(ClientID) is RpcCommand backlogCommand) {
-                isCurrentCommandFromBacklog = true;
-                return backlogCommand;
+        public async Task<RpcCommand?> DequeueCommand(int timeoutMs) {
+            // When there is a non-empty command backlog, dequeue and return its first item
+            if (commandBacklog?.DequeueCommand(ClientID) is RpcCommand backlogCommand) {
+                backlogCommand.MovedToBacklog = false;
+                CurrentCommand = backlogCommand;
             }
             // Otherwise, wait for next item in the normal queue
-            isCurrentCommandFromBacklog = false;
-            return await queue.Peek(timeoutMs);
-        }
-
-        /// <summary>
-        /// Finishes the current command, i.e. removes it from the backlog or queue.
-        /// </summary>
-        public async Task FinishCurrentCommand() {
-            // Remove from command backlog, when from there
-            if (isCurrentCommandFromBacklog)
-                commandBacklog?.FinishCommand(ClientID);
-            // Otherwise, remove from normal queue
-            else
-                await queue.Dequeue(0); // Should be removed immediately, because we called GetCurrentCommand before
+            else {
+                CurrentCommand = await queue.Dequeue(timeoutMs);
+            }
+            return CurrentCommand;
         }
 
         /// <summary>

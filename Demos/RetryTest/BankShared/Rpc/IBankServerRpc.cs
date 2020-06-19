@@ -2,13 +2,13 @@
 using RpcLib.Model;
 using System.Threading.Tasks;
 
-namespace DemoShared.Rpc {
+namespace BankShared.Rpc {
 
     /// <summary>
     /// Demo interface for showcasing the automatic retry capabilities of this library,
     /// using a simple server-side bank account manager.
     /// </summary>
-    public interface IBankAccountRpc : IRpcFunctions {
+    public interface IBankServerRpc : IRpcFunctions {
 
         /// <summary>
         /// Gets the current account balance in cents of the account with the given number.

@@ -18,12 +18,12 @@ namespace RpcLib.Model {
         public string Message { get; }
 
         /// <summary>
-        /// Returns true, iff this failure happened within the RPC engine, probably
-        /// caused by a networking problem.
-        /// In this case, the command should be repeated later.
+        /// Returns true, iff this failure happened because the remote peer could not
+        /// be reached, probably caused by a networking problem.
+        /// In this case, the command could be repeated later.
         /// See <see cref="RpcRetryStrategy"/> how to automate this.
         /// </summary>
-        public bool IsRpcProblem =>
+        public bool IsNetworkProblem =>
             Type == RpcFailureType.Timeout || Type == RpcFailureType.QueueOverflow;
 
     }
@@ -53,6 +53,13 @@ namespace RpcLib.Model {
         /// See <see cref="RpcRetryStrategy"/> how to automate this.
         /// </summary>
         QueueOverflow,
+        /// <summary>
+        /// The peer received a response from the remote peer, but it was not an expected RPC response
+        /// (in case of a remote exception, a well-formated response with an <see cref="RemoteException"/>
+        /// would be expected). We should not repeat this command, since it would probably result
+        /// in the same error again.
+        /// </summary>
+        RpcError,
         /// <summary>
         /// The command was already executed earlier, and the cached result is not available
         /// any more so that we could it send again. Since we must not execute the command twice,

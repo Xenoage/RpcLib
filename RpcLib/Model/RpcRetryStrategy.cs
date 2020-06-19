@@ -1,9 +1,13 @@
-﻿namespace RpcLib.Model {
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
+namespace RpcLib.Model {
 
     /// <summary>
     /// If and how to retry commands which could not be finished because of an
     /// <see cref="RpcException.IsRpcProblem"/> failure.
     /// </summary>
+    [JsonConverter(typeof(StringEnumConverter))]
     public enum RpcRetryStrategy {
 
         /// <summary>

@@ -1,8 +1,12 @@
-﻿namespace RpcLib.Model {
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
+namespace RpcLib.Model {
 
     /// <summary>
     /// The current state of an <see cref="RpcCommand"/>.
     /// </summary>
+    [JsonConverter(typeof(StringEnumConverter))]
     public enum RpcCommandState {
         /// <summary>
         /// The start state. It was just created.

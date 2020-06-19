@@ -6,7 +6,7 @@ namespace RpcLib.Utils {
 
     /// <summary>
     /// A blocking queue implementation based on <see cref="BlockingCollection"/>.
-    /// It contains methods for enqueuing, blocking dequeuing and blocking peeking.
+    /// It contains methods for enqueuing and blocking dequeuing.
     /// </summary>
     public class BlockingQueue<T> where T : class {
 
@@ -41,15 +41,6 @@ namespace RpcLib.Utils {
         /// is an item, or null after the timeout.
         /// </summary>
         public async Task<T?> Dequeue(int timeoutMs) {
-            // When the next element is set, return and remove it immediately
-            lock (queue) {
-                if (next != null) {
-                    var ret = next;
-                    next = null;
-                    return ret;
-                }
-            }
-            // Otherwise dequeue first element in queue (blocking)
             try {
                 return await queue.ReceiveAsync(TimeSpan.FromMilliseconds(timeoutMs));
             }
@@ -58,30 +49,7 @@ namespace RpcLib.Utils {
             }
         }
 
-        /// <summary>
-        /// Tries to return an object from the beginning of the queue without removing it
-        /// in the specified time period in milliseconds. Returns the value, as soon as there
-        /// is an item, or null after the timeout.
-        /// </summary>
-        public async Task<T?> Peek(int timeoutMs) {
-            // When the next element is set, return it immediately
-            lock (queue) {
-                if (next != null)
-                    return next;
-            }
-            // Otherwise read first element in queue (blocking) and remember it
-            // as the next element
-            try {
-                next = await queue.ReceiveAsync(TimeSpan.FromMilliseconds(timeoutMs));
-                return next;
-            }
-            catch {
-                return null;
-            }
-        }
-
         private BufferBlock<T> queue = new BufferBlock<T>();
-        private T? next = null;
 
     }
 

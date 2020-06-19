@@ -45,10 +45,13 @@ namespace RpcLib.Server.Client {
             this.clientConfig = clientConfig;
             this.commandBacklog = commandBacklog;
             serverCache = new RpcPeerCache(clientID: null, commandBacklog);
-            // Create and authorize HTTP client
-            http = new HttpClient();
-            http.Timeout = TimeSpan.FromSeconds(RpcServerEngine.longPollingSeconds + 10); // Give some more seconds for timeout
-            authAction(http);
+            // Create and authorize HTTP clients
+            httpPull = new HttpClient();
+            httpPull.Timeout = TimeSpan.FromSeconds(RpcServerEngine.longPollingSeconds + 10); // Give some more seconds for timeout
+            authAction(httpPull);
+            httpPush = new HttpClient();
+            httpPush.Timeout = TimeSpan.FromMilliseconds(RpcCommand.defaultTimeoutMs);
+            authAction(httpPush);
             // Loop to pull the next command for this client from the server, execute it (if not already executed before)
             // and send the response together with the next pull.
             _ = Task.Run(async () => {
@@ -70,17 +73,13 @@ namespace RpcLib.Server.Client {
             // Loop to execute (i.e. send to server) the next command in the queue.
             _ = Task.Run(async () => {
                 while (isRunning) {
-                    RpcCommand? next = await serverCache.GetCurrentCommand(timeoutMs: -1); // No timeout
+                    RpcCommand? next = await serverCache.DequeueCommand(timeoutMs: -1); // No timeout
                     if (next != null) {
                         next.SetState(RpcCommandState.Sent);
-                        try {
-                            await ExecuteOnServerNow(next);
-                            await serverCache.FinishCurrentCommand();
-                        }
-                        catch {
-                            // Could not reach server. Try the same command again.
-                            await Task.Delay(1000); // Wait a second before trying again
-                        }
+                        await ExecuteOnServerNow(next);
+                        // In case of a networking problem, wait a second before trying the next command
+                        if (next.GetResult().Failure?.IsNetworkProblem ?? false)
+                            await Task.Delay(1000);
                     }
                 }
             });
@@ -89,23 +88,19 @@ namespace RpcLib.Server.Client {
         /// <summary>
         /// Runs the given RPC command on the server as soon as possible
         /// and returns the result or throws an <see cref="RpcException"/>.
-        /// An individual timeout in milliseconds can be given (or null for default).
-        /// When a retry strategy is given, commands which failed because of RPC problems
-        /// will be retried automatically.
         /// </summary>
-        public async Task<T> ExecuteOnServer<T>(RpcCommand command, int? timeoutMs, RpcRetryStrategy retryStrategy) {
+        public async Task<T> ExecuteOnServer<T>(RpcCommand command) {
             try {
                 // Enqueue (and execute)
                 serverCache.EnqueueCommand(command);
                 // Wait for result until timeout
-                return await command.WaitForResult<T>(timeoutMs);
+                return await command.WaitForResult<T>();
             }
             catch (RpcException ex) {
-                if (ex.IsRpcProblem && retryStrategy != RpcRetryStrategy.None) {
-                    // Enqueue in retry queue
-                    CommandBacklog.Enqueue(clientID: null, command, retryStrategy);
-                }
-                throw; // Rethrow RPC exception
+                // When failed because of a network problem and automatic retry is activated, enqueue in command backlog
+                MoveToBacklogIfNetworkFailed(command, ex.Failure);
+                // Rethrow RPC exception
+                throw;
             }
             catch (Exception ex) {
                 throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
@@ -122,23 +117,45 @@ namespace RpcLib.Server.Client {
         /// <summary>
         /// Sends the given command to the server now, reads the result or catches the
         /// exception, and sets the command's state accordingly.
-        /// This method does only throw an exception, when there was a problem reaching the server.
-        /// In this case, the command should be repeated. When there was an exception on the server,
-        /// the command should not be repeated, and so we do not throw an exception here, but store
-        /// the failure in the command's response state.
         /// </summary>
         private async Task ExecuteOnServerNow(RpcCommand command) {
+            RpcCommandResult result;
             var bodyJson = JsonLib.ToJson(command);
-            var httpResponse = await http.PostAsync(clientConfig.ServerUrl + "/push",
-                new StringContent(bodyJson, Encoding.UTF8, "application/json"));
-            if (httpResponse.IsSuccessStatusCode) {
-                // Response (either success or remote failure) received.
-                var result = JsonLib.FromJson<RpcCommandResult>(await httpResponse.Content.ReadAsStringAsync());
-                command.Finish(result);
+            try {
+                var httpResponse = await httpPush.PostAsync(clientConfig.ServerUrl + "/push",
+                    new StringContent(bodyJson, Encoding.UTF8, "application/json"));
+                if (httpResponse.IsSuccessStatusCode) {
+                    // Response (either success or remote failure) received.
+                    result = JsonLib.FromJson<RpcCommandResult>(await httpResponse.Content.ReadAsStringAsync());
+                }
+                else {
+                    // The server did not respond with 200 (which it should do even in case of
+                    // a remote exception). So there is a communication error.
+                    result = RpcCommandResult.FromFailure(command.ID,
+                        new RpcFailure(RpcFailureType.RpcError, "Remote side problem with RPC call. HTTP status code " +
+                            (int)httpResponse.StatusCode));
+                }
             }
-            else {
-                // Remote exception.
-                throw new Exception("Server responded with status code " + httpResponse.StatusCode);
+            catch {
+                // Could not reach server.
+                result = RpcCommandResult.FromFailure(command.ID,
+                    new RpcFailure(RpcFailureType.Timeout, "Could not reach the server"));
+            }
+            // When failed because of a network problem and automatic retry is activated, enqueue in command backlog
+            if (result.Failure != null)
+                MoveToBacklogIfNetworkFailed(command, result.Failure);
+            // Finish command
+            command.Finish(result);
+        }
+
+        /// <summary>
+        /// Moves the given command to the backlog, when the given response is in failed state because of a network problem
+        /// and when automatic retry is activated.
+        /// </summary>
+        private void MoveToBacklogIfNetworkFailed(RpcCommand command, RpcFailure failure) {
+            if (failure.IsNetworkProblem && command.RetryStrategy != RpcRetryStrategy.None && command.MovedToBacklog != true) {
+                command.MovedToBacklog = true;
+                CommandBacklog.EnqueueCommand(clientID: null, command);
             }
         }
 
@@ -152,7 +169,7 @@ namespace RpcLib.Server.Client {
         private async Task<RpcCommand?> PullFromServer(RpcCommandResult? lastResult) {
             // Long polling. The server returns null after the long polling time.
             var bodyJson = lastResult != null ? JsonLib.ToJson(lastResult) : null;
-            var httpResponse = await http.PostAsync(clientConfig.ServerUrl + "/pull",
+            var httpResponse = await httpPull.PostAsync(clientConfig.ServerUrl + "/pull",
                 bodyJson != null ? new StringContent(bodyJson, Encoding.UTF8, "application/json") : null);
             if (httpResponse.IsSuccessStatusCode) {
                 // Last result was received. The server responded with the next command or null,
@@ -202,8 +219,9 @@ namespace RpcLib.Server.Client {
         // Queue for the commands and cached command results of the server
         private RpcPeerCache serverCache = new RpcPeerCache(null, null);
 
-        // HTTP client
-        private HttpClient http = new HttpClient();
+        // HTTP clients
+        private HttpClient httpPull = new HttpClient();
+        private HttpClient httpPush = new HttpClient();
 
         // RPC client methods and settings
         private Func<IEnumerable<RpcFunctions>> clientMethods;

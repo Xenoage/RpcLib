@@ -14,14 +14,14 @@ namespace RpcLib.Peers.Client {
     /// stas the same. Otherwise, it is recommended to create a new stub instance
     /// for each RPC function call.
     /// </summary>
-    public abstract class RpcServerStub : RpcStub {
+    public abstract class RpcServerStub {
 
         /// <summary>
         /// Runs the given RPC command on the server as soon as possible
         /// and returns the result or throws an <see cref="RpcException"/>.
         /// </summary>
         protected Task<T> ExecuteOnServer<T>(RpcCommand command) =>
-            RpcClientEngine.Instance.ExecuteOnServer<T>(command, TimeoutMs, RetryStrategy);
+            RpcClientEngine.Instance.ExecuteOnServer<T>(command);
 
         /// <summary>
         /// Like <see cref="ExecuteOnServer{T}(RpcCommand)"/> but without return value.

@@ -16,7 +16,7 @@ namespace RpcLib.Model {
 
         // Maximum time in milliseconds a sent command may take to be executed and acknowledged. This
         // includes the time where it is still in the queue.
-        public const int timeoutMs = 30_000;
+        public static int defaultTimeoutMs = 30_000;
 
         /// <summary>
         /// Creates a new encoded RPC command, using the given method name and parameters.
@@ -61,6 +61,18 @@ namespace RpcLib.Model {
             JsonLib.FromJson<T>(MethodParameters[index]);
 
         /// <summary>
+        /// Individual timeout for this command.
+        /// By default <see cref="defaultTimeoutMs"/> is used.
+        /// </summary>
+        public int? TimeoutMs { get; set; } = null;
+
+        /// <summary>
+        /// Strategy used for automatic retrying of this command,
+        /// when it has failed because of network problems.
+        /// </summary>
+        public RpcRetryStrategy? RetryStrategy { get; set; } = null;
+
+        /// <summary>
         /// The current state of this command.
         /// The RPC engine calls <see cref="SetState"/> and <see cref="Finish"/> to update
         /// the state while it processes the command.
@@ -99,17 +111,22 @@ namespace RpcLib.Model {
         }
 
         /// <summary>
+        /// True, when this command failes and it was already moved into the command backlog
+        /// for retrying it automatically.
+        /// </summary>
+        public bool? MovedToBacklog { get; set; } = null;
+
+        /// <summary>
         /// Call this method after enqueuing the command to wait for the result of its execution.
         /// The returned task finishes when the call was either successfully executed and
         /// acknowledged, or failed (e.g. because of a timeout).
-        /// An individual timeout can be given, otherwise <see cref="RpcCommand.timeoutMs"/> is used.
         /// The result is stored in the given command itself. If successful, the return value
         /// is also returned, otherwise an <see cref="RpcException"/> is thrown.
         /// </summary>
-        public async Task<T> WaitForResult<T>(int? timeoutMs) {
+        public async Task<T> WaitForResult<T>() {
             try {
                 // Wait for result until timeout
-                await Task.WhenAny(runningTask.Task, Task.Delay(timeoutMs ?? RpcCommand.timeoutMs));
+                await Task.WhenAny(runningTask.Task, Task.Delay(TimeoutMs ?? defaultTimeoutMs));
                 // Timeout?
                 if (false == IsFinished())
                     throw new RpcException(new RpcFailure(RpcFailureType.Timeout, "Timeout"));

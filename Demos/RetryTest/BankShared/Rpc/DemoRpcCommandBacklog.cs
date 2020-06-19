@@ -1,11 +1,10 @@
 ﻿using RpcLib;
 using RpcLib.Model;
 using RpcLib.Utils;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace DemoShared.Rpc {
+namespace BankShared.Rpc {
 
     /// <summary>
     /// Very simple implementation of a <see cref="IRpcCommandBacklog"/>,
@@ -15,43 +14,41 @@ namespace DemoShared.Rpc {
     /// In your real world project, use a database instead.
     /// 
     /// File naming:
-    /// ./RpcBacklog/{clientID|"Server"}/{Unix millisecond}{counter}-{command name}
+    /// ./RpcBacklog/{clientID|"Server"}/{unix time in ms}{counter}-{command name}
     /// </summary>
     public class DemoRpcCommandBacklog : IRpcCommandBacklog {
 
-        public RpcCommand? GetCommand(string? clientID) {
+        public RpcCommand? DequeueCommand(string? clientID) {
             lock (syncLock) {
-                if (GetLatestFile(clientID) is FileInfo file)
-                    return JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
-                else
-                    return null;
-            }
-        }
-
-        public void FinishCommand(string? clientID) {
-            lock (syncLock) {
-                if (GetLatestFile(clientID) is FileInfo file)
+                if (GetLatestFile(clientID) is FileInfo file) {
+                    var ret = JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
                     file.Delete();
+                    return ret;
+                }
+                else {
+                    return null;
+                }
             }
         }
 
-        public void Enqueue(string? clientID, RpcCommand command, RpcRetryStrategy retryStrategy) {
+        public void EnqueueCommand(string? clientID, RpcCommand command) {
             lock (syncLock) {
                 var dir = GetOrCreateDirectory(clientID);
                 // Apply strategy
-                if (retryStrategy == RpcRetryStrategy.None) {
+                var strategy = command.RetryStrategy;
+                if (strategy == null || strategy == RpcRetryStrategy.None) {
                     // No retry strategy chosen. This method should not have been called at all. Do nothing.
                     return;
                 }
-                else if (retryStrategy == RpcRetryStrategy.RetryWhenOnline) {
+                else if (strategy == RpcRetryStrategy.RetryWhenOnline) {
                     // No preparation needed; just enqueue this command
                 }
-                else if (retryStrategy == RpcRetryStrategy.RetryNewestWhenOnline) {
+                else if (strategy == RpcRetryStrategy.RetryNewestWhenOnline) {
                     // Remove all preceding commands of this type
                     foreach (var file in GetFilesByCommandName(clientID, command.MethodName))
                         file.Delete();
                 }
-                var filename = "" + CoreUtils.TimeNow() + counter + "-" + command.MethodName;
+                var filename = CoreUtils.TimeNow() + counter + "-" + command.MethodName;
                 File.WriteAllText(Path.Combine(dir.FullName, filename), JsonLib.ToJson(command));
                 // Increment counter
                 counter++;
@@ -62,7 +59,7 @@ namespace DemoShared.Rpc {
 
         private FileInfo? GetLatestFile(string? clientID) =>
             GetDirectory(clientID).GetFiles().OrderBy(
-                file => long.Parse(file.Name.Split('-')[0])).FirstOrDefault();
+                file => ulong.Parse(file.Name.Split('-')[0])).FirstOrDefault();
 
         private FileInfo[] GetFilesByCommandName(string? clientID, string commandName) =>
             GetDirectory(clientID).GetFiles("*-" + commandName);

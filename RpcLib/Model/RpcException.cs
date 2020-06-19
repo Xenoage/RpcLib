@@ -21,10 +21,10 @@ namespace RpcLib.Model {
             Failure.Message;
 
         /// <summary>
-        /// See <see cref="RpcFailure.IsRpcProblem"/>.
+        /// See <see cref="RpcFailure.IsNetworkProblem"/>.
         /// </summary>
-        public bool IsRpcProblem =>
-            Failure.IsRpcProblem;
+        public bool IsNetworkProblem =>
+            Failure.IsNetworkProblem;
         
 
     }
