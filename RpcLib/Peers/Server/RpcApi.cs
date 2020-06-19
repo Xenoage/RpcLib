@@ -39,13 +39,17 @@ namespace RpcLib.Peers.Server {
             // Read request body (if any). We do not use a [FromBody] parameter, because
             // we want to explicitly use our JsonLib for deserializing (and not overwrite the
             // user's selected default ASP.NET Core JSON serializer)
-            using (var reader = new StreamReader(Request.Body)) {
-                var body = await reader.ReadToEndAsync();
-                if (body.Length > 0) {
-                    // Run command and return the result
-                    var command = JsonLib.FromJson<RpcCommand>(body);
-                    return Ok(await RpcServerEngine.Instance.OnClientPush(clientID, command, runner));
+            try {
+                using (var reader = new StreamReader(Request.Body)) {
+                    var body = await reader.ReadToEndAsync();
+                    if (body.Length > 0) {
+                        // Run command and return the result
+                        var command = JsonLib.FromJson<RpcCommand>(body);
+                        return Ok(await RpcServerEngine.Instance.OnClientPush(clientID, command, runner));
+                    }
                 }
+            }
+            catch { // Can happen when the client cancelled the request
             }
             // Command missing
             return BadRequest();

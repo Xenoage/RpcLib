@@ -43,7 +43,6 @@ namespace RpcLib.Server.Client {
             // Remember client factory and settings
             this.clientMethods = clientMethods;
             this.clientConfig = clientConfig;
-            this.commandBacklog = commandBacklog;
             serverCache = new RpcPeerCache(clientID: null, commandBacklog);
             // Create and authorize HTTP clients
             httpPull = new HttpClient();
@@ -91,10 +90,6 @@ namespace RpcLib.Server.Client {
         /// </summary>
         public async Task<T> ExecuteOnServer<T>(RpcCommand command) {
             try {
-                // When it is a command which should be retried in case of network failure, enqueue it in the command backlog.
-                // We do this even before it failed, because when the program is stopped during the call, the command would be lost.
-                if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
-                    CommandBacklog.EnqueueCommand(clientID: null, command);
                 // Enqueue (and execute)
                 serverCache.EnqueueCommand(command);
                 // Wait for result until timeout
@@ -200,13 +195,6 @@ namespace RpcLib.Server.Client {
                 serverCache.CacheResult(result);
             return result;
         }
-
-        /// <summary>
-        /// Gets the registered backlog for retrying failed commands, or throws an exception if there is none.
-        /// </summary>
-        private IRpcCommandBacklog CommandBacklog =>
-            commandBacklog ?? throw new Exception(nameof(IRpcCommandBacklog) + " required, but none was provided");
-        private IRpcCommandBacklog? commandBacklog;
 
         // Queue for the commands and cached command results of the server
         private RpcPeerCache serverCache = new RpcPeerCache(null, null);

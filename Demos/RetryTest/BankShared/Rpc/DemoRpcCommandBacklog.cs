@@ -27,10 +27,13 @@ namespace BankShared.Rpc {
             }
         }
 
-        public void DequeueCommand(string? clientID) {
+        public void DequeueCommand(string? clientID, ulong commandID) {
             lock (syncLock) {
-                if (GetLatestFile(clientID) is FileInfo file)
-                    file.Delete();
+                if (GetLatestFile(clientID) is FileInfo file) {
+                    var command = JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
+                    if (command.ID == commandID)
+                        file.Delete();
+                }
             }
         }
 

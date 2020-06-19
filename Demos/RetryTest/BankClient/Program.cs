@@ -41,20 +41,32 @@ namespace BankClient {
                 ServerUrl = "http://localhost:5000/rpc"
             };
             RpcMain.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
-            }, defaultTimeoutMs: 2000, new DemoRpcCommandBacklog());
+            }, defaultTimeoutMs: 1000, new DemoRpcCommandBacklog());
 
             // See the RetryTest test project to understand what we are doing now.
 
-            // Send an increasing amount(1 ct, 2ct, 3ct, ...)
-            // to the bank, which is still offline. This is done for 20 seconds.
-            // After each 5 seconds, change the owner name.
+            // Repeatedly, get the current account balance and send an increasing amount(1 ct, 2ct, 3ct, ...)
+            // to the bank, which is still offline at the beginning. This is done for 20 seconds.
+            // Each 5 seconds, change the owner name.
             string filename = $"{clientID}.banklog";
             // TODO bankServer.OnAddMoneyRetryFinished = (command) =>
             //    Log.WriteToFile(filename, $"{command.GetParam<int>(1)} | {command.GetResult().ResultJson} | retried");
             for (int i = 1; i <= 20; i++) {
 
-                // Add money
+                // Get current balance (no retry!)
                 long startTime = CoreUtils.TimeNow(); ;
+                try {
+                    int newCents = await bankServer.GetBalance(clientNumber);
+                    long runTime = CoreUtils.TimeNow() - startTime;
+                    Log.WriteToFile(filename, $"Now | {newCents} | {runTime}ms");
+                }
+                catch (RpcException ex) {
+                    long runTime = CoreUtils.TimeNow() - startTime;
+                    Log.WriteToFile(filename, $"Now | Fail: {ex.Type}: {ex.Message}");
+                }
+
+                // Add money (retry for each command)
+                startTime = CoreUtils.TimeNow(); ;
                 try {
                     int newCents = await bankServer.AddMoney(clientNumber, i);
                     long runTime = CoreUtils.TimeNow() - startTime;
@@ -65,7 +77,7 @@ namespace BankClient {
                     Log.WriteToFile(filename, $"Add | {i} | Fail: {ex.Type}: {ex.Message}");
                 }
 
-                // Change owner name
+                // Change owner name (retry for newest call of command)
                 if (i % 5 == 0) {
                     startTime = CoreUtils.TimeNow();
                     string newName = "MyName-" + (i / 5);

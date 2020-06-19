@@ -20,7 +20,7 @@ namespace RpcLib.Peers.Server {
 
         /// <summary>
         /// Gets the queue of the given client.
-        /// If the client is unknown yet, it is created with the given backlog. TIDY
+        /// If the client is unknown yet, it is created with the given backlog.
         /// </summary>
         public RpcPeerCache GetClient(string clientID, IRpcCommandBacklog? commandBacklog) {
             if (false == queues.TryGetValue(clientID, out var queue))

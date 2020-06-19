@@ -87,8 +87,11 @@ namespace RpcLib.Peers.Server {
         private async Task ReportClientResult(string clientID, RpcCommandResult? lastResult) {
             // Get current command on this client
             var client = clients.GetClient(clientID, commandBacklog);
-            // Handle reported result. Ignore wrong reports (e.g. when received two times or too late)
+            // Result matching to expected last command? Ignore wrong reports (e.g. when received two times or too late).
             if (lastResult != null && client.CurrentCommand is RpcCommand command && lastResult.CommandID == command.ID) {
+                // When a result was received (i.e. when there was no network problem), the command is finished
+                if (false == (lastResult.Failure?.IsNetworkProblem == true))
+                    client.FinishCurrentCommand();
                 // Response for this command received.
                 command.Finish(lastResult);
             }
@@ -106,10 +109,6 @@ namespace RpcLib.Peers.Server {
                 return await command.WaitForResult<T>();
             }
             catch (RpcException ex) {
-                if (ex.IsNetworkProblem && command.RetryStrategy != RpcRetryStrategy.None) {
-                    // Enqueue in retry queue
-                    CommandBacklog.EnqueueCommand(clientID: null, command);
-                }
                 throw; // Rethrow RPC exception
             }
             catch (Exception ex) {
@@ -117,13 +116,9 @@ namespace RpcLib.Peers.Server {
             }
         }
 
-        /// <summary>
-        /// Gets the registered backlog for retrying failed commands, or throws an exception if there is none.
-        /// </summary>
-        private IRpcCommandBacklog CommandBacklog =>
-            commandBacklog ?? throw new Exception(nameof(IRpcCommandBacklog) + " required, but none was provided");
-        public void SetCommandBacklog(IRpcCommandBacklog? commandBacklog) => this.commandBacklog = commandBacklog;
+        // Backlog for retrying commands
         private IRpcCommandBacklog? commandBacklog;
+        public void SetCommandBacklog(IRpcCommandBacklog? commandBacklog) => this.commandBacklog = commandBacklog;
 
         // Long polling time in seconds. After this time, the server returns null when there is
         // no command in the queue.

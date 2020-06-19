@@ -31,9 +31,6 @@ namespace RpcLib.Server {
         // already executed commands can be easily determined.
         private ulong lastCachedResultCommandID = 0;
 
-        // True, when the current command was peeked from the command backlog
-        private bool isCurrentCommandFromBacklog = false;
-
         /// <summary>
         /// Creates a cache for the given client ID (or null for the server peer)
         /// and optionally a backlog for the failed commands for retrying.
@@ -57,19 +54,15 @@ namespace RpcLib.Server {
         /// <summary>
         /// Dequeues and returns the current command in the backlog or queue, or null, if there is none.
         /// The method returns as soon as there is a value, or with null when the
-        /// given timeout in milliseconds is hit.
+        /// given timeout in milliseconds is hit. A value of -1 means no timeout.
         /// </summary>
         public async Task<RpcCommand?> DequeueCommand(int timeoutMs) {
             // When there is a non-empty command backlog, dequeue and return its first item
-            if (commandBacklog?.PeekCommand(ClientID) is RpcCommand backlogCommand) {
-                isCurrentCommandFromBacklog = true; // Remember, because only peeked, not dequeued
+            if (commandBacklog?.PeekCommand(ClientID) is RpcCommand backlogCommand) // Just peek, not dequeue. Only dequeue when finished.
                 CurrentCommand = backlogCommand;
-            }
             // Otherwise, wait for next item in the normal queue
-            else {
-                isCurrentCommandFromBacklog = false;
+            else
                 CurrentCommand = await queue.Dequeue(timeoutMs);
-            }
             return CurrentCommand;
         }
 
@@ -80,6 +73,10 @@ namespace RpcLib.Server {
         /// </summary>
         public void EnqueueCommand(RpcCommand command) {
             try {
+                // When it is a command which should be retried in case of network failure, enqueue it in the command backlog.
+                if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
+                    CommandBacklog.EnqueueCommand(clientID: null, command);
+                // Always (additionally to the command backlog) add it to our normal query for immediate execution
                 queue.Enqueue(command);
                 command.SetState(RpcCommandState.Enqueued);
             }
@@ -95,8 +92,7 @@ namespace RpcLib.Server {
         /// whether successful or not. Do not call it, when the command failed because of an network problem.
         /// </summary>
         public void FinishCurrentCommand() {
-            if (isCurrentCommandFromBacklog)
-                commandBacklog?.DequeueCommand(ClientID);
+            commandBacklog?.DequeueCommand(ClientID, CurrentCommand.ID);
         }
 
         /// <summary>
@@ -127,6 +123,12 @@ namespace RpcLib.Server {
             while (cachedResults.Count > maxQueueSize)
                 cachedResults.TryDequeue(out _);
         }
+
+        /// <summary>
+        /// Gets the registered backlog for retrying failed commands, or throws an exception if there is none.
+        /// </summary>
+        private IRpcCommandBacklog CommandBacklog =>
+            commandBacklog ?? throw new Exception(nameof(IRpcCommandBacklog) + " required, but none was provided");
 
     }
 

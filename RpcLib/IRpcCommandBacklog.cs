@@ -18,9 +18,9 @@ namespace RpcLib {
 
         /// <summary>
         /// Dequeues the first command from the queue of the given client
-        /// (or null for the server).
+        /// (or null for the server), but only if the given command ID matches to this item.
         /// </summary>
-        void DequeueCommand(string? clientID);
+        void DequeueCommand(string? clientID, ulong commandID);
 
         /// <summary>
         /// Adds the given command to the queue of the given client (or null for the server).

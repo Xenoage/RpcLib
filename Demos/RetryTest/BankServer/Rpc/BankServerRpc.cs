@@ -1,4 +1,5 @@
-﻿using BankShared.Rpc;
+﻿using BankShared;
+using BankShared.Rpc;
 using DemoServer.Services;
 using Microsoft.Extensions.DependencyInjection;
 using RpcLib;
@@ -20,11 +21,13 @@ namespace DemoServer.Rpc {
         public async Task<int> AddMoney(int accountNumber, int cents) {
             var account = Bank.GetOrCreateAccount(accountNumber);
             account.Cents += cents;
+            Log.WriteToFile($"BankServer-{Context.ClientID}.banklog", $"Add | {accountNumber} | {cents} | {account.Cents}");
             return account.Cents;
         }
 
         public async Task ChangeOwnerName(int accountNumber, string ownerName) {
             Bank.GetOrCreateAccount(accountNumber).OwnerName = ownerName;
+            Log.WriteToFile($"BankServer-{Context.ClientID}.banklog", $"Name | {accountNumber} | {ownerName}");
         }
 
         /// <summary>

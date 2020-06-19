@@ -12,7 +12,7 @@ namespace BankClient {
             _ = CreateHostBuilder(args).Build().RunAsync();
 
             // File logging
-            string filename = $"BankServer.calclog";
+            string filename = $"BankServer-Server.banklog";
             File.Delete(filename);
 
             // To understand the actions in the following lines, read the testing

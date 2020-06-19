@@ -16,6 +16,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\RpcLib\RpcLib.csproj" />
     <ProjectReference Include="..\BankClient\BankClient.csproj" />
+    <ProjectReference Include="..\BankServer\BankServer.csproj" />
+    <ProjectReference Include="..\BankShared\BankShared.csproj" />
   </ItemGroup>
 
 </Project>

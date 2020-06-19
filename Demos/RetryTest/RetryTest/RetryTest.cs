@@ -17,7 +17,7 @@ namespace RpcLibTest {
     public class RetryTest {
 
         [TestInitialize]
-        private void Cleanup() {
+        public void Cleanup() {
             // Remove all *.banklog files
             foreach (var file in thisDir.GetFiles("*.banklog"))
                 file.Delete();
@@ -31,19 +31,18 @@ namespace RpcLibTest {
             // to the bank, which is still offline. This is done for 10 seconds.
             client = LaunchClient(number: 0);
 
-            // After about 5 second, the server starts. It uses a default timeout of 2 seconds.
+            // After about 25 seconds, the server starts. It uses a default timeout of 1 second.
             _ = Task.Run(async () => {
-                await Task.Delay(5000);
+                await Task.Delay(25000);
                 server = LaunchServer();
             });
 
-            // After about 15 seconds, the client should have been closed and we close the server, too.
-            Thread.Sleep(15000);
+            // After about 45 seconds, the client should have been closed and we close the server, too.
+            Thread.Sleep(45000);
             client.Kill(); // Should be closed already
             server.Kill();
 
             // Check the log files
-
             // TODO: evaluate
         }
 
@@ -51,7 +50,7 @@ namespace RpcLibTest {
             Launch(Path.Combine(baseDir.FullName, "BankServer/bin/Debug/netcoreapp3.1/BankServer.exe"));
 
         private Process LaunchClient(int number) =>
-            Launch(Path.Combine(baseDir.FullName, "BankClient/bin/Debug/netcoreapp3.1/BankClient.exe", $"{number}"));
+            Launch(Path.Combine(baseDir.FullName, "BankClient/bin/Debug/netcoreapp3.1/BankClient.exe"), $"{number}");
 
         private Process Launch(string path, string arguments = "") {
             ProcessStartInfo psi = new ProcessStartInfo();
