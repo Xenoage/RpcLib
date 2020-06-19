@@ -8,6 +8,10 @@ namespace BankClient {
 
     public class Program {
 
+        /// <summary>
+        /// In this simple demo, this server plays the role of a bank.
+        /// It listens to commands sent from the customer clients.
+        /// </summary>
         public static async Task Main(string[] args) {
             _ = CreateHostBuilder(args).Build().RunAsync();
 
@@ -15,10 +19,9 @@ namespace BankClient {
             string filename = $"BankServer-Server.banklog";
             File.Delete(filename);
 
-            // To understand the actions in the following lines, read the testing
-            // strategy described in the RetryTest class in the RetryTest project.
-
-            await Task.Delay(100000);
+            // Run until killed
+            while (true)
+                await Task.Delay(100000);
 
         }
 

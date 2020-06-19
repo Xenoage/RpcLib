@@ -11,13 +11,13 @@ namespace RpcLibTest {
 
     /// <summary>
     /// Test of the different retry strategies, see <see cref="RpcRetryStrategy"/>.
-    /// Here, in "RetryOnClientTest", the bank is the server and the customer is the client behind the firewall.
-    /// To test the other way, see the "RetryOnServerTest" demo.
+    /// Here, in "RetryOnServerTest", the bank is the client behind the firewall and the customer is the server.
+    /// To test the other way, see the "RetryOnClientTest" demo.
     /// 
     /// See the comments within this test what we do and what we expect.
     /// </summary>
     [TestClass]
-    public class RetryOnClientTest {
+    public class RetryOnServerTest {
 
         [TestInitialize]
         public void Cleanup() {
@@ -29,20 +29,20 @@ namespace RpcLibTest {
         [TestMethod]
         public void TestRetry() {
 
-            // Start client. It uses a default timeout of 1 second.
+            // Start server. It uses a default timeout of 1 second.
             // Each second, it sends an increasing amount (1 ct, 2ct, 3ct, ...)
-            // to the bank, which is still offline. This is done for 10 seconds.
-            client = LaunchClient(number: 0);
+            // to the bank (client number = 0), which is still offline. This is done for 10 seconds.
+            client = LaunchServer();
 
-            // After about 25 seconds, the server starts. It uses a default timeout of 1 second.
+            // After about 25 seconds, the client starts. It uses a default timeout of 1 second.
             _ = Task.Run(async () => {
                 await Task.Delay(25000);
-                server = LaunchServer();
+                server = LaunchClient(0);
             });
 
-            // After about 45 seconds, the client should have been closed and we close the server, too.
+            // After about 45 seconds, we close the client and the server.
             Thread.Sleep(45000);
-            client.Kill(); // Should be closed already
+            client.Kill();
             server.Kill();
 
             // Check the log files

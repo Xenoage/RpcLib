@@ -75,7 +75,7 @@ namespace RpcLib.Server {
             try {
                 // When it is a command which should be retried in case of network failure, enqueue it in the command backlog.
                 if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
-                    CommandBacklog.EnqueueCommand(clientID: null, command);
+                    CommandBacklog.EnqueueCommand(ClientID, command);
                 // Always (additionally to the command backlog) add it to our normal query for immediate execution
                 queue.Enqueue(command);
                 command.SetState(RpcCommandState.Enqueued);
@@ -83,7 +83,7 @@ namespace RpcLib.Server {
             catch {
                 throw new RpcException(new RpcFailure(
                     RpcFailureType.QueueOverflow, $"Queue already full " +
-                        (ClientID != null ? "for the client { ClientID}" : "for the server")));
+                        (ClientID != null ? $"for the client { ClientID}" : "for the server")));
             }
         }
 

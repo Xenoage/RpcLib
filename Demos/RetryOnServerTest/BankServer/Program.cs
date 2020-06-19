@@ -1,62 +1,46 @@
-﻿using RpcLib.Model;
-using RpcLib.Server.Client;
-using RpcLib.Utils;
-using System;
-using System.IO;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using RpcLib;
-using BankShared;
 using BankClient.Rpc.Stubs;
-using BankShared.Rpc;
+using BankShared;
+using DemoServer;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using RpcLib.Model;
+using RpcLib.Utils;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace BankClient {
 
     /// <summary>
-    /// In this simple demo, this client plays the role of a bank customer.
-    /// It periodically calls methods on the bank server and prints the results on the console.
+    /// In this simple demo, this server plays the role of a bank customer.
+    /// It periodically calls methods on the bank client and prints the results on the console.
+    /// Yes, this is kind of weird setup, but it's just for testing the reverse direction
+    /// compared to the RetryOnClientTest.
     /// </summary>
     public class Program {
 
-        private static string clientID = "BankClient";
+        public static async Task Main(string[] args) {
+            _ = CreateHostBuilder(args).Build().RunAsync();
 
-        static async Task Main(string[] args) {
+            // File logging
+            string filename = $"BankServer-Server.banklog";
+            File.Delete(filename);
 
-            // First argument: client number (otherwise 0)
-            int clientNumber = 0;
-            if (args.Length > 0 && int.TryParse(args[0], out int it))
-                clientNumber = it;
-            clientID += "-" + clientNumber;
+            // See the RetryOnServerTest test project to understand what we are doing now.
 
-            // Welcome message
-            Log.Write("Welcome to the test client: " + clientID);
-
-            // RPC initialization
-            var bankServer = new BankServerRpcStub();
-            var demoRpcConfig = new RpcClientConfig {
-                ClientID = clientID,
-                ServerUrl = "http://localhost:5000/rpc"
-            };
-            RpcMain.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
-            }, defaultTimeoutMs: 1000, new DemoRpcCommandBacklog());
-
-            // See the RetryOnClientTest test project to understand what we are doing now.
+            int accountNumber = 0;
+            var bankClient = new BankClientRpcStub("BankClient-0"); // Bank runs at client 0
 
             // Repeatedly, get the current account balance and send an increasing amount (1 ct, 2ct, 3ct, ...)
             // to the bank, which is still offline at the beginning. This is done for 20 seconds.
             // Each 5 seconds, change the owner name.
-            string filename = $"{clientID}.banklog";
-            // TODO bankServer.OnAddMoneyRetryFinished = (command) =>
+            // TODO bankClient.OnAddMoneyRetryFinished = (command) =>
             //    Log.WriteToFile(filename, $"{command.GetParam<int>(1)} | {command.GetResult().ResultJson} | retried");
             for (int i = 1; i <= 20; i++) {
 
                 // Get current balance (no retry!)
                 long startTime = CoreUtils.TimeNow();
                 try {
-                    int newCents = await bankServer.GetBalance(clientNumber);
+                    int newCents = await bankClient.GetBalance(accountNumber);
                     long runTime = CoreUtils.TimeNow() - startTime;
                     Log.WriteToFile(filename, $"Now | {newCents} | {runTime}ms");
                 }
@@ -68,7 +52,7 @@ namespace BankClient {
                 // Add money (retry for each command)
                 startTime = CoreUtils.TimeNow(); ;
                 try {
-                    int newCents = await bankServer.AddMoney(clientNumber, i);
+                    int newCents = await bankClient.AddMoney(accountNumber, i);
                     long runTime = CoreUtils.TimeNow() - startTime;
                     Log.WriteToFile(filename, $"Add | {i} | {newCents} | {runTime}ms");
                 }
@@ -82,7 +66,7 @@ namespace BankClient {
                     startTime = CoreUtils.TimeNow();
                     string newName = "MyName-" + (i / 5);
                     try {
-                        await bankServer.ChangeOwnerName(clientNumber, newName);
+                        await bankClient.ChangeOwnerName(accountNumber, newName);
                         long runTime = CoreUtils.TimeNow() - startTime;
                         Log.WriteToFile(filename, $"Name | {newName} | {runTime}ms");
                     }
@@ -95,18 +79,14 @@ namespace BankClient {
                 await Task.Delay(1000);
             }
 
-            // Finished. Close client.
+            // Finished. Close server.
+
         }
 
-        public static void AuthenticateClient(HttpClient httpClient) {
-            // Authentication as defined in the class DemoRpcAuth in the DemoServer project
-            var username = clientID;
-            var password = clientID + "-PW";
-            // Set HTTP Basic Auth header
-            var auth = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}"));
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", auth);
-        }
-
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder => {
+                    webBuilder.UseStartup<Startup>();
+                });
     }
-
 }
