@@ -90,11 +90,15 @@ The RPC engine needs some way to persist the remembered commands, but does not i
 
 ## Customers
 
-This library was created for the [iovent](https://www.iovent.net) project and is used there for communication between the IoT devices and the backend servers.
+![iovent logo](https://pay.iovent.net/assets/images/iovent-text-logo.png)
+
+
+This library was created for a large project of the [iovent GmbH](https://www.iovent.net) and is used there for simple, fast and reliable communication between the IoT devices and the backend servers.
 
 ## Open issues
 
 This library is very new and changes will happen frequently. Contributions are welcome. The next steps:
 
-* Split into different demo solutions, because the single demo solution has become overloaded
 * For choosing individal timeouts and retry strategies, find a cleaner way than creating new stubs for each call, e.g. use method attributes like `[RpcOptions(timeoutMs=100, retry="RetryWhenOnline")]`
+* Create a wiki for better explaining the demo projects
+* Create a screencast showing how to get started with this library
