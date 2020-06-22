@@ -14,10 +14,10 @@ namespace DemoClient.Rpc.Stubs {
     public class DemoServerRpcStub : RpcServerStub, IDemoServerRpc {
 
         public Task SayHelloToServer(Greeting greeting) =>
-            ExecuteOnServer(new RpcCommand("SayHelloToServer", greeting));
+            ExecuteOnServer("SayHelloToServer", greeting);
 
         public Task<SampleData> ProcessDataOnServer(SampleData baseData) =>
-            ExecuteOnServer<SampleData>(new RpcCommand("ProcessDataOnServer", baseData));
+            ExecuteOnServer<SampleData>("ProcessDataOnServer", baseData);
     }
 
 }

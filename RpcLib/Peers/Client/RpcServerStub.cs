@@ -19,15 +19,16 @@ namespace RpcLib.Peers.Client {
         /// <summary>
         /// Runs the given RPC command on the server as soon as possible
         /// and returns the result or throws an <see cref="RpcException"/>.
+        /// See <see cref="RpcCommand.CreateForServer"/> for the parameters.
         /// </summary>
-        protected Task<T> ExecuteOnServer<T>(RpcCommand command) =>
-            RpcClientEngine.Instance.ExecuteOnServer<T>(command);
+        protected Task<T> ExecuteOnServer<T>(string methodName, params object[] methodParameters) =>
+            RpcClientEngine.Instance.ExecuteOnServer<T>(RpcCommand.CreateForServer(methodName, methodParameters));
 
         /// <summary>
-        /// Like <see cref="ExecuteOnServer{T}(RpcCommand)"/> but without return value.
+        /// Like <see cref="ExecuteOnServer{T}"/> but without return value.
         /// </summary>
-        protected Task ExecuteOnServer(RpcCommand command) =>
-            ExecuteOnServer<object>(command);
+        protected Task ExecuteOnServer(string methodName, params object[] methodParameters) =>
+            ExecuteOnServer<object>(methodName, methodParameters);
 
     }
 

@@ -1,13 +1,15 @@
 ﻿using RpcLib.Utils;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace RpcLib.Model {
 
     /// <summary>
-    /// Encoded RPC command. Together with the current state, the method name and JSON-encoded parameters,
+    /// Encoded RPC command. Together with the target peer ID, the current state, the method name and JSON-encoded parameters,
     /// it stores a packet number which can be used to ensure that a call is evaluated
     /// only a single time, also if it arrives multiple times for any reason.
     /// As soon as the call finishes (whether successfully or failed), the result is also stored here.
@@ -19,15 +21,30 @@ namespace RpcLib.Model {
         public static int defaultTimeoutMs = 30_000;
 
         /// <summary>
+        /// Creates a new encoded RPC command to be run on the server, using the given method name and parameters.
+        /// The parameters must be JSON-encodable objects.
+        /// </summary>
+        public static RpcCommand CreateForServer(string methodName, params object[] methodParameters) =>
+            new RpcCommand(methodName, methodParameters);
+
+        /// <summary>
+        /// Creates a new encoded RPC command to be run on the client with the given ID,
+        /// using the given method name and parameters.
+        /// The parameters must be JSON-encodable objects.
+        /// </summary>
+        public static RpcCommand CreateForClient(string clientID, string methodName, params object[] methodParameters) =>
+            new RpcCommand(methodName, methodParameters) { TargetPeerID = clientID };
+
+        /// <summary>
         /// Creates a new encoded RPC command, using the given method name and parameters.
         /// The parameters must be JSON-encodable objects.
         /// </summary>
-        public RpcCommand(string methodName, params object[] methodParameters) {
-            lock(syncLock) {
+        private RpcCommand(string methodName, params object[] methodParameters) {
+            lock (syncLock) {
                 loop++;
                 if (loop > 999)
                     loop = 0;
-                ID = ((ulong) CoreUtils.TimeNow()) * 1000 + loop;
+                ID = ((ulong)CoreUtils.TimeNow()) * 1000 + loop;
             }
             MethodName = methodName;
             MethodParameters = methodParameters.Select(it => JsonLib.ToJson(it)).ToList();
@@ -35,6 +52,7 @@ namespace RpcLib.Model {
 
         /// <summary>
         /// Default constructor. For JSON deserialization only.
+        /// In the program code, use 
         /// </summary>
         public RpcCommand() {
         }
@@ -45,6 +63,12 @@ namespace RpcLib.Model {
         /// i.e. ascending over time.
         /// </summary>
         public ulong ID { get; set; }
+
+        /// <summary>
+        /// The ID of the target peer where to run this command on, i.e. the
+        /// client ID or null for the server.
+        /// </summary>
+        public string? TargetPeerID { get; set; } = null;
 
         /// <summary>
         /// The name of the method.
@@ -114,6 +138,31 @@ namespace RpcLib.Model {
         }
 
         /// <summary>
+        /// When this method is called with a class implementing <see cref="IRpcFunctions"/>
+        /// in the calling stack, the <see cref="RpcOptionsAttribute"/> (if any) of the method
+        /// with this command name are read and applied.
+        /// </summary>
+        public void ApplyRpcOptionsFromCallStack() {
+            // Find attributes (e.g. custom timeout, retry strategy) for this method definition.
+            // In the call stack, find a caller (e.g. "RpcServerStub") implementing an interface (e.g. "IRpcServer")
+            // based on the IFunctions interface.
+            // Find a method with the command's name and have a look at its RpcOptions attribute.
+            foreach (var stackFrame in new StackTrace().GetFrames()) {
+                var frameType = stackFrame.GetMethod().DeclaringType;
+                if (frameType.GetInterfaces().FirstOrDefault(it => it.GetInterfaces().Contains(typeof(IRpcFunctions))) is Type intf) {
+                    var method = intf.GetMethod(MethodName);
+                    if (method != null && method.GetCustomAttribute<RpcOptionsAttribute>() is RpcOptionsAttribute options) {
+                        if (options.TimeoutMs != RpcOptionsAttribute.useDefaultTimeout)
+                            TimeoutMs = options.TimeoutMs;
+                        if (options.RetryStrategy is RpcRetryStrategy retryStrategy)
+                            RetryStrategy = retryStrategy;
+                        break; // Method found, do not traverse call stack any further
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Call this method after enqueuing the command to wait for the result of its execution.
         /// The returned task finishes when the call was either successfully executed and
         /// acknowledged, or failed (e.g. because of a timeout).
@@ -145,6 +194,7 @@ namespace RpcLib.Model {
             }
         }
         private TaskCompletionSource<RpcCommandResult> runningTask = new TaskCompletionSource<RpcCommandResult>();
+
 
         // Helper fields
         private static ulong loop = 0; // Looping between 0 and 999 to allow up to 1000 commands per ms

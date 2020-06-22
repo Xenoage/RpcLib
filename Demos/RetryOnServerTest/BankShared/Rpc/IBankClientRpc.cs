@@ -22,6 +22,7 @@ namespace BankShared.Rpc {
         /// This command should be retried until the bank client is finally reached,
         /// i.e. <see cref="RpcRetryStrategy.RetryWhenOnline"/> must be used.
         /// </summary>
+        [RpcOptions(RetryStrategy = RpcRetryStrategy.RetryWhenOnline)]
         Task<int> AddMoney(int accountNumber, int cents);
 
         /// <summary>
@@ -30,6 +31,7 @@ namespace BankShared.Rpc {
         /// but only the latest change is relevant,
         /// i.e. <see cref="RpcRetryStrategy.RetryNewestWhenOnline"/> must be used.
         /// </summary>
+        [RpcOptions(RetryStrategy = RpcRetryStrategy.RetryNewestWhenOnline)]
         Task ChangeOwnerName(int accountNumber, string ownerName);
 
     }

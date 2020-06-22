@@ -1,5 +1,4 @@
-﻿using RpcLib.Model;
-using RpcLib.Peers.Client;
+﻿using RpcLib.Peers.Client;
 using Shared.Rpc;
 using System.Threading.Tasks;
 
@@ -13,10 +12,10 @@ namespace Client.Rpc.Stubs {
     public class CalcRpcStub : RpcServerStub, ICalcRpc {
 
         public Task<int> AddNumbers(int number1, int number2) =>
-            ExecuteOnServer<int>(new RpcCommand("AddNumbers", number1, number2));
+            ExecuteOnServer<int>("AddNumbers", number1, number2);
 
         public Task<int> DivideNumbers(int dividend, int divisor) =>
-            ExecuteOnServer<int>(new RpcCommand("DivideNumbers", dividend, divisor));
+            ExecuteOnServer<int>("DivideNumbers", dividend, divisor);
     }
 
 }

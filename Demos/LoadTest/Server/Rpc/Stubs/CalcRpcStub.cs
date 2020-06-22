@@ -17,10 +17,10 @@ namespace Server.Rpc.Stubs {
         }
 
         public Task<int> AddNumbers(int number1, int number2) =>
-            ExecuteOnClient<int>(new RpcCommand("AddNumbers", number1, number2));
+            ExecuteOnClient<int>("AddNumbers", number1, number2);
 
         public Task<int> DivideNumbers(int dividend, int divisor) =>
-            ExecuteOnClient<int>(new RpcCommand("DivideNumbers", dividend, divisor));
+            ExecuteOnClient<int>("DivideNumbers", dividend, divisor);
     }
 
 }

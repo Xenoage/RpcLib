@@ -13,17 +13,13 @@ namespace BankClient.Rpc.Stubs {
     public class BankServerRpcStub : RpcServerStub, IBankServerRpc {
 
         public Task<int> GetBalance(int accountNumber) =>
-            ExecuteOnServer<int>(new RpcCommand("GetBalance", accountNumber));
+            ExecuteOnServer<int>("GetBalance", accountNumber);
 
         public Task<int> AddMoney(int accountNumber, int cents) =>
-            ExecuteOnServer<int>(new RpcCommand("AddMoney", accountNumber, cents) {
-                RetryStrategy = RpcRetryStrategy.RetryWhenOnline
-            });
+            ExecuteOnServer<int>("AddMoney", accountNumber, cents);
 
         public Task ChangeOwnerName(int accountNumber, string ownerName) =>
-            ExecuteOnServer(new RpcCommand("ChangeOwnerName", accountNumber, ownerName) {
-                RetryStrategy = RpcRetryStrategy.RetryNewestWhenOnline
-            });
+            ExecuteOnServer("ChangeOwnerName", accountNumber, ownerName);
 
     }
 

@@ -7,6 +7,9 @@ using RpcLib.Peers.Server;
 using System.Collections.Generic;
 using RpcLib.Peers;
 using RpcLib.Utils;
+using System.Diagnostics;
+using RpcLib.Peers.Client;
+using System.Reflection;
 
 namespace RpcLib.Server.Client {
 
@@ -90,6 +93,8 @@ namespace RpcLib.Server.Client {
         /// </summary>
         public async Task<T> ExecuteOnServer<T>(RpcCommand command) {
             try {
+                // Apply [RpcOptions(...)] from method declaration
+                command.ApplyRpcOptionsFromCallStack();
                 // Enqueue (and execute)
                 serverCache.EnqueueCommand(command);
                 // Wait for result until timeout

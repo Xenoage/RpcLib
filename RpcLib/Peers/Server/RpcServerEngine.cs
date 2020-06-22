@@ -98,11 +98,14 @@ namespace RpcLib.Peers.Server {
         }
 
         /// <summary>
-        /// Runs the given RPC command on the client with the given ID as soon as possible
-        /// and returns the result or throws an <see cref="RpcException"/>.
+        /// Runs the given RPC command on the client with the given <see cref="RpcCommand.TargetPeerID"/>
+        /// as soon as possible and returns the result or throws an <see cref="RpcException"/>.
         /// </summary>
-        public async Task<T> ExecuteOnClient<T>(string clientID, RpcCommand command) {
+        public async Task<T> ExecuteOnClient<T>(RpcCommand command) {
             try {
+                var clientID = command.TargetPeerID ?? throw new Exception("No client ID given");
+                // Apply [RpcOptions(...)] from method declaration
+                command.ApplyRpcOptionsFromCallStack();
                 // Enqueue (and execute)
                 clients.GetClient(clientID, commandBacklog).EnqueueCommand(command);
                 // Wait for result until timeout
