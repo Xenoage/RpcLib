@@ -8,7 +8,7 @@ _Early alpha version - more documentation will follow._
 
 ## Overview
 
-[[https://raw.githubusercontent.com/wiki/Xenoage/RpcLib/Drawings/RpcLib-Overview.png]]
+![Overview](https://raw.githubusercontent.com/wiki/Xenoage/RpcLib/Drawings/RpcLib-Overview.png)
 
 Illustration of the infrastructure: 1 server with HTTP(S) endpoints, N clients, direct client-to-server calls, indirect server-to-client calls (long polling)
 
