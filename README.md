@@ -1,6 +1,6 @@
 # Xenoage.RpcLib
 
-*A simple .NET Core RPC library for bidirectional reliable communication between an ASP.NET Core server with HTTP(S) Web API endpoints and clients behind a firewall.*
+*A simple .NET Core RPC library for bidirectional, reliable and typesafe communication between an ASP.NET Core server with HTTP/S Web API endpoints and clients behind a firewall.*
 
 [![NuGet version (Xenoage.RpcLib)](https://img.shields.io/nuget/v/Xenoage.RpcLib.svg?style=flat-square)](https://www.nuget.org/packages/Xenoage.RpcLib/)
 
@@ -22,7 +22,7 @@ interface IRemoteCalculator : IRpcFunctions {
    Task<int> AddNumbers(int n1, int n2);
 }
 
-// Client-side code (excerpt)
+// Caller-side code (excerpt)
 IRemoteCalculator calc = ...;
 try {
    int sum = await calc.AddNumbers(5, 10);
@@ -35,7 +35,7 @@ catch (RpcException ex) {
       Console.WriteLine("The remote peer threw an exception: " + ex.Message);
 }
 
-// Server-side code (excerpt)
+// Callee-side code (excerpt)
 public async Task<int> AddNumbers(int n1, int n2) {
    return n1 + n2;
 }
