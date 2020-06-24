@@ -1,5 +1,4 @@
 ﻿using RpcLib.Model;
-using RpcLib.Server.Client;
 using RpcLib.Utils;
 using System;
 using System.IO;
@@ -12,6 +11,7 @@ using RpcLib;
 using BankShared;
 using BankShared.Rpc;
 using DemoServer.Rpc;
+using RpcLib.Peers.Client;
 
 namespace BankClient {
 

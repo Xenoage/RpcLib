@@ -2,6 +2,7 @@
 using RpcLib.Auth;
 using RpcLib.Model;
 using RpcLib.Peers;
+using RpcLib.Peers.Client;
 using RpcLib.Peers.Server;
 using RpcLib.Server.Client;
 using System;

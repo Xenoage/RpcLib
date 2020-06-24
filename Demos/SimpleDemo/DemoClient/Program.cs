@@ -2,7 +2,6 @@
 using DemoShared;
 using DemoShared.Model;
 using RpcLib.Model;
-using RpcLib.Server.Client;
 using RpcLib.Utils;
 using System;
 using System.Net.Http;
@@ -13,6 +12,7 @@ using System.Collections.Generic;
 using DemoShared.Rpc;
 using RpcLib;
 using DemoClient.Rpc.Stubs;
+using RpcLib.Peers.Client;
 
 namespace DemoClient {
 

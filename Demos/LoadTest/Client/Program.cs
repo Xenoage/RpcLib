@@ -1,5 +1,4 @@
 ﻿using RpcLib.Model;
-using RpcLib.Server.Client;
 using RpcLib.Utils;
 using System;
 using System.IO;
@@ -12,6 +11,7 @@ using RpcLib;
 using Client.Rpc.Stubs;
 using Shared.Rpc;
 using Shared;
+using RpcLib.Peers.Client;
 
 namespace Client {
 

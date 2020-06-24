@@ -1,8 +1,6 @@
 ﻿using RpcLib.Model;
-using RpcLib.Server.Client;
 using RpcLib.Utils;
 using System;
-using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -12,6 +10,7 @@ using RpcLib;
 using BankShared;
 using BankClient.Rpc.Stubs;
 using BankShared.Rpc;
+using RpcLib.Peers.Client;
 
 namespace BankClient {
 
