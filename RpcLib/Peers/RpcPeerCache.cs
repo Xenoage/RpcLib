@@ -32,18 +32,18 @@ namespace RpcLib.Server {
         private ulong lastCachedResultCommandID = 0;
 
         /// <summary>
-        /// Creates a cache for the given client ID (or null for the server peer)
+        /// Creates a cache for the given client ID (or "" for the server peer)
         /// and optionally a backlog for the failed commands for retrying.
         /// </summary>
-        public RpcPeerCache(string? clientID, IRpcCommandBacklog? commandBacklog) {
+        public RpcPeerCache(string clientID, IRpcCommandBacklog? commandBacklog) {
             ClientID = clientID;
             this.commandBacklog = commandBacklog;
         }
 
         /// <summary>
-        /// The ID of this client peer, or null for the server peer.
+        /// The ID of this client peer, or "" for the server peer.
         /// </summary>
-        public string? ClientID { get; }
+        public string ClientID { get; }
 
         /// <summary>
         /// The currently executing command. This property is updated whenever

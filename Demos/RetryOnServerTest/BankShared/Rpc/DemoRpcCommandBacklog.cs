@@ -18,7 +18,7 @@ namespace BankShared.Rpc {
     /// </summary>
     public class DemoRpcCommandBacklog : IRpcCommandBacklog {
 
-        public RpcCommand? PeekCommand(string? clientID) {
+        public RpcCommand? PeekCommand(string clientID) {
             lock (syncLock) {
                 if (GetLatestFile(clientID) is FileInfo file)
                     return JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
@@ -27,7 +27,7 @@ namespace BankShared.Rpc {
             }
         }
 
-        public void DequeueCommand(string? clientID, ulong commandID) {
+        public void DequeueCommand(string clientID, ulong commandID) {
             lock (syncLock) {
                 if (GetLatestFile(clientID) is FileInfo file) {
                     var command = JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
@@ -37,7 +37,7 @@ namespace BankShared.Rpc {
             }
         }
 
-        public void EnqueueCommand(string? clientID, RpcCommand command) {
+        public void EnqueueCommand(string clientID, RpcCommand command) {
             lock (syncLock) {
                 var dir = GetDirectory(clientID);
                 // Apply strategy
@@ -59,20 +59,20 @@ namespace BankShared.Rpc {
             }
         }
 
-        private FileInfo? GetLatestFile(string? clientID) =>
+        private FileInfo? GetLatestFile(string clientID) =>
             GetDirectory(clientID).GetFiles().OrderBy(
                 file => ulong.Parse(file.Name.Split('-')[0])).FirstOrDefault();
 
-        private FileInfo[] GetFilesByCommandName(string? clientID, string commandName) =>
+        private FileInfo[] GetFilesByCommandName(string clientID, string commandName) =>
             GetDirectory(clientID).GetFiles("*-" + commandName);
 
-        private DirectoryInfo GetDirectory(string? clientID) {
-            var dir = new DirectoryInfo("RpcBacklog/" + (clientID ?? "Server"));
+        private DirectoryInfo GetDirectory(string clientID) {
+            var dir = new DirectoryInfo("RpcBacklog/" + (clientID.Length > 0 ? clientID : "Server"));
             if (false == dir.Exists)
                 Directory.CreateDirectory(dir.FullName);
             return dir;
         }
-        
+
         private readonly object syncLock = new object();
 
     }

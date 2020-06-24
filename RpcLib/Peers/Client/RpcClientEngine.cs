@@ -46,7 +46,7 @@ namespace RpcLib.Server.Client {
             // Remember client factory and settings
             this.clientMethods = clientMethods;
             this.clientConfig = clientConfig;
-            serverCache = new RpcPeerCache(clientID: null, commandBacklog);
+            serverCache = new RpcPeerCache(clientID: "", commandBacklog);
             // Create and authorize HTTP clients
             httpPull = new HttpClient();
             httpPull.Timeout = TimeSpan.FromSeconds(RpcServerEngine.longPollingSeconds + 10); // Give some more seconds for timeout
@@ -202,7 +202,7 @@ namespace RpcLib.Server.Client {
         }
 
         // Queue for the commands and cached command results of the server
-        private RpcPeerCache serverCache = new RpcPeerCache(null, null);
+        private RpcPeerCache serverCache = new RpcPeerCache("", null);
 
         // HTTP clients
         private HttpClient httpPull = new HttpClient();

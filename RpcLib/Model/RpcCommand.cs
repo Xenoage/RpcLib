@@ -66,9 +66,9 @@ namespace RpcLib.Model {
 
         /// <summary>
         /// The ID of the target peer where to run this command on, i.e. the
-        /// client ID or null for the server.
+        /// client ID or "" for the server.
         /// </summary>
-        public string? TargetPeerID { get; set; } = null;
+        public string TargetPeerID { get; set; } = "";
 
         /// <summary>
         /// The name of the method.

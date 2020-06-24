@@ -103,7 +103,9 @@ namespace RpcLib.Peers.Server {
         /// </summary>
         public async Task<T> ExecuteOnClient<T>(RpcCommand command) {
             try {
-                var clientID = command.TargetPeerID ?? throw new Exception("No client ID given");
+                var clientID = command.TargetPeerID;
+                if (clientID.Length == 0)
+                    throw new Exception("No client ID given");
                 // Apply [RpcOptions(...)] from method declaration
                 command.ApplyRpcOptionsFromCallStack();
                 // Enqueue (and execute)
