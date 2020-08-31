@@ -16,10 +16,6 @@ namespace RpcLib.Model {
     /// </summary>
     public class RpcCommand {
 
-        // Maximum time in milliseconds a sent command may take to be executed and acknowledged. This
-        // includes the time where it is still in the queue.
-        public static int defaultTimeoutMs = 30_000;
-
         /// <summary>
         /// Creates a new encoded RPC command to be run on the server, using the given method name and parameters.
         /// The parameters must be JSON-encodable objects.
@@ -100,6 +96,11 @@ namespace RpcLib.Model {
         public RpcRetryStrategy? RetryStrategy { get; set; } = null;
 
         /// <summary>
+        /// Strategy used for compress messages to reduce traffic between the peers.
+        /// </summary>
+        public RpcCompressionStrategy? Compression { get; set; } = null;
+
+        /// <summary>
         /// The current state of this command.
         /// The RPC engine calls <see cref="SetState"/> and <see cref="Finish"/> to update
         /// the state while it processes the command.
@@ -156,6 +157,8 @@ namespace RpcLib.Model {
                             TimeoutMs = options.TimeoutMs;
                         if (options.RetryStrategy is RpcRetryStrategy retryStrategy)
                             RetryStrategy = retryStrategy;
+                        if (options.Compression is RpcCompressionStrategy compression)
+                            Compression = compression;
                         break; // Method found, do not traverse call stack any further
                     }
                 }
@@ -172,7 +175,7 @@ namespace RpcLib.Model {
         public async Task<T> WaitForResult<T>() {
             try {
                 // Wait for result until timeout
-                await Task.WhenAny(runningTask.Task, Task.Delay(TimeoutMs ?? defaultTimeoutMs));
+                await Task.WhenAny(runningTask.Task, Task.Delay(TimeoutMs ?? RpcMain.DefaultSettings.TimeoutMs));
                 // Timeout?
                 if (false == IsFinished())
                     throw new RpcException(new RpcFailure(RpcFailureType.Timeout, "Timeout"));

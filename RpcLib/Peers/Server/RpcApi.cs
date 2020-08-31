@@ -42,8 +42,7 @@ namespace RpcLib.Peers.Server {
             try {
                 var command = await Serializer.Deserialize<RpcCommand>(Request);
                 var result = await RpcServerEngine.Instance.OnClientPush(clientID, command, runner);
-                bool compress = new Random().NextDouble() < 0.5; // GOON
-                return await Serializer.Serialize(result, compress, this);
+                return await Serializer.Serialize(result, result.Compression, this);
             }
             catch (Exception ex) {
                 // Missing or bad command
@@ -69,8 +68,7 @@ namespace RpcLib.Peers.Server {
             var lastResult = await Serializer.Deserialize<RpcCommandResult?>(Request);
             // Report result and query next method
             var result = await RpcServerEngine.Instance.OnClientPull(clientID, lastResult);
-            bool compress = new Random().NextDouble() < 0.5; // GOON
-            return await Serializer.Serialize(result, compress, this);
+            return await Serializer.Serialize(result, result?.Compression, this);
         }
 
     }

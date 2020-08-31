@@ -12,18 +12,18 @@ namespace RpcLib.Utils {
     public static class Gzip {
 
         /// <summary>
-        /// Compresses the given string into a gzip-compressed byte array .
+        /// Compresses the given byte array into a gzip-compressed byte array .
         /// </summary>
-        public static async Task<byte[]> ZipToBytes(string str) {
-            using (var zipStream = await ZipToStream(str))
+        public static async Task<byte[]> ZipToBytes(byte[] data) {
+            using (var zipStream = await ZipToStream(data))
             return zipStream.ToArray();
         }
 
         /// <summary>
-        /// Compresses the given string into a gzip-compressed stream.
+        /// Compresses the given byte array into a gzip-compressed stream.
         /// </summary>
-        public static async Task<MemoryStream> ZipToStream(string str) {
-            using (var streamIn = new MemoryStream(Encoding.UTF8.GetBytes(str)))
+        public static async Task<MemoryStream> ZipToStream(byte[] data) {
+            using (var streamIn = new MemoryStream(data)) // GOON clean up - which streams are really needed
             using (var streamOut = new MemoryStream()) {
                 using (var zipStream = new GZipStream(streamOut, CompressionMode.Compress))
                     streamIn.CopyTo(zipStream);
@@ -32,7 +32,7 @@ namespace RpcLib.Utils {
         }
 
         /// <summary>
-        /// Uncompressed the given gzip-compressed string.
+        /// Uncompresses the given gzip-compressed UTF-8 string.
         /// </summary>
         public static async Task<string> Unzip(byte[] bytes) {
             using (var stream = new MemoryStream(bytes))
@@ -40,7 +40,7 @@ namespace RpcLib.Utils {
         }
 
         /// <summary>
-        /// Uncompresses the given gzip-compressed string stream.
+        /// Uncompresses the given gzip-compressed UTF-8 string stream.
         /// </summary>
         public static async Task<string> Unzip(Stream stream) {
             using (var streamZip = new GZipStream(stream, CompressionMode.Decompress))

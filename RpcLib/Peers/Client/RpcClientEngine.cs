@@ -52,7 +52,7 @@ namespace RpcLib.Server.Client {
             httpPull.Timeout = TimeSpan.FromSeconds(RpcServerEngine.longPollingSeconds + 10); // Give some more seconds for timeout
             authAction(httpPull);
             httpPush = new HttpClient();
-            httpPush.Timeout = TimeSpan.FromMilliseconds(RpcCommand.defaultTimeoutMs);
+            httpPush.Timeout = TimeSpan.FromMilliseconds(RpcMain.DefaultSettings.TimeoutMs);
             authAction(httpPush);
             // Loop to pull the next command for this client from the server, execute it (if not already executed before)
             // and send the response together with the next pull.
@@ -123,9 +123,8 @@ namespace RpcLib.Server.Client {
         private async Task ExecuteOnServerNow(RpcCommand command) {
             RpcCommandResult result;
             try {
-                bool compress = new Random().NextDouble() < 0.5; // GOON
                 var httpResponse = await httpPush.PostAsync(clientConfig.ServerUrl + "/push",
-                    await Serializer.Serialize(command, compress));
+                    await Serializer.Serialize(command, command.Compression));
                 if (httpResponse.IsSuccessStatusCode) {
                     // Response (either success or remote failure) received.
                     result = await Serializer.Deserialize<RpcCommandResult>(httpResponse.Content);
@@ -135,13 +134,13 @@ namespace RpcLib.Server.Client {
                     // a remote exception). So there is a communication error.
                     result = RpcCommandResult.FromFailure(command.ID,
                         new RpcFailure(RpcFailureType.RpcError, "Remote side problem with RPC call. HTTP status code " +
-                            (int)httpResponse.StatusCode));
+                            (int)httpResponse.StatusCode), command.Compression);
                 }
             }
             catch {
                 // Could not reach server.
                 result = RpcCommandResult.FromFailure(command.ID,
-                    new RpcFailure(RpcFailureType.Timeout, "Could not reach the server"));
+                    new RpcFailure(RpcFailureType.Timeout, "Could not reach the server"), command.Compression);
             }
             // When a result was received (i.e. when there was no network problem), the command is finished
             if (false == (result.Failure?.IsNetworkProblem == true) && command.ID == serverCache.CurrentCommand?.ID)
@@ -151,7 +150,7 @@ namespace RpcLib.Server.Client {
         }
 
         /// <summary>
-        /// Polls the next command to execute locally from the server. The result of the
+        /// Polls the next command from the server to execute locally. The result of the
         /// last executed command must be given, if there is one. The returned Task may block
         /// some time, because the server uses the long polling technique to reduce network traffic.
         /// If the server can not be reached, an exception is thrown (because the last result
@@ -159,9 +158,8 @@ namespace RpcLib.Server.Client {
         /// </summary>
         private async Task<RpcCommand?> PullFromServer(RpcCommandResult? lastResult) {
             // Long polling. The server returns null after the long polling time.
-            bool compress = new Random().NextDouble() < 0.5; // GOON
             var httpResponse = await httpPull.PostAsync(clientConfig.ServerUrl + "/pull",
-                await Serializer.Serialize(lastResult, compress));
+                await Serializer.Serialize(lastResult, lastResult?.Compression));
             if (httpResponse.IsSuccessStatusCode) {
                 // Last result was received. The server responded with the next command or null,
                 // if there is currently none.
@@ -193,7 +191,7 @@ namespace RpcLib.Server.Client {
             }
             catch (Exception ex) {
                 result = RpcCommandResult.FromFailure(command.ID,
-                    new RpcFailure(RpcFailureType.RemoteException, ex.Message));
+                    new RpcFailure(RpcFailureType.RemoteException, ex.Message), command.Compression);
             }
             // Cache result, if there was no network problem
             if (false == (result.Failure?.IsNetworkProblem == true))

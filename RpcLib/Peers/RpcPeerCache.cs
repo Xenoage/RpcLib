@@ -110,7 +110,7 @@ namespace RpcLib.Server {
             var result = cachedResults.Find(it => it.CommandID == commandID);
             return result ?? RpcCommandResult.FromFailure(commandID, new RpcFailure(
                 RpcFailureType.ObsoleteCommandID, $"Command ID {commandID} already executed too long ago " +
-                    (ClientID != null ? $"on the client {ClientID}" : "for the server")));
+                    (ClientID != null ? $"on the client {ClientID}" : "for the server")), compression: null);
         }
 
         /// <summary>

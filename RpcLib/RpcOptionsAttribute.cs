@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RpcLib.Model;
+using System;
 
 namespace RpcLib {
     
@@ -19,11 +20,17 @@ namespace RpcLib {
         public int TimeoutMs { get; set; } = useDefaultTimeout;
 
         /// <summary>
-        /// Use an <see cref="RetryStrategy"/> enum value.
+        /// Use an <see cref="RpcRetryStrategy"/> enum value.
         /// Strategy used for automatic retrying of this command,
         /// when it has failed because of network problems.
         /// </summary>
         public object? RetryStrategy { get; set; } = null;
+
+        /// <summary>
+        /// Use an <see cref="RpcCompressionStrategy"/> enum value.
+        /// Strategy used for compress messages to reduce traffic between the peers.
+        /// </summary>
+        public object? Compression { get; set; } = null;
 
     }
 

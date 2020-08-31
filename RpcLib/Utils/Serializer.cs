@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
+using RpcLib.Model;
 using System;
 using System.IO;
 using System.Net.Http;
@@ -11,9 +12,11 @@ namespace RpcLib.Utils {
 
     /// <summary>
     /// (De)serializes content from/into plaintext JSON or gzip-compressed JSON.
+    /// The compression strategy is dependent on the given <see cref="RpcCompressionStrategy"/>,
+    /// or, if not set, the default <see cref="RpcSettings.Compression"/>.
     /// </summary>
     public static class Serializer {
-
+        
         /// <summary>
         /// Parses the given HTTP content.
         /// Compressed content is automatically recognized.
@@ -58,31 +61,50 @@ namespace RpcLib.Utils {
         /// Creates an HTTP response with the given content.
         /// The content may be stored as plaintext JSON or in gzip-compressed JSON.
         /// </summary>
-        public static async Task<IActionResult> Serialize<T>(T content, bool compress, ControllerBase ctrl) {
-            if (compress && content != null)
-                return ctrl.File(await Gzip.ZipToBytes(JsonLib.ToJson(content)), "application/gzip");
+        public static async Task<IActionResult> Serialize<T>(T content,
+                RpcCompressionStrategy? compression, ControllerBase ctrl) {
+            if (content == null)
+                return ctrl.Ok();
+            var json = JsonLib.ToJson(content);
+            var jsonBytes = Encoding.UTF8.GetBytes(json);
+            if (IsCompressionRequired(compression, jsonBytes.Length))
+                return ctrl.File(await Gzip.ZipToBytes(jsonBytes), "application/gzip");
             else
-                return ctrl.Ok(content);
+                return ctrl.File(jsonBytes, "application/json");
         }
 
         /// <summary>
         /// Creates an HTTP content with the given content.
         /// The content may be stored as plaintext JSON or in gzip-compressed JSON.
         /// </summary>
-        public static async Task<HttpContent?> Serialize<T>(T content, bool compress) {
-            var json = content != null ? JsonLib.ToJson(content) : null;
-            if (compress && json != null) {
-                var ret = new ByteArrayContent(await Gzip.ZipToBytes(json));
+        public static async Task<HttpContent?> Serialize<T>(T content,
+                RpcCompressionStrategy? compression) {
+            if (content == null)
+                return null;
+            var json = JsonLib.ToJson(content);
+            var jsonBytes = Encoding.UTF8.GetBytes(json);
+            if (IsCompressionRequired(compression, jsonBytes.Length)) {
+                var ret = new ByteArrayContent(await Gzip.ZipToBytes(jsonBytes));
                 ret.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/gzip");
                 return ret;
             }
-            else if (json != null) {
-                return new StringContent(json, Encoding.UTF8, "application/json");
-            }
             else {
-                return null;
+                var ret = new ByteArrayContent(await Gzip.ZipToBytes(jsonBytes));
+                ret.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+                return ret;
             }
         }
+
+        /// <summary>
+        /// Returns true, iff message compression is enabled for the given compression
+        /// strategy and message size in bytes.
+        /// </summary>
+        private static bool IsCompressionRequired(RpcCompressionStrategy? compression, int sizeBytes) =>
+            (compression ?? RpcMain.DefaultSettings.Compression) switch {
+                RpcCompressionStrategy.Auto => sizeBytes >= RpcMain.DefaultSettings.CompressionThresholdBytes,
+                RpcCompressionStrategy.Enabled => true,
+                _ => false
+            };
 
     }
 

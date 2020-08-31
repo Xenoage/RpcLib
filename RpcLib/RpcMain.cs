@@ -18,12 +18,18 @@ namespace RpcLib {
     public static class RpcMain {
 
         /// <summary>
+        /// Gets the default settings, which apply if not overridden on a lower level.
+        /// </summary>
+        public static RpcSettings DefaultSettings { get; private set; } = new RpcSettings();
+
+        /// <summary>
         /// Initialize the RPC server with the given ASP.NET Core MVC builder, authentication method
-        /// server-side RPC functions, optionally default timeout in ms and optionally backlog for retrying failed commands.
+        /// server-side RPC functions, optionally default settings and optionally backlog for retrying failed commands.
         /// Call this method during ASP.NET Core startup in the ConfigureServices method. 
         /// </summary>
         public static void InitRpcServer(this IServiceCollection services, IMvcBuilder mvc, Type auth,
-                List<Type> rpcFunctions, int? defaultTimeoutMs = null, IRpcCommandBacklog? commandBacklog = null) {
+                List<Type> rpcFunctions, RpcSettings? defaultSettings = null,
+                IRpcCommandBacklog? commandBacklog = null) {
             // Register this assembly for the MVC module, so that ASP.NET Core can find the RpcApi controller
             mvc.AddApplicationPart(Assembly.Load(new AssemblyName("RpcLib")));
             // Register command runner
@@ -33,22 +39,23 @@ namespace RpcLib {
             // Register given RPC functions
             foreach (var rpcFunction in rpcFunctions)
                 services.AddScoped(typeof(RpcFunctions), rpcFunction);
-            // Set default timeout
-            if (defaultTimeoutMs != null)
-                RpcCommand.defaultTimeoutMs = defaultTimeoutMs.Value;
+            // Set default settings
+            if (defaultSettings != null)
+                DefaultSettings = defaultSettings;
             // Set backlog for retrying failed commands
             RpcServerEngine.Instance.SetCommandBacklog(commandBacklog);
         }
 
         /// <summary>
         /// Initialize the RPC client with the given configuration, authentication method
-        /// server-side RPC functions, optionally default timeout in ms and optionally backlog for retrying failed commands.
+        /// server-side RPC functions, default settings and optionally backlog for retrying failed commands.
         /// </summary>
         public static void InitRpcClient(RpcClientConfig config, Action<HttpClient> auth,
-                Func<List<RpcFunctions>> rpcFunctions, int? defaultTimeoutMs = null, IRpcCommandBacklog? commandBacklog = null) {
-            // Set default timeout
-            if (defaultTimeoutMs != null)
-                RpcCommand.defaultTimeoutMs = defaultTimeoutMs.Value;
+                Func<List<RpcFunctions>> rpcFunctions, RpcSettings? defaultSettings = null,
+                IRpcCommandBacklog? commandBacklog = null) {
+            // Set default settings
+            if (defaultSettings != null)
+                DefaultSettings = defaultSettings;
             // Start client
             RpcClientEngine.Instance.Start(rpcFunctions, config, auth, commandBacklog);
         }
