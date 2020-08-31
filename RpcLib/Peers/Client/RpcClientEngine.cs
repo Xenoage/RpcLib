@@ -128,7 +128,7 @@ namespace RpcLib.Server.Client {
                     await Serializer.Serialize(command, compress));
                 if (httpResponse.IsSuccessStatusCode) {
                     // Response (either success or remote failure) received.
-                    result = JsonLib.FromJson<RpcCommandResult>(await httpResponse.Content.ReadAsStringAsync());
+                    result = await Serializer.Deserialize<RpcCommandResult>(httpResponse.Content);
                 }
                 else {
                     // The server did not respond with 200 (which it should do even in case of

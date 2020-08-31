@@ -43,8 +43,8 @@ namespace DemoClient {
             // Each few seconds, send commands to the server. Log the result.
             var random = new Random();
             while (true) {
-                /*try {
-                    
+                try {
+
                     // Send greeting
                     Log.Write("Sending greeting...");
                     var greeting = new Greeting {
@@ -71,9 +71,9 @@ namespace DemoClient {
                 catch (RpcException ex) {
                     Log.Write("Error: " + ex.Failure.Type + ": " + ex.Message);
                 }
-                    */
+
                 // Wait a second before the next round
-                await Task.Delay(10_000);
+                await Task.Delay(1000);
             }
 
         }
