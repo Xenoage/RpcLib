@@ -1,9 +1,8 @@
-﻿using System.IO;
+﻿using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RpcLib.Auth;
 using RpcLib.Model;
-using RpcLib.Peers;
 using RpcLib.Utils;
 
 namespace RpcLib.Peers.Server {
@@ -37,22 +36,19 @@ namespace RpcLib.Peers.Server {
             if (clientID == null)
                 return Unauthorized();
             // Read request body (if any). We do not use a [FromBody] parameter, because
-            // we want to explicitly use our JsonLib for deserializing (and not overwrite the
+            // we support two content types (gzipped and plaintext JSON) and we
+            // want to explicitly use our JsonLib for deserializing (and not overwrite the
             // user's selected default ASP.NET Core JSON serializer)
             try {
-                using (var reader = new StreamReader(Request.Body)) {
-                    var body = await reader.ReadToEndAsync();
-                    if (body.Length > 0) {
-                        // Run command and return the result
-                        var command = JsonLib.FromJson<RpcCommand>(body);
-                        return Ok(await RpcServerEngine.Instance.OnClientPush(clientID, command, runner));
-                    }
-                }
+                var command = await Serializer.Deserialize<RpcCommand>(Request);
+                var result = await RpcServerEngine.Instance.OnClientPush(clientID, command, runner);
+                bool compress = new Random().NextDouble() < 0.5; // GOON
+                return await Serializer.Serialize(result, compress, this);
             }
-            catch { // Can happen when the client cancelled the request
+            catch (Exception ex) {
+                // Missing or bad command
+                return BadRequest(ex.Message);
             }
-            // Command missing
-            return BadRequest();
         }
 
         /// <summary>
@@ -67,16 +63,14 @@ namespace RpcLib.Peers.Server {
             if (clientID == null)
                 return Unauthorized();
             // Read request body (if any). We do not use a [FromBody] parameter, because
-            // we want to explicitly use our JsonLib for deserializing (and not overwrite the
+            // we support two content types (gzipped and plaintext JSON) and we
+            // want to explicitly use our JsonLib for deserializing (and not overwrite the
             // user's selected default ASP.NET Core JSON serializer)
-            RpcCommandResult? lastResult = null;
-            using (var reader = new StreamReader(Request.Body)) {
-                var body = await reader.ReadToEndAsync();
-                if (body.Length > 0)
-                    lastResult = JsonLib.FromJson<RpcCommandResult>(body);
-            }
+            var lastResult = await Serializer.Deserialize<RpcCommandResult?>(Request);
             // Report result and query next method
-            return Ok(await RpcServerEngine.Instance.OnClientPull(clientID, lastResult));
+            var result = await RpcServerEngine.Instance.OnClientPull(clientID, lastResult);
+            bool compress = new Random().NextDouble() < 0.5; // GOON
+            return await Serializer.Serialize(result, compress, this);
         }
 
     }

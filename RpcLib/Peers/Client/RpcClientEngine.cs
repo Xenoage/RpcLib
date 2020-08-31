@@ -122,10 +122,10 @@ namespace RpcLib.Server.Client {
         /// </summary>
         private async Task ExecuteOnServerNow(RpcCommand command) {
             RpcCommandResult result;
-            var bodyJson = JsonLib.ToJson(command);
             try {
+                bool compress = new Random().NextDouble() < 0.5; // GOON
                 var httpResponse = await httpPush.PostAsync(clientConfig.ServerUrl + "/push",
-                    new StringContent(bodyJson, Encoding.UTF8, "application/json"));
+                    await Serializer.Serialize(command, compress));
                 if (httpResponse.IsSuccessStatusCode) {
                     // Response (either success or remote failure) received.
                     result = JsonLib.FromJson<RpcCommandResult>(await httpResponse.Content.ReadAsStringAsync());
@@ -159,14 +159,14 @@ namespace RpcLib.Server.Client {
         /// </summary>
         private async Task<RpcCommand?> PullFromServer(RpcCommandResult? lastResult) {
             // Long polling. The server returns null after the long polling time.
-            var bodyJson = lastResult != null ? JsonLib.ToJson(lastResult) : null;
+            bool compress = new Random().NextDouble() < 0.5; // GOON
             var httpResponse = await httpPull.PostAsync(clientConfig.ServerUrl + "/pull",
-                bodyJson != null ? new StringContent(bodyJson, Encoding.UTF8, "application/json") : null);
+                await Serializer.Serialize(lastResult, compress));
             if (httpResponse.IsSuccessStatusCode) {
                 // Last result was received. The server responded with the next command or null,
                 // if there is currently none.
                 if (httpResponse.Content.Headers.ContentLength > 0)
-                    return JsonLib.FromJson<RpcCommand>(await httpResponse.Content.ReadAsStringAsync());
+                    return await Serializer.Deserialize<RpcCommand>(httpResponse.Content);
                 else
                     return null;
             }
