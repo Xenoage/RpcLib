@@ -7,7 +7,7 @@ namespace DemoShared.Rpc {
     /// <summary>
     /// Some functions to send text messages from one peer to another.
     /// The different compression strategies are demonstrated:
-    /// Default, auto, forced enabled and forced disabled and starting at a given size.
+    /// Auto (starting at a given size), forced enabled and forced disabled.
     /// </summary>
     public interface ITextRpc : IRpcFunctions {
 
