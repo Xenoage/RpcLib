@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Xenoage.RpcLib</PackageId>
-    <Version>0.6.2</Version>
+    <Version>0.7.1</Version>
     <Authors>Andreas Wenger</Authors>
     <Company>Xenoage Software</Company>
     <RepositoryUrl>https://github.com/Xenoage/RpcLib</RepositoryUrl>
@@ -12,6 +12,10 @@
     <Copyright>Copyright © 2020 Xenoage Software</Copyright>
     <Product>Xenoage.RpcLib</Product>
     <PackageProjectUrl>https://github.com/Xenoage/RpcLib</PackageProjectUrl>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>RpcLib.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
