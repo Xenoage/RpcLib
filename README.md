@@ -25,7 +25,7 @@ interface IRemoteCalculator : IRpcFunctions {
 // Caller-side code (excerpt)
 IRemoteCalculator calc = ...;
 try {
-   int sum = await calc.AddNumbers(5, 10);
+   int sum = await calc.AddNumbers(5, 10); // This method will be executed on the remote peer
    Console.WriteLine("Result should be 15: " + sum);
 }
 catch (RpcException ex) {
