@@ -43,7 +43,9 @@ namespace BankClient {
             };
             RpcMain.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
                 new BankClientRpc()
-            }, defaultTimeoutMs: 1000, new DemoRpcCommandBacklog());
+            }, new RpcSettings {
+                TimeoutMs = 1000
+            }, new DemoRpcCommandBacklog());
 
             // Run until killed
             while (true)

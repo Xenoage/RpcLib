@@ -11,17 +11,20 @@
 
         /// <summary>
         /// Creates a new result for the given command ID after successful execution, using
-        /// the given return value encoded in JSON (or null for void return type).
+        /// the given return value encoded in JSON (or null for void return type)
+        /// and the given compression strategy.
         /// </summary>
-        public static RpcCommandResult FromSuccess(ulong commandID, string? resultJson) =>
-            new RpcCommandResult(commandID) { ResultJson = resultJson };
+        public static RpcCommandResult FromSuccess(ulong commandID, string? resultJson,
+                RpcCompressionStrategy? compression) =>
+            new RpcCommandResult(commandID) { ResultJson = resultJson, Compression = compression };
 
         /// <summary>
         /// Creates a new result for the given command ID after failed execution, using
-        /// the given failure reason.
+        /// the given failure reason and the given compression strategy
         /// </summary>
-        public static RpcCommandResult FromFailure(ulong commandID, RpcFailure failure) =>
-            new RpcCommandResult(commandID) { Failure = failure };
+        public static RpcCommandResult FromFailure(ulong commandID, RpcFailure failure,
+                RpcCompressionStrategy? compression) =>
+            new RpcCommandResult(commandID) { Failure = failure, Compression = compression };
 
         public RpcCommandResult(ulong commandID) {
             CommandID = commandID;
@@ -46,6 +49,12 @@
         /// An exception happened on either the local or the remote side.
         /// </summary>
         public RpcFailure? Failure { get; set; } = null;
+
+        /// <summary>
+        /// Message compression strategy (the same as the strategy of the
+        /// command this result belongs to).
+        /// </summary>
+        public RpcCompressionStrategy? Compression { get; set; } = null;
 
         /// <summary>
         /// Returns, whether is object stores a successful or failed result.

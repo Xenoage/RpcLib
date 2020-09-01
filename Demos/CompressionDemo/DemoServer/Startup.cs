@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using DemoShared.Rpc;
 using RpcLib;
 using System.Collections.Generic;
 using System;
-using BankShared.Rpc;
 
 namespace DemoServer {
     public class Startup {
@@ -23,9 +23,10 @@ namespace DemoServer {
 
             // RPC initialization
             services.InitRpcServer(mvc, typeof(DemoRpcAuth), new List<Type> {
+                typeof(TextRpc)
             }, new RpcSettings {
-                TimeoutMs = 1000
-            }, new DemoRpcCommandBacklog());
+                CompressionThresholdBytes = 1500 // Auto-compress messages >= 1.5 kB in this test
+            });
 
         }
 

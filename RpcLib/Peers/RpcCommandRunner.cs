@@ -27,7 +27,7 @@ namespace RpcLib.Peers {
                 rpc.Context = new RpcContext(clientID, serviceScopeFactory);
                 if (rpc.Execute(command) is Task<string?> task) {
                     // Method found in this class
-                    return RpcCommandResult.FromSuccess(command.ID, await task);
+                    return RpcCommandResult.FromSuccess(command.ID, await task, command.Compression);
                 }
             }
             // Called method is not implemented in any registered class

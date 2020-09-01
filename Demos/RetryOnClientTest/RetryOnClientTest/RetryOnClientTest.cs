@@ -1,7 +1,5 @@
-using BankClient;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RpcLib.Model;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;

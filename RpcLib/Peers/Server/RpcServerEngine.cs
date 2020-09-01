@@ -42,7 +42,7 @@ namespace RpcLib.Peers.Server {
             }
             catch (Exception ex) {
                 result = RpcCommandResult.FromFailure(command.ID,
-                    new RpcFailure(RpcFailureType.RemoteException, ex.Message));
+                    new RpcFailure(RpcFailureType.RemoteException, ex.Message), command.Compression);
             }
             // Cache result, if there was no network problem
             if (false == (result.Failure?.IsNetworkProblem == true))
