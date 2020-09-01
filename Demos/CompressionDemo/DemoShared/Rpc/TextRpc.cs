@@ -15,9 +15,6 @@ namespace DemoShared.Rpc {
         public Task<string> CapitalizeText(string text) =>
             Task.FromResult(text.ToUpper()); 
 
-        public Task<string> CapitalizeText_Auto(string text) =>
-            CapitalizeText(text);
-
         public Task<string> CapitalizeText_Compressed(string text) =>
             CapitalizeText(text);
 
@@ -27,7 +24,6 @@ namespace DemoShared.Rpc {
         // Mapping of RpcCommand to real method calls (boilerplate code; we could auto-generate this method later)
         public override Task<string?>? Execute(RpcCommand command) => command.MethodName switch {
             "CapitalizeText" => CapitalizeText(command.GetParam<string>(0)).ToJson(),
-            "CapitalizeText_Auto" => CapitalizeText_Auto(command.GetParam<string>(0)).ToJson(),
             "CapitalizeText_Compressed" => CapitalizeText_Compressed(command.GetParam<string>(0)).ToJson(),
             "CapitalizeText_Uncompressed" => CapitalizeText_Compressed(command.GetParam<string>(0)).ToJson(),
             _ => null

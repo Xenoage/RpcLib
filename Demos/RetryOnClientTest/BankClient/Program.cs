@@ -40,7 +40,9 @@ namespace BankClient {
                 ServerUrl = "http://localhost:5000/rpc"
             };
             RpcMain.InitRpcClient(demoRpcConfig, AuthenticateClient, () => new List<RpcFunctions> {
-            }, defaultTimeoutMs: 1000, new DemoRpcCommandBacklog());
+            }, new RpcSettings {
+                TimeoutMs = 1000
+            }, new DemoRpcCommandBacklog());
 
             // See the RetryOnClientTest test project to understand what we are doing now.
 

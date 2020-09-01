@@ -89,7 +89,7 @@ namespace RpcLib.Utils {
                 return ret;
             }
             else {
-                var ret = new ByteArrayContent(await Gzip.ZipToBytes(jsonBytes));
+                var ret = new ByteArrayContent(jsonBytes);
                 ret.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
                 return ret;
             }

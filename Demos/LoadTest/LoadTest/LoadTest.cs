@@ -63,7 +63,7 @@ namespace RpcLibTest {
             psi.Arguments = arguments;
 
             // Uncomment the following lines to make all program consoles visible (very slow!)
-            /*
+            //*
             psi.UseShellExecute = true;
             psi.CreateNoWindow = false;
             psi.WindowStyle = ProcessWindowStyle.Normal; //*/

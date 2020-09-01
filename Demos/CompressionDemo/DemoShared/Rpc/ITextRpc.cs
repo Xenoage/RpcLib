@@ -13,16 +13,10 @@ namespace DemoShared.Rpc {
 
         /// <summary>
         /// Returns the given text in capital letters.
-        /// The global default compression strategy is used.
-        /// </summary>
-        Task<string> CapitalizeText(string text);
-
-        /// <summary>
-        /// Like <see cref="CapitalizeText(string)"/>, but compression on
-        /// for messages starting at a given size (see <see cref="RpcSettings"/>).
+        /// Messages starting at a given size (see <see cref="RpcSettings"/>) will be compressed.
         /// </summary>
         [RpcOptions(Compression = RpcCompressionStrategy.Auto)]
-        Task<string> CapitalizeText_Auto(string text);
+        Task<string> CapitalizeText(string text);
 
         /// <summary>
         /// Like <see cref="CapitalizeText(string)"/>, but compression always on.

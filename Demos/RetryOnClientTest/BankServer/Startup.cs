@@ -25,7 +25,9 @@ namespace DemoServer {
             // RPC initialization
             services.InitRpcServer(mvc, typeof(DemoRpcAuth), new List<Type> {
                 typeof(BankServerRpc)
-            }, defaultTimeoutMs: 1000, new DemoRpcCommandBacklog());
+            }, new RpcSettings {
+                TimeoutMs = 1000
+            }, new DemoRpcCommandBacklog());
 
             // Bank as singleton service
             services.AddSingleton<BankService>();

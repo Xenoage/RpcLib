@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.Formatters;
-using System.IO;
+﻿using System.IO;
 using System.IO.Compression;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace RpcLib.Utils {
@@ -23,7 +21,7 @@ namespace RpcLib.Utils {
         /// Compresses the given byte array into a gzip-compressed stream.
         /// </summary>
         public static async Task<MemoryStream> ZipToStream(byte[] data) {
-            using (var streamIn = new MemoryStream(data)) // GOON clean up - which streams are really needed
+            using (var streamIn = new MemoryStream(data))
             using (var streamOut = new MemoryStream()) {
                 using (var zipStream = new GZipStream(streamOut, CompressionMode.Compress))
                     streamIn.CopyTo(zipStream);

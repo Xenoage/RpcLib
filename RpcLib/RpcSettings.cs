@@ -16,9 +16,9 @@ namespace RpcLib {
 
         /// <summary>
         /// If and how to compress commands and responses to reduce traffic between the peers.
-        /// <see cref="RpcCompressionStrategy.Auto"/> by default.
+        /// <see cref="RpcCompressionStrategy.Disabled"/> by default.
         /// </summary>
-        public RpcCompressionStrategy Compression { get; set; } = RpcCompressionStrategy.Auto;
+        public RpcCompressionStrategy Compression { get; set; } = RpcCompressionStrategy.Disabled;
 
         /// <summary>
         /// Size in number of bytes of a message (JSON-encoded command or response),
