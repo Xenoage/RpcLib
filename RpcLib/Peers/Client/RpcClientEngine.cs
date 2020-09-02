@@ -10,6 +10,7 @@ using RpcLib.Utils;
 using System.Diagnostics;
 using RpcLib.Peers.Client;
 using System.Reflection;
+using System.Net;
 
 namespace RpcLib.Server.Client {
 
@@ -62,10 +63,13 @@ namespace RpcLib.Server.Client {
                     RpcCommand? next = null;
                     try {
                         next = await PullFromServer(lastResult);
+                        OnPullFinished(success: true);
                     }
                     catch {
-                        // Could not reach server. Try the same result report again.
-                        await Task.Delay(1000); // Wait a second before trying again
+                        // Could not reach server. Try the same result report again, but wait a moment
+                        // because of the networking problem.
+                        OnPullFinished(success: false);
+                        await Task.Delay(secondsUntilNextTry * 1000);
                     }
                     if (next != null) {
                         lastResult = await ExecuteLocallyNow(next);
@@ -79,12 +83,29 @@ namespace RpcLib.Server.Client {
                     if (next != null) {
                         next.SetState(RpcCommandState.Sent);
                         await ExecuteOnServerNow(next);
-                        // In case of a networking problem, wait a second before trying the next command
-                        if (next.GetResult().Failure?.IsNetworkProblem ?? false)
-                            await Task.Delay(1000);
+                        // If it's not just a "normal" exception on the remote side, but for example
+                        // a timeout or authorization problem, wait a short time before trying the next command
+                        // (but not longer than 50% of the timeout time)
+                        if (next.GetResult().Failure is RpcFailure failure && failure.Type != RpcFailureType.RemoteException) {
+                            int waitSeconds = Math.Min(secondsUntilNextTry, httpPush.Timeout.Seconds / 2);
+                            await Task.Delay(waitSeconds * 1000);
+                        }
                     }
                 }
             });
+        }
+
+        /// <summary>
+        /// This method adjusts the value of <see cref="secondsUntilNextTry"/>, dependent of
+        /// the given success or failure report when pulling from the server.
+        /// When successful, the value is set back to 1 second. Otherwise, the time is doubled
+        /// up to a maximum of 60 seconds.
+        /// </summary>
+        private void OnPullFinished(bool success) {
+            if (success)
+                secondsUntilNextTry = 1;
+            else
+                secondsUntilNextTry = Math.Min(60, 2 * secondsUntilNextTry);
         }
 
         /// <summary>
@@ -128,6 +149,11 @@ namespace RpcLib.Server.Client {
                 if (httpResponse.IsSuccessStatusCode) {
                     // Response (either success or remote failure) received.
                     result = await Serializer.Deserialize<RpcCommandResult>(httpResponse.Content);
+                }
+                else if (httpResponse.StatusCode == HttpStatusCode.Unauthorized) {
+                    // The server responded with 401 (unauthorized).
+                    result = RpcCommandResult.FromFailure(command.ID,
+                        new RpcFailure(RpcFailureType.AuthError, "Unauthorized"), command.Compression);
                 }
                 else {
                     // The server did not respond with 200 (which it should do even in case of
@@ -212,6 +238,9 @@ namespace RpcLib.Server.Client {
 
         // True, as long as the client engine is running
         private bool isRunning = false;
+
+        // After a network error, do not try it immediately again, but this number of seconds.
+        private int secondsUntilNextTry = 1;
 
     }
 

@@ -59,8 +59,10 @@ namespace RpcLib.Peers.Server {
         public async Task<IActionResult> Pull() {
             // Identify calling client. If now allowed, return RPC failure.
             string? clientID = auth.GetClientID(Request);
-            if (clientID == null)
+            if (clientID == null) {
+                // Console.WriteLine("Unauthorized pull");
                 return Unauthorized();
+            }
             // Read request body (if any). We do not use a [FromBody] parameter, because
             // we support two content types (gzipped and plaintext JSON) and we
             // want to explicitly use our JsonLib for deserializing (and not overwrite the

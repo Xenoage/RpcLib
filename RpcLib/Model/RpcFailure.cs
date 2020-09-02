@@ -41,6 +41,11 @@ namespace RpcLib.Model {
         /// </summary>
         RemoteException,
         /// <summary>
+        /// The client was not able to authenticate at the server (HTTP status code 401).
+        /// Check the credentials of the client.
+        /// </summary>
+        AuthError,
+        /// <summary>
         /// The local side did not receive a response before the timeout happened.
         /// In this case, the command should be repeated when the other peer is online again.
         /// See <see cref="RpcRetryStrategy"/> how to automate this.

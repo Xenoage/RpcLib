@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using RpcLib.Auth;
+using System;
 
 namespace DemoServer.Rpc {
 
