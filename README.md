@@ -43,6 +43,6 @@ public async Task<int> AddNumbers(int n1, int n2) {
 
 ## More information
 
-For more information how to integrate the library into your project, use special features like [timeouts](https://github.com/Xenoage/RpcLib/wiki/Individual-timeouts), [automatic retries](https://github.com/Xenoage/RpcLib/wiki/Automatic-retry) or [compression](https://github.com/Xenoage/RpcLib/wiki/Compression) and get explanations on the included demo projects, please have a look in our [wiki](https://github.com/Xenoage/RpcLib/wiki).
+For more information how to integrate the library into your project, use special features like [timeouts](https://github.com/Xenoage/RpcLib/wiki/Individual-timeouts), [automatic retries](https://github.com/Xenoage/RpcLib/wiki/Automatic-retry) or [compression](https://github.com/Xenoage/RpcLib/wiki/Compression) and get explanations on the included demo projects, please have a look in our [wiki](https://github.com/Xenoage/RpcLib/wiki). It is also possible to use your [JSON serializer](https://github.com/Xenoage/RpcLib/wiki/JSON-serializer) and [logging framework](https://github.com/Xenoage/RpcLib/wiki/Logging) within the RPC library.
 
 This library is very new and changes will happen frequently. Contributions are welcome.
