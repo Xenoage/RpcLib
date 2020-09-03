@@ -1,5 +1,6 @@
 ﻿using RpcLib.Logging;
 using RpcLib.Model;
+using RpcLib.Utils;
 
 namespace RpcLib {
 
@@ -35,6 +36,14 @@ namespace RpcLib {
         /// By default, logging is disabled.
         /// </summary>
         public ILogger Logger { get; set; } = new NoLogger();
+
+        /// <summary>
+        /// Serialization into JSON and deserialization from JSON.
+        /// The interface is kept very simple, so that any JSON library with its
+        /// custom settings can easily be adapted to be used within this library.
+        /// A default implementation based on Newtonsoft.JSON is provided.
+        /// </summary>
+        public IJsonLib JsonLib { get; set; } = new JsonLib();
 
     }
 

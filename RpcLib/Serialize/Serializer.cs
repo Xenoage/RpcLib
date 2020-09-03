@@ -32,7 +32,7 @@ namespace RpcLib.Utils {
                 json = await Gzip.Unzip(await content.ReadAsStreamAsync());
             else
                 throw new Exception("Unexpected content type: " + mediaType);
-            return JsonLib.FromJson<T>(json);
+            return RpcMain.JsonLib.FromJson<T>(json);
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace RpcLib.Utils {
             else {
                 throw new Exception("Unexpected content type: " + mediaType);
             }
-            return JsonLib.FromJson<T>(json);
+            return RpcMain.JsonLib.FromJson<T>(json);
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace RpcLib.Utils {
                 RpcCompressionStrategy? compression, ControllerBase ctrl) {
             if (content == null)
                 return ctrl.Ok();
-            var json = JsonLib.ToJson(content);
+            var json = RpcMain.JsonLib.ToJson(content);
             var jsonBytes = Encoding.UTF8.GetBytes(json);
             if (IsCompressionRequired(compression, jsonBytes.Length))
                 return ctrl.File(await Gzip.ZipToBytes(jsonBytes), "application/gzip");
@@ -81,7 +81,7 @@ namespace RpcLib.Utils {
                 RpcCompressionStrategy? compression) {
             if (content == null)
                 return null;
-            var json = JsonLib.ToJson(content);
+            var json = RpcMain.JsonLib.ToJson(content);
             var jsonBytes = Encoding.UTF8.GetBytes(json);
             if (IsCompressionRequired(compression, jsonBytes.Length)) {
                 var ret = new ByteArrayContent(await Gzip.ZipToBytes(jsonBytes));

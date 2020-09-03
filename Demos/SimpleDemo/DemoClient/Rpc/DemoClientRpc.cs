@@ -17,7 +17,7 @@ namespace DemoServer.Rpc {
         public async Task SayHelloToClient(Greeting greeting) {
             Console.WriteLine("Hello " + greeting.Name + "!");
             if (greeting.MoreData is SampleData moreData)
-                Console.WriteLine("More information for you: " + JsonLib.ToJson(moreData));
+                Console.WriteLine("More information for you: " + RpcMain.JsonLib.ToJson(moreData));
         }
 
         public async Task<SampleData> ProcessDataOnClient(SampleData baseData) {

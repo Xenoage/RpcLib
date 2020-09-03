@@ -5,6 +5,7 @@ using RpcLib.Peers;
 using RpcLib.Peers.Client;
 using RpcLib.Peers.Server;
 using RpcLib.Server.Client;
+using RpcLib.Utils;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -78,6 +79,12 @@ namespace RpcLib {
         /// </summary>
         public static void Log(string message, LogLevel level) =>
             DefaultSettings.Logger.Log(message, level);
+
+        /// <summary>
+        /// Gets the JSON (de)serializer defined in <see cref="DefaultSettings"/>.
+        /// </summary>
+        public static IJsonLib JsonLib =>
+            DefaultSettings.JsonLib;
 
         private static string Version =>
             Assembly.GetCallingAssembly().GetName().Version.ToString();

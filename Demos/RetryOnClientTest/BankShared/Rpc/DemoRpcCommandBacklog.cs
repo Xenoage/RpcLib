@@ -21,7 +21,7 @@ namespace BankShared.Rpc {
         public RpcCommand? PeekCommand(string clientID) {
             lock (syncLock) {
                 if (GetLatestFile(clientID) is FileInfo file)
-                    return JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
+                    return RpcMain.JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
                 else
                     return null;
             }
@@ -30,7 +30,7 @@ namespace BankShared.Rpc {
         public void DequeueCommand(string clientID, ulong commandID) {
             lock (syncLock) {
                 if (GetLatestFile(clientID) is FileInfo file) {
-                    var command = JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
+                    var command = RpcMain.JsonLib.FromJson<RpcCommand>(File.ReadAllText(file.FullName));
                     if (command.ID == commandID)
                         file.Delete();
                 }
@@ -55,7 +55,7 @@ namespace BankShared.Rpc {
                         file.Delete();
                 }
                 var filename = command.ID + "-" + command.MethodName;
-                File.WriteAllText(Path.Combine(dir.FullName, filename), JsonLib.ToJson(command));
+                File.WriteAllText(Path.Combine(dir.FullName, filename), RpcMain.JsonLib.ToJson(command));
             }
         }
 

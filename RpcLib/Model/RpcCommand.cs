@@ -44,7 +44,7 @@ namespace RpcLib.Model {
                 ID = ((ulong)CoreUtils.TimeNow()) * 1000 + loop;
             }
             MethodName = methodName;
-            MethodParameters = methodParameters.Select(it => JsonLib.ToJson(it)).ToList();
+            MethodParameters = methodParameters.Select(it => RpcMain.JsonLib.ToJson(it)).ToList();
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace RpcLib.Model {
         /// Gets the decoded message parameter with the given index.
         /// </summary>
         public T GetParam<T>(int index) =>
-            JsonLib.FromJson<T>(MethodParameters[index]);
+            RpcMain.JsonLib.FromJson<T>(MethodParameters[index]);
 
         /// <summary>
         /// Individual timeout for this command.
@@ -187,7 +187,7 @@ namespace RpcLib.Model {
                     throw new RpcException(failure);
                 // Return JSON-encoded result (or null for void return type)
                 if (result.ResultJson is string json)
-                    return JsonLib.FromJson<T>(json);
+                    return RpcMain.JsonLib.FromJson<T>(json);
                 else
                     return default!;
             }
