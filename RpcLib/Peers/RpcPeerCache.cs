@@ -18,7 +18,7 @@ namespace RpcLib.Server {
         private const int maxQueueSize = 10;
 
         // The next commands to execute on the peer
-        private BlockingQueue<RpcCommand?> queue = new BlockingQueue<RpcCommand?>(size: maxQueueSize);
+        private BlockingQueue<RpcCommand> queue = new BlockingQueue<RpcCommand>(size: maxQueueSize);
 
         // Backlog of failed commands for retrying
         private IRpcCommandBacklog? commandBacklog;
@@ -58,16 +58,28 @@ namespace RpcLib.Server {
         /// given timeout in milliseconds is hit. A value of -1 means no timeout.
         /// </summary>
         public async Task<RpcCommand?> DequeueCommand(int timeoutMs) {
+            // Peek the next element from the queue, if any
+            var queueCommand = queue.Peek();
             // When there is a non-empty command backlog, dequeue and return its first item
             if (commandBacklog?.PeekCommand(ClientID) is RpcCommand backlogCommand) { // Just peek, not dequeue. Only dequeue when finished.
                 CurrentCommand = backlogCommand;
+                // If the command in the backlog is the same as the next command in the normal queue (this can happen, because we
+                // immediately put retryable commands in both the backlog and the normal queue),
+                // prefer the command from the normal queue, because it is able to return a value to the caller.
+                if (queueCommand?.ID == backlogCommand.ID) {
+                    RpcMain.Log($"Next command dequeued from queue (= same command as in backlog): " +
+                        $"{CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
+                    return await queue.Dequeue(-1); // Before it was only peeked, now dequeue it
+                }
                 RpcMain.Log($"Next command dequeued from backlog: {CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
             }
-            // Otherwise, wait for next item in the normal queue
+            // Otherwise, get or wait for next item in the normal queue
             else {
                 CurrentCommand = await queue.Dequeue(timeoutMs);
                 if (CurrentCommand != null)
                     RpcMain.Log($"Next command dequeued from queue: {CurrentCommand?.ID} {CurrentCommand?.MethodName}", LogLevel.Trace);
+                else
+                    RpcMain.Log($"Next command: None (timeout)", LogLevel.Trace);
             }
             return CurrentCommand;
         }
@@ -79,18 +91,11 @@ namespace RpcLib.Server {
         /// </summary>
         public void EnqueueCommand(RpcCommand command) {
             try {
-                // When it is a command which should be retried in case of network failure, enqueue it in the command backlog
-                if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None) {
-                    RpcMain.Log($"Enqueue command {command.ID} {command.MethodName} into backlog", LogLevel.Trace);
+                // When it is a command which should be retried in case of network failure, enqueue it in the command backlog.
+                if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
                     CommandBacklog.EnqueueCommand(ClientID, command);
-                    if (queue.Count == 0)
-                        queue.Enqueue(null); // Wake up the queue (we are waiting there for new items)
-                }
-                // Otherwise add it to our normal queue
-                else {
-                    RpcMain.Log($"Enqueue command {command.ID} {command.MethodName} into queue", LogLevel.Trace);
-                    queue.Enqueue(command);
-                }
+                // Always (additionally to the command backlog) add it to our normal query for immediate execution
+                queue.Enqueue(command);
                 command.SetState(RpcCommandState.Enqueued);
             }
             catch {

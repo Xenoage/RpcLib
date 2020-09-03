@@ -122,8 +122,6 @@ namespace RpcLib.Server.Client {
         /// <summary>
         /// Runs the given RPC command on the server as soon as possible
         /// and returns the result or throws an <see cref="RpcException"/>.
-        /// Retryable commands will return immediately, because there is no guarantee
-        /// when they will be executed.
         /// </summary>
         public async Task<T> ExecuteOnServer<T>(RpcCommand command) {
             try {
@@ -132,10 +130,7 @@ namespace RpcLib.Server.Client {
                 // Enqueue (and execute)
                 serverCache.EnqueueCommand(command);
                 // Wait for result until timeout
-                if (command.RetryStrategy == null || command.RetryStrategy == RpcRetryStrategy.None)
-                    return await command.WaitForResult<T>();
-                else
-                    return default(T); // Retryable commands have no return value
+                return await command.WaitForResult<T>();
             }
             catch (RpcException ex) {
                 // Rethrow RPC exception
