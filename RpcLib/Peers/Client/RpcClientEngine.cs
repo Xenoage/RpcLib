@@ -1,16 +1,14 @@
 ﻿using RpcLib.Model;
 using System;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using RpcLib.Peers.Server;
 using System.Collections.Generic;
 using RpcLib.Peers;
 using RpcLib.Utils;
-using System.Diagnostics;
 using RpcLib.Peers.Client;
-using System.Reflection;
 using System.Net;
+using RpcLib.Logging;
 
 namespace RpcLib.Server.Client {
 
@@ -62,12 +60,16 @@ namespace RpcLib.Server.Client {
                 while (isRunning) {
                     RpcCommand? next = null;
                     try {
+                        RpcMain.Log("Pull from server... ID of last result: " +
+                            (lastResult?.CommandID.ToString() ?? "None"), LogLevel.Trace);
                         next = await PullFromServer(lastResult);
+                        RpcMain.Log("Pulled next command, ID: " + next?.ID, LogLevel.Trace);
                         OnPullFinished(success: true);
                     }
-                    catch {
+                    catch (Exception ex) {
                         // Could not reach server. Try the same result report again, but wait a moment
                         // because of the networking problem.
+                        RpcMain.Log("Pull failed: " + ex.Message, LogLevel.Trace);
                         OnPullFinished(success: false);
                         await Task.Delay(secondsUntilNextTry * 1000);
                     }
@@ -81,6 +83,7 @@ namespace RpcLib.Server.Client {
                 while (isRunning) {
                     RpcCommand? next = await serverCache.DequeueCommand(timeoutMs: -1); // No timeout
                     if (next != null) {
+                        RpcMain.Log($"Push command {next.MethodName}, ID: {next.ID}", LogLevel.Trace);
                         next.SetState(RpcCommandState.Sent);
                         await ExecuteOnServerNow(next);
                         // If it's not just a "normal" exception on the remote side, but for example
@@ -88,6 +91,7 @@ namespace RpcLib.Server.Client {
                         // (but not longer than 50% of the timeout time)
                         if (next.GetResult().Failure is RpcFailure failure && failure.Type != RpcFailureType.RemoteException) {
                             int waitSeconds = Math.Min(secondsUntilNextTry, httpPush.Timeout.Seconds / 2);
+                            RpcMain.Log($"Push failed: {failure.Type}. Throttle: {waitSeconds}s until next command.", LogLevel.Info);
                             await Task.Delay(waitSeconds * 1000);
                         }
                     }
@@ -102,10 +106,17 @@ namespace RpcLib.Server.Client {
         /// up to a maximum of 60 seconds.
         /// </summary>
         private void OnPullFinished(bool success) {
+            var old = secondsUntilNextTry;
             if (success)
                 secondsUntilNextTry = 1;
             else
                 secondsUntilNextTry = Math.Min(60, 2 * secondsUntilNextTry);
+            if (old != secondsUntilNextTry) {
+                if (success)
+                    RpcMain.Log($"Throttle: Reset. Full speed again.", LogLevel.Info);
+                else
+                    RpcMain.Log($"Throttle: {secondsUntilNextTry}s until next pull", LogLevel.Info);
+            }
         }
 
         /// <summary>

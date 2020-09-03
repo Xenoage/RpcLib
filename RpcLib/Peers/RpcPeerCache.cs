@@ -1,4 +1,5 @@
-﻿using RpcLib.Model;
+﻿using RpcLib.Logging;
+using RpcLib.Model;
 using RpcLib.Utils;
 using System;
 using System.Collections.Concurrent;
@@ -58,11 +59,18 @@ namespace RpcLib.Server {
         /// </summary>
         public async Task<RpcCommand?> DequeueCommand(int timeoutMs) {
             // When there is a non-empty command backlog, dequeue and return its first item
-            if (commandBacklog?.PeekCommand(ClientID) is RpcCommand backlogCommand) // Just peek, not dequeue. Only dequeue when finished.
+            if (commandBacklog?.PeekCommand(ClientID) is RpcCommand backlogCommand) { // Just peek, not dequeue. Only dequeue when finished.
                 CurrentCommand = backlogCommand;
+                RpcMain.Log($"Next command dequeued from backlog: {CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
+            }
             // Otherwise, wait for next item in the normal queue
-            else
+            else {
                 CurrentCommand = await queue.Dequeue(timeoutMs);
+                if (CurrentCommand != null)
+                    RpcMain.Log($"Next command dequeued from queue: {CurrentCommand?.ID} {CurrentCommand?.MethodName}", LogLevel.Trace);
+                else
+                    RpcMain.Log($"Next command: None (timeout)", LogLevel.Trace);
+            }
             return CurrentCommand;
         }
 
@@ -73,11 +81,12 @@ namespace RpcLib.Server {
         /// </summary>
         public void EnqueueCommand(RpcCommand command) {
             try {
-                // When it is a command which should be retried in case of network failure, enqueue it in the command backlog.
+                // When it is a command which should be retried in case of network failure, enqueue it in the command backlog
                 if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
                     CommandBacklog.EnqueueCommand(ClientID, command);
-                // Always (additionally to the command backlog) add it to our normal query for immediate execution
-                queue.Enqueue(command);
+                // Otherwise add it to our normal queue
+                else
+                    queue.Enqueue(command);
                 command.SetState(RpcCommandState.Enqueued);
             }
             catch {

@@ -1,4 +1,5 @@
-﻿using RpcLib.Utils;
+﻿using RpcLib.Logging;
+using RpcLib.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -126,6 +127,7 @@ namespace RpcLib.Model {
         public void SetState(RpcCommandState state) {
             if (state == RpcCommandState.Successful || state == RpcCommandState.Failed)
                 throw new Exception("Method call not allowed for finished commands");
+            RpcMain.Log($"Command {ID}: State changed to {state}", LogLevel.Trace);
             State = state;
         }
 
