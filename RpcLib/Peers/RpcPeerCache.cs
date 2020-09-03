@@ -18,7 +18,7 @@ namespace RpcLib.Server {
         private const int maxQueueSize = 10;
 
         // The next commands to execute on the peer
-        private BlockingQueue<RpcCommand> queue = new BlockingQueue<RpcCommand>(size: maxQueueSize);
+        private BlockingQueue<RpcCommand?> queue = new BlockingQueue<RpcCommand?>(size: maxQueueSize);
 
         // Backlog of failed commands for retrying
         private IRpcCommandBacklog? commandBacklog;
@@ -68,8 +68,6 @@ namespace RpcLib.Server {
                 CurrentCommand = await queue.Dequeue(timeoutMs);
                 if (CurrentCommand != null)
                     RpcMain.Log($"Next command dequeued from queue: {CurrentCommand?.ID} {CurrentCommand?.MethodName}", LogLevel.Trace);
-                else
-                    RpcMain.Log($"Next command: None (timeout)", LogLevel.Trace);
             }
             return CurrentCommand;
         }
@@ -82,11 +80,17 @@ namespace RpcLib.Server {
         public void EnqueueCommand(RpcCommand command) {
             try {
                 // When it is a command which should be retried in case of network failure, enqueue it in the command backlog
-                if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
+                if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None) {
+                    RpcMain.Log($"Enqueue command {command.ID} {command.MethodName} into backlog", LogLevel.Trace);
                     CommandBacklog.EnqueueCommand(ClientID, command);
+                    if (queue.Count == 0)
+                        queue.Enqueue(null); // Wake up the queue (we are waiting there for new items)
+                }
                 // Otherwise add it to our normal queue
-                else
+                else {
+                    RpcMain.Log($"Enqueue command {command.ID} {command.MethodName} into queue", LogLevel.Trace);
                     queue.Enqueue(command);
+                }
                 command.SetState(RpcCommandState.Enqueued);
             }
             catch {
