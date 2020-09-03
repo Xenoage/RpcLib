@@ -1,4 +1,5 @@
-﻿using RpcLib.Model;
+﻿using RpcLib.Logging;
+using RpcLib.Model;
 using RpcLib.Utils;
 using System;
 using System.Collections.Concurrent;
@@ -57,12 +58,29 @@ namespace RpcLib.Server {
         /// given timeout in milliseconds is hit. A value of -1 means no timeout.
         /// </summary>
         public async Task<RpcCommand?> DequeueCommand(int timeoutMs) {
+            // Peek the next element from the queue, if any
+            var queueCommand = queue.Peek();
             // When there is a non-empty command backlog, dequeue and return its first item
-            if (commandBacklog?.PeekCommand(ClientID) is RpcCommand backlogCommand) // Just peek, not dequeue. Only dequeue when finished.
+            if (commandBacklog?.PeekCommand(ClientID) is RpcCommand backlogCommand) { // Just peek, not dequeue. Only dequeue when finished.
                 CurrentCommand = backlogCommand;
-            // Otherwise, wait for next item in the normal queue
-            else
+                // If the command in the backlog is the same as the next command in the normal queue (this can happen, because we
+                // immediately put retryable commands in both the backlog and the normal queue),
+                // prefer the command from the normal queue, because it is able to return a value to the caller.
+                if (queueCommand?.ID == backlogCommand.ID) {
+                    RpcMain.Log($"Next command dequeued from queue (= same command as in backlog): " +
+                        $"{CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
+                    return await queue.Dequeue(-1); // Before it was only peeked, now dequeue it
+                }
+                RpcMain.Log($"Next command dequeued from backlog: {CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
+            }
+            // Otherwise, get or wait for next item in the normal queue
+            else {
                 CurrentCommand = await queue.Dequeue(timeoutMs);
+                if (CurrentCommand != null)
+                    RpcMain.Log($"Next command dequeued from queue: {CurrentCommand?.ID} {CurrentCommand?.MethodName}", LogLevel.Trace);
+                else
+                    RpcMain.Log($"Next command: None (timeout)", LogLevel.Trace);
+            }
             return CurrentCommand;
         }
 

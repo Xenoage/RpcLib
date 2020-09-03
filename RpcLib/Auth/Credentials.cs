@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using RpcLib.Logging;
 using System;
 using System.Net.Http.Headers;
 using System.Text;
@@ -22,14 +23,17 @@ namespace RpcLib.Auth {
         public static Credentials? FromBasicAuth(HttpRequest httpRequest) {
             if (httpRequest.Headers.ContainsKey("Authorization")) {
                 try {
-
                     var authHeader = AuthenticationHeaderValue.Parse(httpRequest.Headers["Authorization"]);
                     var credentialBytes = Convert.FromBase64String(authHeader.Parameter);
                     var credentials = Encoding.UTF8.GetString(credentialBytes).Split(':');
                     return new Credentials(credentials[0], credentials[1]);
                 }
-                catch (Exception) {
+                catch (Exception ex) {
+                    RpcMain.Log("Authorization header corrupt: " + ex.Message, LogLevel.Trace);
                 }
+            }
+            else {
+                RpcMain.Log("Authorization header missing", LogLevel.Trace);
             }
             return null;
         }

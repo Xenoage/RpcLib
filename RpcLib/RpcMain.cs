@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using RpcLib.Auth;
-using RpcLib.Model;
+using RpcLib.Logging;
 using RpcLib.Peers;
 using RpcLib.Peers.Client;
 using RpcLib.Peers.Server;
@@ -30,6 +30,11 @@ namespace RpcLib {
         public static void InitRpcServer(this IServiceCollection services, IMvcBuilder mvc, Type auth,
                 List<Type> rpcFunctions, RpcSettings? defaultSettings = null,
                 IRpcCommandBacklog? commandBacklog = null) {
+            // Set default settings
+            if (defaultSettings != null)
+                DefaultSettings = defaultSettings;
+            // Start logging
+            Log($"Starting RpcLib server, version {Version}", LogLevel.Info);
             // Register this assembly for the MVC module, so that ASP.NET Core can find the RpcApi controller
             mvc.AddApplicationPart(Assembly.Load(new AssemblyName("RpcLib")));
             // Register command runner
@@ -39,9 +44,6 @@ namespace RpcLib {
             // Register given RPC functions
             foreach (var rpcFunction in rpcFunctions)
                 services.AddScoped(typeof(RpcFunctions), rpcFunction);
-            // Set default settings
-            if (defaultSettings != null)
-                DefaultSettings = defaultSettings;
             // Set backlog for retrying failed commands
             RpcServerEngine.Instance.SetCommandBacklog(commandBacklog);
         }
@@ -56,6 +58,9 @@ namespace RpcLib {
             // Set default settings
             if (defaultSettings != null)
                 DefaultSettings = defaultSettings;
+            // Start logging
+            Log($"Starting RpcLib client, version {Version}", LogLevel.Info);
+            Log($"RpcLib client ID: {config.ClientID} , path to server: {config.ServerUrl}", LogLevel.Info);
             // Start client
             RpcClientEngine.Instance.Start(rpcFunctions, config, auth, commandBacklog);
         }
@@ -66,6 +71,16 @@ namespace RpcLib {
         /// </summary>
         public static List<string> GetClientIDs() =>
             RpcServerEngine.Instance.GetClientIDs();
+
+        /// <summary>
+        /// Logs the given message with the given severity to
+        /// the logger defined in <see cref="DefaultSettings"/>.
+        /// </summary>
+        public static void Log(string message, LogLevel level) =>
+            DefaultSettings.Logger.Log(message, level);
+
+        private static string Version =>
+            Assembly.GetCallingAssembly().GetName().Version.ToString();
 
     }
 }

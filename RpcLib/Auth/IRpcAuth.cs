@@ -10,10 +10,11 @@ namespace RpcLib.Auth {
     public interface IRpcAuth {
 
         /// <summary>
-        /// Returns the ID of the client authenticated by this request, or null,
-        /// if the client could not be authenticated.
+        /// Tries to authenticate the client by the given HTTP request.
+        /// The returned object contains the requested client ID and if the
+        /// authentication was successful or not.
         /// </summary>
-        string? GetClientID(HttpRequest request);
+        AuthResult Authenticate(HttpRequest request);
 
     }
 

@@ -1,4 +1,5 @@
-﻿using RpcLib.Model;
+﻿using RpcLib.Logging;
+using RpcLib.Model;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -30,12 +31,15 @@ namespace RpcLib.Peers.Server {
         /// No exception is thrown, but a <see cref="RpcFailure"/> result is set in case of a failure.
         /// </summary>
         public async Task<RpcCommandResult> OnClientPush(string clientID, RpcCommand command, RpcCommandRunner runner) {
+            RpcMain.Log($"Command {command.ID} {command.MethodName} received from client {clientID}", LogLevel.Trace);
             // Do not run the same command twice. If the command with this ID was already
             // executed, return the cached result. If the cache is not available any more, return a
             // obsolete function call failure.
             var client = clients.GetClient(clientID, commandBacklog);
-            if (client.GetCachedResult(command.ID) is RpcCommandResult result)
+            if (client.GetCachedResult(command.ID) is RpcCommandResult result) {
+                RpcMain.Log($"Command {command.ID} was already run, return cached result again", LogLevel.Trace);
                 return result;
+            }
             // Execute the command
             try {
                 result = await runner.Execute(clientID, command);
@@ -47,6 +51,7 @@ namespace RpcLib.Peers.Server {
             // Cache result, if there was no network problem
             if (false == (result.Failure?.IsNetworkProblem == true))
                 client.CacheResult(result);
+            RpcMain.Log($"Command {command.ID} result: {result.Failure?.Type.ToString() ?? "Success"}", LogLevel.Trace);
             return result;
         }
 
@@ -68,16 +73,20 @@ namespace RpcLib.Peers.Server {
         /// even when it was received two times for any reason.
         /// </summary>
         public async Task<RpcCommand?> OnClientPull(string clientID, RpcCommandResult? lastCommandResult) {
+            RpcMain.Log($"Pull from client {clientID}" + (lastCommandResult != null ?
+                $", including result from command {lastCommandResult.CommandID}" : ""), LogLevel.Trace);
             // When a result is received, process it
             if (lastCommandResult != null)
                 await ReportClientResult(clientID, lastCommandResult);
             // Wait for next command
             RpcCommand? next = await clients.GetClient(clientID, commandBacklog).DequeueCommand(longPollingSeconds * 1000);
             if (next != null) {
+                RpcMain.Log($"Pull response for client {clientID}: Command {next.ID} {next.MethodName}", LogLevel.Trace);
                 next.SetState(RpcCommandState.Sent);
                 return next;
             }
             // No item during long polling time. Return null.
+            RpcMain.Log($"Pull response for client {clientID}: None", LogLevel.Trace);
             return null;
         }
 

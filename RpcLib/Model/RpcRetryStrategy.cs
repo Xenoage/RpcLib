@@ -22,6 +22,8 @@ namespace RpcLib.Model {
         /// executed later in exactly this order.
         /// Example use case: A method to add or remove credit (when adding 5, 10
         /// and 30 ct, at the very end the other peer should have received all 45 ct).
+        /// If methods with this flag have a return value, this return value can
+        /// of course only be received when the call works at the first attempt.
         /// </summary>
         RetryWhenOnline,
 
@@ -31,6 +33,8 @@ namespace RpcLib.Model {
         /// Example use case: A method to set a configuration file (when first setting
         /// the name to "MyFirstName", then to "MySecondName" and finally to "MyThirdName",
         /// only "MyThirdName" will be sent to the other peer as soon it is online again).
+        /// If methods with this flag have a return value, this return value can
+        /// of course only be received when the call works at the first attempt.
         /// </summary>
         RetryNewestWhenOnline
     }

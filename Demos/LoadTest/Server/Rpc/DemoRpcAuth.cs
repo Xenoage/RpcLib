@@ -10,14 +10,13 @@ namespace Server.Rpc {
     /// </summary>
     public class DemoRpcAuth : IRpcAuth {
 
-        public string? GetClientID(HttpRequest request) {
+        public AuthResult Authenticate(HttpRequest request) {
             if (Credentials.FromBasicAuth(request) is Credentials credentials) {
                 string clientID = credentials.Username;
-                if (credentials.Password != $"{clientID}-PW")
-                    return null; // Wrong password
-                return clientID;
+                bool success = credentials.Password == $"{clientID}-PW";
+                return new AuthResult(clientID, success);
             }
-            return null; // No HTTP Basic Auth header found
+            return new AuthResult(null, false); // No HTTP Basic Auth header found
         }
 
     }

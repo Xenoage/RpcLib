@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RpcLib.Auth;
+using RpcLib.Logging;
 using RpcLib.Model;
 using RpcLib.Utils;
 
@@ -32,9 +33,12 @@ namespace RpcLib.Peers.Server {
         [HttpPost("push")]
         public async Task<IActionResult> Push() {
             // Identify calling client. If now allowed, return RPC failure.
-            string? clientID = auth.GetClientID(Request);
-            if (clientID == null)
+            var authResult = auth.Authenticate(Request);
+            if (false == authResult.Success) {
+                RpcMain.Log($"Unauthorized push received from client {authResult.ClientID}", LogLevel.Debug);
                 return Unauthorized();
+            }
+            string clientID = authResult.ClientID ?? "?";
             // Read request body (if any). We do not use a [FromBody] parameter, because
             // we support two content types (gzipped and plaintext JSON) and we
             // want to explicitly use our JsonLib for deserializing (and not overwrite the
@@ -46,6 +50,7 @@ namespace RpcLib.Peers.Server {
             }
             catch (Exception ex) {
                 // Missing or bad command
+                RpcMain.Log($"Push from client {clientID}: Corrupt message: {ex.Message}" , LogLevel.Debug);
                 return BadRequest(ex.Message);
             }
         }
@@ -58,11 +63,12 @@ namespace RpcLib.Peers.Server {
         [HttpPost("pull")]
         public async Task<IActionResult> Pull() {
             // Identify calling client. If now allowed, return RPC failure.
-            string? clientID = auth.GetClientID(Request);
-            if (clientID == null) {
-                // Console.WriteLine("Unauthorized pull");
+            var authResult = auth.Authenticate(Request);
+            if (false == authResult.Success) {
+                RpcMain.Log($"Unauthorized pull received from client {authResult.ClientID}", LogLevel.Debug);
                 return Unauthorized();
             }
+            string clientID = authResult.ClientID ?? "?";
             // Read request body (if any). We do not use a [FromBody] parameter, because
             // we support two content types (gzipped and plaintext JSON) and we
             // want to explicitly use our JsonLib for deserializing (and not overwrite the

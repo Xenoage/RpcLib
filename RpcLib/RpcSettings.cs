@@ -1,4 +1,5 @@
-﻿using RpcLib.Model;
+﻿using RpcLib.Logging;
+using RpcLib.Model;
 
 namespace RpcLib {
 
@@ -26,6 +27,14 @@ namespace RpcLib {
         /// strategy <see cref="RpcCompressionStrategy.Auto"/>. 
         /// </summary>
         public int CompressionThresholdBytes { get; set; } = 1000;
+
+        /// <summary>
+        /// Logging interface used for RpcLib log messages.
+        /// The interface is kept very simple, so it is easy to adapt your favorite
+        /// logging framework to it.
+        /// By default, logging is disabled.
+        /// </summary>
+        public ILogger Logger { get; set; } = new NoLogger();
 
     }
 
