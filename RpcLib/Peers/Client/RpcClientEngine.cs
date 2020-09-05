@@ -137,6 +137,7 @@ namespace RpcLib.Server.Client {
                 throw;
             }
             catch (Exception ex) {
+                RpcMain.Log($"Exception when executing {command.ID}: " + ex.Message, LogLevel.Trace);
                 throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
             }
         }

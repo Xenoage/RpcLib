@@ -36,7 +36,7 @@ namespace RpcLib.Peers.Server {
             // executed, return the cached result. If the cache is not available any more, return a
             // obsolete function call failure.
             var client = clients.GetClient(clientID, commandBacklog);
-            if (client.GetCachedResult(command.ID) is RpcCommandResult result) {
+            if (client.GetCachedResult(command) is RpcCommandResult result) {
                 RpcMain.Log($"Command {command.ID} was already run, return cached result again", LogLevel.Trace);
                 return result;
             }

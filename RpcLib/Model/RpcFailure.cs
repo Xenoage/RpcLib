@@ -69,6 +69,8 @@ namespace RpcLib.Model {
         /// The command was already executed earlier, and the cached result is not available
         /// any more so that we could it send again. Since we must not execute the command twice,
         /// we use this failure to notify the remote peer about the problem.
+        /// This is only true for non-retryable commands. Retryable commands can be sent
+        /// "out of order" and will not produce this error.
         /// </summary>
         ObsoleteCommandID,
         /// <summary>

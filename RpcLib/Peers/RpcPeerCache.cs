@@ -94,14 +94,25 @@ namespace RpcLib.Server {
                 // When it is a command which should be retried in case of network failure, enqueue it in the command backlog.
                 if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
                     CommandBacklog.EnqueueCommand(ClientID, command);
+            }
+            catch (Exception ex) {
+                string errorMessage = $"Could not enqueue command into backlog " +
+                        (ClientID != null ? $"on the client { ClientID}" : "on the server: " + ex.Message);
+                RpcMain.Log(errorMessage, LogLevel.Warn);
+                throw new RpcException(new RpcFailure(
+                    RpcFailureType.Other, errorMessage));
+            }
+            try {
                 // Always (additionally to the command backlog) add it to our normal query for immediate execution
                 queue.Enqueue(command);
                 command.SetState(RpcCommandState.Enqueued);
             }
             catch {
+                string errorMessage = $"Queue already full " +
+                        (ClientID != null ? $"for the client { ClientID}" : "for the server");
+                RpcMain.Log(errorMessage, LogLevel.Warn);
                 throw new RpcException(new RpcFailure(
-                    RpcFailureType.QueueOverflow, $"Queue already full " +
-                        (ClientID != null ? $"for the client { ClientID}" : "for the server")));
+                    RpcFailureType.QueueOverflow, errorMessage));
             }
         }
 
@@ -119,15 +130,22 @@ namespace RpcLib.Server {
         /// If the command was already executed, but is too old so that there is no cached result
         /// any more, a failure result with <see cref="RpcFailureType.ObsoleteCommandID"/> is returned.
         /// </summary>
-        public RpcCommandResult? GetCachedResult(ulong commandID) {
+        public RpcCommandResult? GetCachedResult(RpcCommand command) {
             // New command?
-            if (commandID > lastCachedResultCommandID)
+            if (command.ID > lastCachedResultCommandID)
                 return null;
             // It is an old command. Find the cached result.
             var cachedResults = this.cachedResults.ToList(); // Defensive copy
-            var result = cachedResults.Find(it => it.CommandID == commandID);
-            return result ?? RpcCommandResult.FromFailure(commandID, new RpcFailure(
-                RpcFailureType.ObsoleteCommandID, $"Command ID {commandID} already executed too long ago " +
+            var result = cachedResults.Find(it => it.CommandID == command.ID);
+            if (result != null)
+                return result;
+            // When there is no result, but the command is a retryable command, then
+            // this is ok, since its original call may be long time ago.
+            if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
+                return null;
+            // Otherwise, this is an error in the process
+            return RpcCommandResult.FromFailure(command.ID, new RpcFailure(
+                RpcFailureType.ObsoleteCommandID, $"Command ID {command.ID} already executed too long ago " +
                     (ClientID != null ? $"on the client {ClientID}" : "for the server")), compression: null);
         }
 
