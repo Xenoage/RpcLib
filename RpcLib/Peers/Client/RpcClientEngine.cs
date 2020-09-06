@@ -128,6 +128,7 @@ namespace RpcLib.Server.Client {
                 // Apply [RpcOptions(...)] from method declaration
                 command.ApplyRpcOptionsFromCallStack();
                 // Enqueue (and execute)
+                RpcMain.Log($"Enqueue command {command.ID} {command.MethodName}", LogLevel.Trace);
                 serverCache.EnqueueCommand(command);
                 // Wait for result until timeout
                 return await command.WaitForResult<T>();
@@ -220,7 +221,7 @@ namespace RpcLib.Server.Client {
             // Do not run the same command twice. If the command with this ID was already
             // executed, return the cached result. If the cache is not available any more, return a
             // obsolete function call failure.
-            if (serverCache.GetCachedResult(command.ID) is RpcCommandResult result)
+            if (serverCache.GetCachedResult(command) is RpcCommandResult result)
                 return result;
             // Execute the command
             try {

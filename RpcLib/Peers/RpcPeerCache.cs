@@ -69,9 +69,11 @@ namespace RpcLib.Server {
                 if (queueCommand?.ID == backlogCommand.ID) {
                     RpcMain.Log($"Next command dequeued from queue (= same command as in backlog): " +
                         $"{CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
-                    return await queue.Dequeue(-1); // Before it was only peeked, now dequeue it
+                    CurrentCommand = await queue.Dequeue(-1); // Before it was only peeked, now dequeue it
                 }
-                RpcMain.Log($"Next command dequeued from backlog: {CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
+                else {
+                    RpcMain.Log($"Next command dequeued from backlog: {CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
+                }
             }
             // Otherwise, get or wait for next item in the normal queue
             else {
@@ -90,29 +92,35 @@ namespace RpcLib.Server {
         /// <see cref="RpcFailureType.LocalQueueOverflow"/> is thrown.
         /// </summary>
         public void EnqueueCommand(RpcCommand command) {
-            try {
-                // When it is a command which should be retried in case of network failure, enqueue it in the command backlog.
-                if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
-                    CommandBacklog.EnqueueCommand(ClientID, command);
-            }
-            catch (Exception ex) {
-                string errorMessage = $"Could not enqueue command into backlog " +
-                        (ClientID != null ? $"on the client { ClientID}" : "on the server: " + ex.Message);
-                RpcMain.Log(errorMessage, LogLevel.Warn);
-                throw new RpcException(new RpcFailure(
-                    RpcFailureType.Other, errorMessage));
-            }
-            try {
-                // Always (additionally to the command backlog) add it to our normal query for immediate execution
-                queue.Enqueue(command);
-                command.SetState(RpcCommandState.Enqueued);
-            }
-            catch {
-                string errorMessage = $"Queue already full " +
-                        (ClientID != null ? $"for the client { ClientID}" : "for the server");
-                RpcMain.Log(errorMessage, LogLevel.Warn);
-                throw new RpcException(new RpcFailure(
-                    RpcFailureType.QueueOverflow, errorMessage));
+            // Synchronize enqueuing the commands, because writing in the backlog
+            // can require some time, while in the meantime a more recent command
+            // may already be enqueued in the normal queue. Then, we would have
+            // an out-of-order command.
+            lock (this) {
+                try {
+                    // When it is a command which should be retried in case of network failure, enqueue it in the command backlog.
+                    if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
+                        CommandBacklog.EnqueueCommand(ClientID, command);
+                }
+                catch (Exception ex) {
+                    string errorMessage = $"Could not enqueue command into backlog " +
+                            (ClientID != null ? $"on the client { ClientID}" : "on the server: " + ex.Message);
+                    RpcMain.Log(errorMessage, LogLevel.Warn);
+                    throw new RpcException(new RpcFailure(
+                        RpcFailureType.Other, errorMessage));
+                }
+                try {
+                    // Always (additionally to the command backlog) add it to our normal query for immediate execution
+                    queue.Enqueue(command);
+                    command.SetState(RpcCommandState.Enqueued);
+                }
+                catch {
+                    string errorMessage = $"Queue already full " +
+                            (ClientID != null ? $"for the client { ClientID}" : "for the server");
+                    RpcMain.Log(errorMessage, LogLevel.Warn);
+                    throw new RpcException(new RpcFailure(
+                        RpcFailureType.QueueOverflow, errorMessage));
+                }
             }
         }
 
@@ -121,7 +129,13 @@ namespace RpcLib.Server {
         /// whether successful or not. Do not call it, when the command failed because of an network problem.
         /// </summary>
         public void FinishCurrentCommand() {
-            commandBacklog?.DequeueCommand(ClientID, CurrentCommand.ID);
+            if (CurrentCommand?.RetryStrategy != null && CurrentCommand.RetryStrategy != RpcRetryStrategy.None) {
+                RpcMain.Log($"Current retryable command {CurrentCommand.ID} finished, dequeuing it from backlog.", LogLevel.Trace);
+                commandBacklog?.DequeueCommand(ClientID, CurrentCommand.ID);
+            }
+            else {
+                RpcMain.Log($"Current command {CurrentCommand?.ID} finished", LogLevel.Trace);
+            }
         }
 
         /// <summary>
@@ -139,11 +153,7 @@ namespace RpcLib.Server {
             var result = cachedResults.Find(it => it.CommandID == command.ID);
             if (result != null)
                 return result;
-            // When there is no result, but the command is a retryable command, then
-            // this is ok, since its original call may be long time ago.
-            if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
-                return null;
-            // Otherwise, this is an error in the process
+            // When there is no result, this is an error in the process
             return RpcCommandResult.FromFailure(command.ID, new RpcFailure(
                 RpcFailureType.ObsoleteCommandID, $"Command ID {command.ID} already executed too long ago " +
                     (ClientID != null ? $"on the client {ClientID}" : "for the server")), compression: null);

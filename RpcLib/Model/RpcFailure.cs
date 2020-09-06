@@ -24,7 +24,9 @@ namespace RpcLib.Model {
         /// See <see cref="RpcRetryStrategy"/> how to automate this.
         /// </summary>
         public bool IsNetworkProblem =>
-            Type == RpcFailureType.Timeout || Type == RpcFailureType.QueueOverflow;
+            Type == RpcFailureType.Timeout
+            || Type == RpcFailureType.QueueOverflow
+            || Type == RpcFailureType.RpcError;
 
     }
 
@@ -61,16 +63,14 @@ namespace RpcLib.Model {
         /// <summary>
         /// The peer received a response from the remote peer, but it was not an expected RPC response
         /// (in case of a remote exception, a well-formated response with an <see cref="RemoteException"/>
-        /// would be expected). We should not repeat this command, since it would probably result
-        /// in the same error again.
+        /// would be expected). We should repeat this command, since it seems the server is not
+        /// available right now (for example, it may be a 503 service anavailable error).
         /// </summary>
         RpcError,
         /// <summary>
         /// The command was already executed earlier, and the cached result is not available
         /// any more so that we could it send again. Since we must not execute the command twice,
         /// we use this failure to notify the remote peer about the problem.
-        /// This is only true for non-retryable commands. Retryable commands can be sent
-        /// "out of order" and will not produce this error.
         /// </summary>
         ObsoleteCommandID,
         /// <summary>
