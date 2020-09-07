@@ -17,6 +17,14 @@ namespace RpcLib {
         public int TimeoutMs { get; set; } = 30_000;
 
         /// <summary>
+        /// Long polling time in milliseconds. After this time, the server returns null when there is
+        /// no command in the queue. Make sure this value is identical on the server and on the
+        /// clients, otherwise the client may think there is a network problem if the server
+        /// does not respond early enough.
+        /// </summary>
+        public int LongPollingMs = 90_000;
+
+        /// <summary>
         /// If and how to compress commands and responses to reduce traffic between the peers.
         /// <see cref="RpcCompressionStrategy.Disabled"/> by default.
         /// </summary>

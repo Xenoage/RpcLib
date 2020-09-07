@@ -48,7 +48,8 @@ namespace RpcLib.Server.Client {
             serverCache = new RpcPeerCache(clientID: "", commandBacklog);
             // Create and authorize HTTP clients
             httpPull = new HttpClient();
-            httpPull.Timeout = TimeSpan.FromSeconds(RpcServerEngine.longPollingSeconds + 10); // Give some more seconds for timeout
+            httpPull.Timeout = TimeSpan.FromMilliseconds(
+                RpcMain.DefaultSettings.LongPollingMs + 5_000); // Give some more seconds for timeout on client side
             authAction(httpPull);
             httpPush = new HttpClient();
             httpPush.Timeout = TimeSpan.FromMilliseconds(RpcMain.DefaultSettings.TimeoutMs);

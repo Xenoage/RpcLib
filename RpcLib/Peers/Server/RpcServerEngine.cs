@@ -79,7 +79,8 @@ namespace RpcLib.Peers.Server {
             if (lastCommandResult != null)
                 await ReportClientResult(clientID, lastCommandResult);
             // Wait for next command
-            RpcCommand? next = await clients.GetClient(clientID, commandBacklog).DequeueCommand(longPollingSeconds * 1000);
+            RpcCommand? next = await clients.GetClient(clientID, commandBacklog)
+                .DequeueCommand(RpcMain.DefaultSettings.LongPollingMs);
             if (next != null) {
                 RpcMain.Log($"Pull response for client {clientID}: Command {next.ID} {next.MethodName}", LogLevel.Trace);
                 next.SetState(RpcCommandState.Sent);
@@ -133,10 +134,6 @@ namespace RpcLib.Peers.Server {
         // Backlog for retrying commands
         private IRpcCommandBacklog? commandBacklog;
         public void SetCommandBacklog(IRpcCommandBacklog? commandBacklog) => this.commandBacklog = commandBacklog;
-
-        // Long polling time in seconds. After this time, the server returns null when there is
-        // no command in the queue.
-        public const int longPollingSeconds = 90;
 
         // The registered clients and their command queues and cached command results
         private RpcClientCaches clients = new RpcClientCaches();
