@@ -22,7 +22,7 @@ namespace RpcLib.Peers.Client {
         /// See <see cref="RpcCommand.CreateForServer"/> for the parameters.
         /// </summary>
         protected Task<T> ExecuteOnServer<T>(string methodName, params object[] methodParameters) =>
-            RpcClientEngine.Instance.ExecuteOnServer<T>(RpcCommand.CreateForServer(methodName, methodParameters));
+            RpcClientEngine.Instance.ExecuteOnServer<T>(methodName, methodParameters);
 
         /// <summary>
         /// Like <see cref="ExecuteOnServer{T}"/> but without return value.

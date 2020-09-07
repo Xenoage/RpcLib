@@ -28,8 +28,7 @@ namespace RpcLib.Peers.Server {
         /// See <see cref="RpcCommand.CreateForClient"/> for the parameters.
         /// </summary>
         protected Task<T> ExecuteOnClient<T>(string methodName, params object[] methodParameters) =>
-            RpcServerEngine.Instance.ExecuteOnClient<T>(
-                RpcCommand.CreateForClient(ClientID, methodName, methodParameters));
+            RpcServerEngine.Instance.ExecuteOnClient<T>(ClientID, methodName, methodParameters);
 
         /// <summary>
         /// Like <see cref="ExecuteOnClient{T}"/> but without return value.

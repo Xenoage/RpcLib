@@ -2,7 +2,6 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using RpcLib.Peers.Server;
 using System.Collections.Generic;
 using RpcLib.Peers;
 using RpcLib.Utils;
@@ -124,13 +123,19 @@ namespace RpcLib.Server.Client {
         /// Runs the given RPC command on the server as soon as possible
         /// and returns the result or throws an <see cref="RpcException"/>.
         /// </summary>
-        public async Task<T> ExecuteOnServer<T>(RpcCommand command) {
+        public async Task<T> ExecuteOnServer<T>(string methodName, params object[] methodParameters) {
+            RpcCommand? command = null;
             try {
-                // Apply [RpcOptions(...)] from method declaration
-                command.ApplyRpcOptionsFromCallStack();
-                // Enqueue (and execute)
-                RpcMain.Log($"Enqueue command {command.ID} {command.MethodName}", LogLevel.Trace);
-                serverCache.EnqueueCommand(command);
+                // Synchronize until enqueuing the command, to make sure
+                // the commands are not enqueued out-of-order because of racing conditions
+                lock (this) {
+                    command = RpcCommand.CreateForServer(methodName, methodParameters);
+                    // Apply [RpcOptions(...)] from method declaration
+                    command.ApplyRpcOptionsFromCallStack();
+                    // Enqueue (and execute)
+                    RpcMain.Log($"Enqueue command {command.ID} {command.MethodName}", LogLevel.Trace);
+                    serverCache.EnqueueCommand(command);
+                }
                 // Wait for result until timeout
                 return await command.WaitForResult<T>();
             }
@@ -139,7 +144,8 @@ namespace RpcLib.Server.Client {
                 throw;
             }
             catch (Exception ex) {
-                RpcMain.Log($"Exception when executing {command.ID}: " + ex.Message, LogLevel.Trace);
+                RpcMain.Log("Exception when executing " +
+                    $"{command?.ID.ToString() ?? methodName}: " + ex.Message, LogLevel.Trace);
                 throw new RpcException(new RpcFailure(RpcFailureType.Other, ex.Message)); // Wrap any other exception
             }
         }

@@ -58,31 +58,37 @@ namespace RpcLib.Server {
         /// given timeout in milliseconds is hit. A value of -1 means no timeout.
         /// </summary>
         public async Task<RpcCommand?> DequeueCommand(int timeoutMs) {
-            // Peek the next element from the queue, if any
+            RpcCommand? nextCommand = null;
+            // Peek the next element from the normal queue, if any
             var queueCommand = queue.Peek();
-            // When there is a non-empty command backlog, dequeue and return its first item
+            // When there is a non-empty command backlog, peek its first item
+            // and compare its ID with the command from the normal queue
             if (commandBacklog?.PeekCommand(ClientID) is RpcCommand backlogCommand) { // Just peek, not dequeue. Only dequeue when finished.
-                CurrentCommand = backlogCommand;
-                // If the command in the backlog is the same as the next command in the normal queue (this can happen, because we
-                // immediately put retryable commands in both the backlog and the normal queue),
-                // prefer the command from the normal queue, because it is able to return a value to the caller.
-                if (queueCommand?.ID == backlogCommand.ID) {
-                    RpcMain.Log($"Next command dequeued from queue (= same command as in backlog): " +
-                        $"{CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
-                    CurrentCommand = await queue.Dequeue(-1); // Before it was only peeked, now dequeue it
-                }
-                else {
-                    RpcMain.Log($"Next command dequeued from backlog: {CurrentCommand.ID} {CurrentCommand.MethodName}", LogLevel.Trace);
+                if (queueCommand == null || backlogCommand.ID <= queueCommand.ID) {
+                    // Backlog command comes first!
+                    // If the command in the backlog is the same as the next command in the normal queue (this can happen, because we
+                    // immediately put retryable commands in both the backlog and the normal queue),
+                    // prefer the command from the normal queue, because it is able to return a value to the caller.
+                    if (queueCommand?.ID == backlogCommand.ID) {
+                        nextCommand = await queue.Dequeue(-1); // Before it was only peeked, now dequeue it
+                        RpcMain.Log($"Next command dequeued from queue (= same command as in backlog): " +
+                            $"{nextCommand?.ID} {nextCommand?.MethodName}", LogLevel.Trace);
+                    }
+                    else {
+                        nextCommand = backlogCommand;
+                        RpcMain.Log($"Next command dequeued from backlog: {nextCommand.ID} {nextCommand.MethodName}", LogLevel.Trace);
+                    }
                 }
             }
             // Otherwise, get or wait for next item in the normal queue
-            else {
-                CurrentCommand = await queue.Dequeue(timeoutMs);
-                if (CurrentCommand != null)
-                    RpcMain.Log($"Next command dequeued from queue: {CurrentCommand?.ID} {CurrentCommand?.MethodName}", LogLevel.Trace);
+            if (nextCommand == null) {
+                nextCommand = await queue.Dequeue(timeoutMs);
+                if (nextCommand != null)
+                    RpcMain.Log($"Next command dequeued from queue: {nextCommand.ID} {nextCommand.MethodName}", LogLevel.Trace);
                 else
                     RpcMain.Log($"Next command: None (timeout)", LogLevel.Trace);
             }
+            CurrentCommand = nextCommand;
             return CurrentCommand;
         }
 
