@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Xenoage.RpcLib</PackageId>
-    <Version>0.9.2</Version>
+    <Version>0.9.4</Version>
     <Authors>Andreas Wenger</Authors>
     <Company>Xenoage Software</Company>
     <RepositoryUrl>https://github.com/Xenoage/RpcLib</RepositoryUrl>
@@ -12,6 +12,11 @@
     <Copyright>Copyright © 2020 Xenoage Software</Copyright>
     <Product>Xenoage.RpcLib</Product>
     <PackageProjectUrl>https://github.com/Xenoage/RpcLib</PackageProjectUrl>
+    <PackageTags>RPC;Remote Procedure Call;ASP.NET Core;Bidirectional;Typesafe;Retryable;Firewall;Long Polling</PackageTags>
+    <Description>
+      A simple .NET Core RPC library for bidirectional, reliable and typesafe communication between an ASP.NET Core server with HTTP/S Web API endpoints and clients behind a firewall.
+      See https://github.com/Xenoage/RpcLib for documentation and samples.
+    </Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
