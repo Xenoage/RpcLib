@@ -159,6 +159,11 @@ namespace RpcLib.Server {
             var result = cachedResults.Find(it => it.CommandID == command.ID);
             if (result != null)
                 return result;
+
+            // GOON! currently we ignore ObsoleteCommandID for retryable commands - fix this immediately
+            if (command.RetryStrategy != null && command.RetryStrategy != RpcRetryStrategy.None)
+                return null;
+
             // When there is no result, this is an error in the process
             return RpcCommandResult.FromFailure(command.ID, new RpcFailure(
                 RpcFailureType.ObsoleteCommandID, $"Command ID {command.ID} already executed too long ago " +
