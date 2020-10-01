@@ -154,13 +154,15 @@ namespace RpcLib.Model {
                 var frameType = stackFrame.GetMethod().DeclaringType;
                 if (frameType.GetInterfaces().FirstOrDefault(it => it.GetInterfaces().Contains(typeof(IRpcFunctions))) is Type intf) {
                     var method = intf.GetMethod(MethodName);
-                    if (method != null && method.GetCustomAttribute<RpcOptionsAttribute>() is RpcOptionsAttribute options) {
-                        if (options.TimeoutMs != RpcOptionsAttribute.useDefaultTimeout)
-                            TimeoutMs = options.TimeoutMs;
-                        if (options.RetryStrategy is RpcRetryStrategy retryStrategy)
-                            RetryStrategy = retryStrategy;
-                        if (options.Compression is RpcCompressionStrategy compression)
-                            Compression = compression;
+                    if (method != null) {
+                        if (method.GetCustomAttribute<RpcOptionsAttribute>() is RpcOptionsAttribute options) {
+                            if (options.TimeoutMs != RpcOptionsAttribute.useDefaultTimeout)
+                                TimeoutMs = options.TimeoutMs;
+                            if (options.RetryStrategy is RpcRetryStrategy retryStrategy)
+                                RetryStrategy = retryStrategy;
+                            if (options.Compression is RpcCompressionStrategy compression)
+                                Compression = compression;
+                        }
                         break; // Method found, do not traverse call stack any further
                     }
                 }
