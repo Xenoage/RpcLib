@@ -15,7 +15,7 @@ namespace RpcLib.Server {
     public class RpcPeerCache {
 
         // The maximum number of items in the queues
-        private const int maxQueueSize = 10;
+        private const int maxQueueSize = 100;
 
         // The next commands to execute on the peer
         private BlockingQueue<RpcCommand> queue = new BlockingQueue<RpcCommand>(size: maxQueueSize);

@@ -59,7 +59,7 @@ namespace RpcLib.Peers.Server {
         /// Call this method when the client called the "/rpc/pull"-endpoint.
         /// It does two things: Reporting the last result (optional) and querying the next command.
         /// 
-        /// This method retuns the current <see cref="RpcCommand"/> in the queue of the calling client,
+        /// This method returns the current <see cref="RpcCommand"/> in the queue of the calling client,
         /// by "long polling". Because the server can not call the client directly (firewall...),
         /// instead the client continuously calls this method and waits for new data.
         /// Because the server only responds when there is data available or with null when

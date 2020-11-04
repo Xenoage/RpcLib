@@ -44,7 +44,7 @@ namespace DemoClient {
             var random = new Random();
             while (true) {
                 try {
-
+                    
                     // Send greeting
                     Log.Write("Sending greeting...");
                     var greeting = new Greeting {

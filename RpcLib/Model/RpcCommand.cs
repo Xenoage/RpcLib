@@ -49,7 +49,7 @@ namespace RpcLib.Model {
 
         /// <summary>
         /// Default constructor. For JSON deserialization only.
-        /// In the program code, use 
+        /// In the program code, use the other constructor.
         /// </summary>
         public RpcCommand() {
         }
