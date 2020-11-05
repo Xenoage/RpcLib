@@ -101,7 +101,7 @@ namespace RpcLib.Peers.Server {
             if (lastResult != null && client.CurrentCommand is RpcCommand command && lastResult.CommandID == command.ID) {
                 // When a result was received (i.e. when there was no network problem), the command is finished
                 if (false == (lastResult.Failure?.IsNetworkProblem == true))
-                    client.FinishCurrentCommand();
+                    await client.FinishCurrentCommand();
                 // Response for this command received.
                 command.Finish(lastResult);
             }

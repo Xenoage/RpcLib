@@ -190,7 +190,7 @@ namespace RpcLib.Server.Client {
             }
             // When a result was received (i.e. when there was no network problem), the command is finished
             if (false == (result.Failure?.IsNetworkProblem == true) && command.ID == serverCache.CurrentCommand?.ID)
-                serverCache.FinishCurrentCommand();
+                await serverCache.FinishCurrentCommand();
             // Finish command
             command.Finish(result);
         }

@@ -134,9 +134,11 @@ namespace RpcLib.Server {
         /// Call this method, when the <see cref="CurrentCommand"/> was executed on the remote peer,
         /// whether successful or not. Do not call it, when the command failed because of an network problem.
         /// </summary>
-        public void FinishCurrentCommand() {
+        public async Task FinishCurrentCommand() {
             if (CurrentCommand?.RetryStrategy != null && CurrentCommand.RetryStrategy != RpcRetryStrategy.None) {
-                RpcMain.Log($"Current retryable command {CurrentCommand.ID} finished, dequeuing it from backlog.", LogLevel.Trace);
+                RpcMain.Log($"Current retryable command {CurrentCommand.ID} finished, dequeuing it from queue and backlog.", LogLevel.Trace);
+                if (queue.Peek()?.ID == CurrentCommand.ID)
+                    await queue.Dequeue(100);
                 commandBacklog?.DequeueCommand(ClientID, CurrentCommand.ID);
             }
             else {
