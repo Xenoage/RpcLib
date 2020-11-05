@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30523.141
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RpcLibTests", "RpcLibTests\RpcLibTests.csproj", "{D22F8A0B-320E-4D7E-8122-10D16467EFB2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RpcLib", "..\..\RpcLib\RpcLib.csproj", "{2A1FA180-B740-4E15-81EF-527CAF0D917E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RpcLib", "..\RpcLib\RpcLib.csproj", "{2A1FA180-B740-4E15-81EF-527CAF0D917E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
