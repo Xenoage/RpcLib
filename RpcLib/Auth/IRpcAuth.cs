@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using System;
 
 namespace RpcLib.Auth {
 
@@ -7,6 +8,7 @@ namespace RpcLib.Auth {
     /// Given an <see cref="HttpRequest"/>, a class implementing this interface must
     /// return the ID of the client identified by this request.
     /// </summary>
+    [Obsolete("Use SignalR based mechanism instead")]
     public interface IRpcAuth {
 
         /// <summary>

@@ -13,6 +13,7 @@ namespace RpcLib.Peers.Server {
     /// The concrete <see cref="IRpcAuth"/> implementation is injected, so it must be
     /// registered during the ASP.NET Core startup as a service.
     /// </summary>
+    [Obsolete("Use SignalR based mechanism instead!")]
     [ApiController]
     [Route("rpc")]
     public class RpcApi : ControllerBase {

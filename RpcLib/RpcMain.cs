@@ -53,6 +53,7 @@ namespace RpcLib {
         /// Initialize the RPC client with the given configuration, authentication method
         /// server-side RPC functions, default settings and optionally backlog for retrying failed commands.
         /// </summary>
+        [Obsolete("Use the other InitRpcClient method, using the SignalR based mechanism")]
         public static void InitRpcClient(RpcClientConfig config, Action<HttpClient> auth,
                 Func<List<RpcFunctions>> rpcFunctions, RpcSettings? defaultSettings = null,
                 IRpcCommandBacklog? commandBacklog = null) {

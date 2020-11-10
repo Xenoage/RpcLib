@@ -10,6 +10,7 @@ namespace RpcLib.Auth {
 	/// HTTP Basic Auth credentials. Of course any other mechanism for authentication
     /// can be used within this library, see <see cref="IRpcAuth"/>.
 	/// </summary>
+    [Obsolete("Use SignalR based mechanism instead")]
 	public class Credentials {
 
         public string Username { get; set; }
