@@ -23,9 +23,10 @@ namespace Xenoage.RpcLib.Serialization {
             System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value, options);
 
         private static readonly JsonSerializerOptions options = new JsonSerializerOptions {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase, // camelCaseNaming
-            // TODO: not found? DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, // More compact by ignoring null value properties
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase, // camelCaseNaming 
             WriteIndented = false, // Compact representation
+            // TODO: More compact by ignoring null value properties - but only available since .NET 5.0 - add later
+            // DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
     }

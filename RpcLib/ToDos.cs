@@ -1,9 +1,13 @@
-﻿/**********
+﻿using Xenoage.RpcLib.Serialization;
 
-List of TODOs
-*************
-
-- Prevent CSWSH (Cross-Site WebSocket Hijacking) by using a whitelist of the allowed origins.
-  See: https://www.codetinkerer.com/2018/06/05/aspnet-core-websockets.html
-
-**********/
+/// <summary>
+/// 
+/// List of TODOs
+/// *************
+/// 
+/// -Prevent CSWSH (Cross-Site WebSocket Hijacking) by using a whitelist of the allowed origins.
+/// See: https://www.codetinkerer.com/2018/06/05/aspnet-core-websockets.html
+/// 
+/// -Ignore null values when serializing JSON. .NET 5 is required, see <see cref="JsonSerializer"/>.
+/// 
+/// </summary>
