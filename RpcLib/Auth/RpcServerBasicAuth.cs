@@ -32,11 +32,11 @@ namespace Xenoage.RpcLib.Auth {
                 string password = credentials[1];
                 if (false == AreCredentialsCorrect(username, password))
                     throw new Exception("Incorrect credentials");
-                RpcMain.Log($"Client authentication of user {username} successful", LogLevel.Debug);
+                Log.Debug($"Client authentication of user {username} successful");
                 return new AuthResult(username, success: true);
             } catch (Exception ex) {
-                RpcMain.Log($"Client authentication {(username != null ? $"of user {username} " : "")} " +
-                    $"failed: {ex.Message}", LogLevel.Debug);
+                Log.Debug($"Client authentication {(username != null ? $"of user {username} " : "")} " +
+                    $"failed: {ex.Message}");
                 return new AuthResult(username, success: false);
             }
         }

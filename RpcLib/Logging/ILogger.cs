@@ -10,7 +10,7 @@
         /// <summary>
         /// Logs the given message with the given severity.
         /// </summary>
-        public void Log(string message, LogLevel level);
+        public void Log(string message, LogLevel level);    
 
     }
 
