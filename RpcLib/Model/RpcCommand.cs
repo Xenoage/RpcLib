@@ -10,6 +10,9 @@ namespace Xenoage.RpcLib.Model {
     /// Together with the target peer ID, the method name and serialized parameters,
     /// it stores a packet number which can be used to ensure that a call is evaluated
     /// only a single time, also if it arrives multiple times for any reason.
+    /// This is the data which is transferred to the other peer over the network
+    /// when the command is called. Additional information, which remains on the local
+    /// side, is stored in <see cref="RpcCall"/>.
     /// </summary>
     public class RpcCommand {
 
@@ -21,12 +24,6 @@ namespace Xenoage.RpcLib.Model {
         /// i.e. ascending over time.
         /// </summary>
         public ulong ID { get; set; }
-
-        /// <summary>
-        /// The ID of the target peer where to run this command on,
-        /// i.e. the client ID or null for the server.
-        /// </summary>
-        public string? TargetPeerID { get; set; }
 
         /// <summary>
         /// The name of the metho. Equals the actual C# method name.

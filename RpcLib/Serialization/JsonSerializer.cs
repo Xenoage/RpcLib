@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Xenoage.RpcLib.Serialization {
 
@@ -25,6 +26,7 @@ namespace Xenoage.RpcLib.Serialization {
         private static readonly JsonSerializerOptions options = new JsonSerializerOptions {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase, // camelCaseNaming 
             WriteIndented = false, // Compact representation
+            //Converters = { new JsonStringEnumConverter() },
             // TODO: More compact by ignoring null value properties - but only available since .NET 5.0 - add later
             // DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };

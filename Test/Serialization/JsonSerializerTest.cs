@@ -17,9 +17,10 @@ namespace Xenoage.RpcLib.Serialization {
             Number = 5,
             Child = new TestChildClass { Text = "Hello" },
             Array = new List<int> { 1, 2, 3 },
-            NullValue = (int?)null
+            NullValue = (int?)null,
+            EnumValue = TestEnum.FlagTwo
         };
-        private string json = "{'number':5,'child':{'text':'Hello'},'array':[1,2,3],'nullValue':null}".Replace("'", "\"");
+        private string json = "{'number':5,'child':{'text':'Hello'},'array':[1,2,3],'nullValue':null,'enumValue':'FlagTwo'}".Replace("'", "\"");
 
         #endregion
 
@@ -58,13 +59,15 @@ namespace Xenoage.RpcLib.Serialization {
             public TestChildClass Child { get; set; }
             public IList<int> Array { get; set; }
             public int? NullValue { get; set; }
+            public TestEnum EnumValue { get; set; }
 
             public override bool Equals(object? obj) {
                 return obj is TestClass @class &&
                        Number == @class.Number &&
                        Child.Equals(@class.Child) &&
                        Array.SequenceEqual(@class.Array) &&
-                       NullValue == @class.NullValue;
+                       NullValue == @class.NullValue &&
+                       EnumValue == @class.EnumValue;
             }
         }
 
@@ -75,6 +78,11 @@ namespace Xenoage.RpcLib.Serialization {
                 return obj is TestChildClass @class &&
                        Text == @class.Text;
             }
+        }
+
+        public enum TestEnum {
+            FlagOne,
+            FlagTwo
         }
 
         #endregion
