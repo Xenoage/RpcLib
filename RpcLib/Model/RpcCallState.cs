@@ -1,8 +1,8 @@
 ﻿namespace Xenoage.RpcLib.Model {
 
     /// <summary>
-     /// The current state of an <see cref="RpcCall"/>.
-     /// </summary>
+    /// The current state of an <see cref="RpcCall"/>.
+    /// </summary>
     public enum RpcCallState {
 
         /// <summary>
@@ -29,7 +29,9 @@
         /// <summary>
         /// The call failed, either on the local side (because of a timeout for example) or on
         /// the remote side (exception during execution).
-        /// See <see cref="RpcCommandResult.Failure"/> for details.
         /// </summary>
         Failed
+
     }
+
+}
