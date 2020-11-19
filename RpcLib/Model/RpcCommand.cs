@@ -41,19 +41,11 @@ namespace Xenoage.RpcLib.Model {
         #region Creation
 
         /// <summary>
-        /// Creates a new RPC command to be run on the server, using the given method name and parameters.
-        /// The parameters must be JSON-encodable objects.
+        /// Creates a new RPC command, using the given method name and parameters.
+        /// The parameters must be serializable objects or primitive values.
         /// </summary>
-        public static RpcCommand CreateForServer(string methodName, params object[] methodParameters) =>
+        public static RpcCommand Create(string methodName, params object[] methodParameters) =>
             new RpcCommand(methodName, methodParameters);
-
-        /// <summary>
-        /// Creates a new RPC command to be run on the client with the given ID,
-        /// using the given method name and parameters.
-        /// The parameters must be JSON-encodable objects.
-        /// </summary>
-        public static RpcCommand CreateForClient(string clientID, string methodName, params object[] methodParameters) =>
-            new RpcCommand(methodName, methodParameters) { TargetPeerID = clientID };
 
         /// <summary>
         /// Default constructor. For JSON deserialization only.
