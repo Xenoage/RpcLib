@@ -4,7 +4,7 @@ using Xenoage.RpcLib.Model;
 namespace Xenoage.RpcLib.Queue {
 
     /// <summary>
-    /// Interface for saving call that should be retried until they were
+    /// Interface for saving calls that should be retried until they were
     /// executed on the remote peer or finally failed because of a
     /// non-<see cref="RpcFailureTypeEx.IsRetryable"/> failure.
     /// See also <see cref="RpcRetryStrategy"/>.
@@ -12,12 +12,19 @@ namespace Xenoage.RpcLib.Queue {
     /// When the implementation of this interface is using persistent storage (file, database, ...),
     /// the retry strategy still works after reboot.
     /// Implementations of this class must be thread-safe.
-    /// See <see cref="JsonFileRpcBacklog"/> for a simple example, just for demo purposes.
+    /// 
+    /// See <see cref="MemoryRpcBacklog"/> for a production-ready in-memory implementation,
+    /// or <see cref="JsonFileRpcBacklog"/> for a simple example of a persistent backlog, just for demo purposes.
     /// 
     /// The method names and signatures were chosen to be similar to .NET's
     /// <see cref="ConcurrentQueue"/> implementation.
     /// </summary>
     public interface IRpcBacklog {
+
+        /// <summary>
+        /// True, iff this implementation persists the queue even over program restarts.
+        /// </summary>
+        bool IsPersistent { get; }
 
         /// <summary>
         /// Tries to return the call from the beginning of this queue without removing it.
@@ -34,13 +41,18 @@ namespace Xenoage.RpcLib.Queue {
         bool TryDequeue(string? targetPeerID, out RpcCall result);
 
         /// <summary>
-        /// Adds the given call to the end of this queue.
+        /// Adds the given call to the end of the queue of the call's target peer.
         /// When the retry strategy of the call allows only a single method call with this name
         /// (<see cref="RpcRetryStrategy.RetryLatest"/>), all other calls with the
-        /// same method name are removed from the queue.
+        /// same method name, which are still in <see cref="RpcCallState.Enqueued"/>, are removed from the queue.
         /// </summary>
-        /// <param name="targetPeerID">The ID of the called peer, i.e. the client ID or null for the server</param>
-        void Enqueue(string? targetPeerID, RpcCall call);
+        void Enqueue(RpcCall call);
+
+        /// <summary>
+        /// Explicitly clears the whole backlog.
+        /// Not used in the library itself, but useful for testing.
+        /// </summary>
+        void Clear();
 
     }
 
