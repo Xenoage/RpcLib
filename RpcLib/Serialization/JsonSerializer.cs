@@ -26,7 +26,7 @@ namespace Xenoage.RpcLib.Serialization {
         private static readonly JsonSerializerOptions options = new JsonSerializerOptions {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase, // camelCaseNaming 
             WriteIndented = false, // Compact representation
-            //Converters = { new JsonStringEnumConverter() },
+            Converters = { new JsonStringEnumConverter() }, // Enum values as strings, not as numbers
             // TODO: More compact by ignoring null value properties - but only available since .NET 5.0 - add later
             // DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
