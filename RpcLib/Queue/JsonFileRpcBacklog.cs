@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Serialization;
 
@@ -13,33 +14,40 @@ namespace Xenoage.RpcLib.Queue {
     /// In your real world project, use for example a local database instead!
     /// 
     /// File naming:
-    /// ./RpcBacklog/{clientID|"Server"}/{ID}-{method name}
+    /// {backlogDir}/{clientID|"Server"}/{ID}-{method name}
     /// </summary>
     public class JsonFileRpcBacklog : IRpcBacklog {
 
         public bool IsPersistent => true;
 
-        public bool TryPeek(string? targetPeerID, out RpcCall result) =>
-            TryPeekOrDequeue(targetPeerID, dequeue: false, out result);
+        /// <summary>
+        /// Creates a new JSON-file-based backlog, using the given directory
+        /// for storing the backlog items.
+        /// </summary>
+        public JsonFileRpcBacklog(DirectoryInfo backlogDir) {
+            this.backlogDir = backlogDir;
+        }
 
-        public bool TryDequeue(string? targetPeerID, out RpcCall result) =>
-            TryPeekOrDequeue(targetPeerID, dequeue: true, out result);
+        public async Task<RpcCall?> Peek(string? targetPeerID) =>
+            await PeekOrDequeue(targetPeerID, dequeue: false);
 
-        private bool TryPeekOrDequeue(string? targetPeerID, bool dequeue, out RpcCall result) {
+        public async Task<RpcCall?> Dequeue(string? targetPeerID) =>
+            await PeekOrDequeue(targetPeerID, dequeue: true);
+
+        private async Task<RpcCall?> PeekOrDequeue(string? targetPeerID, bool dequeue) {
             lock (syncLock) {
                 if (GetLatestFile(targetPeerID) is FileInfo file) {
-                    result = LoadFromFile(file);
+                    var result = LoadFromFile(file);
                     if (dequeue)
                         file.Delete();
-                    return true;
+                    return result;
                 } else {
-                    result = default!;
-                    return false;
+                    return null;
                 }
             }
         }
 
-        public void Enqueue(RpcCall call) {
+        public async Task Enqueue(RpcCall call) {
             lock (syncLock) {
                 var dir = GetDirectory(call.TargetPeerID);
                 // Apply strategy
@@ -61,11 +69,9 @@ namespace Xenoage.RpcLib.Queue {
             }
         }
 
-        public void Clear() {
-            lock (syncLock) {
-                Directory.Delete(baseDir, recursive: true);
-            }
-        }
+        public async Task<int> GetCount(string? targetPeerID) =>
+            GetDirectory(targetPeerID).GetFiles().Length;
+
 
         private RpcCall LoadFromFile(FileInfo file) =>
             Serializer.Deserialize<RpcCall>(File.ReadAllBytes(file.FullName));
@@ -78,13 +84,13 @@ namespace Xenoage.RpcLib.Queue {
             GetDirectory(targetPeerID).GetFiles("*-" + methodName); // Very inefficient; just for demo purposes
 
         private DirectoryInfo GetDirectory(string? targetPeerID) {
-            var dir = new DirectoryInfo(baseDir + "/" + (targetPeerID ?? "Server"));
+            var dir = new DirectoryInfo(backlogDir.FullName + "/" + (targetPeerID ?? "Server"));
             if (false == dir.Exists)
                 Directory.CreateDirectory(dir.FullName);
             return dir;
         }
 
-        private const string baseDir = "RpcBacklog";
+        private DirectoryInfo backlogDir;
 
         private readonly object syncLock = new object();
 

@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Utils;
 
@@ -15,66 +17,63 @@ namespace Xenoage.RpcLib.Queue {
 
         public bool IsPersistent => false;
 
-        public bool TryPeek(string? targetPeerID, out RpcCall result) =>
-            TryPeekOrDequeue(targetPeerID, dequeue: false, out result);
+        public async Task<RpcCall?> Peek(string? targetPeerID) =>
+            await PeekOrDequeue(targetPeerID, dequeue: false);
 
-        public bool TryDequeue(string? targetPeerID, out RpcCall result) =>
-            TryPeekOrDequeue(targetPeerID, dequeue: true, out result);
+        public async Task<RpcCall?> Dequeue(string? targetPeerID) =>
+            await PeekOrDequeue(targetPeerID, dequeue: true);
 
-        private bool TryPeekOrDequeue(string? targetPeerID, bool dequeue, out RpcCall result) {
-            lock (syncLock) {
-                var queue = GetQueue(targetPeerID);
-                if (queue.Count > 0) {
-                    result = queue.First!.Value;
-                    if (dequeue)
-                        queue.RemoveFirst();
-                    return true;
-                } else {
-                    result = default!;
-                    return false;
-                }
+        private async Task<RpcCall?> PeekOrDequeue(string? targetPeerID, bool dequeue) {
+            await semaphoreSlim.WaitAsync();
+            RpcCall? result = null;
+            var queue = GetQueue(targetPeerID);
+            if (queue.Count > 0) {
+                result = queue.First!.Value;
+                if (dequeue)
+                    queue.RemoveFirst();
             }
+            semaphoreSlim.Release();
+            return result;
         }
 
-        public void Enqueue(RpcCall call) {
-            lock (syncLock) {
-                var queue = GetQueue(call.TargetPeerID);
-                // Apply strategy
-                var strategy = call.RetryStrategy;
-                if (strategy == null || strategy == RpcRetryStrategy.None) {
-                    // No retry strategy chosen. This method should not have been called at all. Do nothing.
-                    return;
-                } else if (strategy == RpcRetryStrategy.Retry) {
-                    // No preparation needed; just enqueue this call
-                } else if (strategy == RpcRetryStrategy.RetryLatest) {
-                    // Remove all preceding method calls with this name, if still in enqueued state
-                    queue.RemoveAll(it => it.Method.Name == call.Method.Name && it.State == RpcCallState.Enqueued);
-                }
-                queue.AddLast(call);
+        public async Task Enqueue(RpcCall call) {
+            await semaphoreSlim.WaitAsync();
+            var queue = GetQueue(call.TargetPeerID);
+            // Apply strategy
+            var strategy = call.RetryStrategy;
+            if (strategy == null || strategy == RpcRetryStrategy.None) {
+                // No retry strategy chosen. This method should not have been called at all. Do nothing.
+                return;
+            } else if (strategy == RpcRetryStrategy.Retry) {
+                // No preparation needed; just enqueue this call
+            } else if (strategy == RpcRetryStrategy.RetryLatest) {
+                // Remove all preceding method calls with this name, if still in enqueued state
+                queue.RemoveAll(it => it.Method.Name == call.Method.Name && it.State == RpcCallState.Enqueued);
             }
+            queue.AddLast(call);
+            semaphoreSlim.Release();
         }
 
-        public void Clear() {
-            lock (syncLock) {
-                queues.Clear();
-            }
+        public async Task<int> GetCount(string? targetPeerID) {
+            await semaphoreSlim.WaitAsync();
+            int count = GetQueue(targetPeerID).Count;
+            semaphoreSlim.Release();
+            return count;
         }
 
         private LinkedList<RpcCall> GetQueue(string? targetPeerID) {
             string key = targetPeerID ?? "";
-            lock (syncLock) {
-                if (queues.TryGetValue(key, out var ret))
-                    return ret;
-                var queue = new LinkedList<RpcCall>();
-                queues.Add(key, queue);
-                return queue;
-            }
+            if (queues.TryGetValue(key, out var ret))
+                return ret;
+            var queue = new LinkedList<RpcCall>();
+            queues.Add(key, queue);
+            return queue;
         }
 
         // A queue for each target peer. The key is the client ID or "" for the server.
         private Dictionary<string, LinkedList<RpcCall>> queues = new Dictionary<string, LinkedList<RpcCall>>();
 
-        private readonly object syncLock = new object();
+        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
     }
 

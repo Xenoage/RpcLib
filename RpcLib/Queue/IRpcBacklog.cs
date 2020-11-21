@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using Xenoage.RpcLib.Model;
 
 namespace Xenoage.RpcLib.Queue {
@@ -11,7 +12,9 @@ namespace Xenoage.RpcLib.Queue {
     /// 
     /// When the implementation of this interface is using persistent storage (file, database, ...),
     /// the retry strategy still works after reboot.
-    /// Implementations of this class must be thread-safe.
+    /// Implementations of this class must be thread-safe, but keep in mind that if multiple threads
+    /// access the same target peer's queue, a <see cref="Peek"/> and a following <see cref="Dequeue"/>
+    /// may return different items. Thus, only one thread should process one target peer at a time.
     /// 
     /// See <see cref="MemoryRpcBacklog"/> for a production-ready in-memory implementation,
     /// or <see cref="JsonFileRpcBacklog"/> for a simple example of a persistent backlog, just for demo purposes.
@@ -22,23 +25,23 @@ namespace Xenoage.RpcLib.Queue {
     public interface IRpcBacklog {
 
         /// <summary>
-        /// True, iff this implementation persists the queue even over program restarts.
+        /// True, iff this implementation persists the queues even over program restarts.
         /// </summary>
         bool IsPersistent { get; }
 
         /// <summary>
-        /// Tries to return the call from the beginning of this queue without removing it.
-        /// Returns true and sets the result parameter, if there is one, otherwise returns false.
+        /// Returns the call from the beginning of the queue of the given peer without removing it.
+        /// If there is one, null is returned.
         /// </summary>
         /// <param name="targetPeerID">The ID of the called peer, i.e. the client ID or null for the server</param>
-        bool TryPeek(string? targetPeerID, out RpcCall result);
+        Task<RpcCall?> Peek(string? targetPeerID);
 
         /// <summary>
-        /// Tries to remove and return the call at the beginning of this queue.
-        /// Returns true and sets the result parameter, if there is one, otherwise returns false.
+        /// Removes and returns the call at the beginning of the queue of the given peer.
+        /// If there is none, null is returned.
         /// </summary>
         /// <param name="targetPeerID">The ID of the called peer, i.e. the client ID or null for the server</param>
-        bool TryDequeue(string? targetPeerID, out RpcCall result);
+        Task<RpcCall?> Dequeue(string? targetPeerID);
 
         /// <summary>
         /// Adds the given call to the end of the queue of the call's target peer.
@@ -46,13 +49,12 @@ namespace Xenoage.RpcLib.Queue {
         /// (<see cref="RpcRetryStrategy.RetryLatest"/>), all other calls with the
         /// same method name, which are still in <see cref="RpcCallState.Enqueued"/>, are removed from the queue.
         /// </summary>
-        void Enqueue(RpcCall call);
+        Task Enqueue(RpcCall call);
 
         /// <summary>
-        /// Explicitly clears the whole backlog.
-        /// Not used in the library itself, but useful for testing.
+        /// Gets the number of currently enqueued calls of the given peer.
         /// </summary>
-        void Clear();
+        Task<int> GetCount(string? targetPeerID);
 
     }
 
