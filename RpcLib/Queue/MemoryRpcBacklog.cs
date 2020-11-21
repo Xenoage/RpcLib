@@ -24,7 +24,7 @@ namespace Xenoage.RpcLib.Queue {
             await PeekOrDequeue(targetPeerID, dequeue: true);
 
         private async Task<RpcCall?> PeekOrDequeue(string? targetPeerID, bool dequeue) {
-            await semaphoreSlim.WaitAsync();
+            await semaphore.WaitAsync();
             RpcCall? result = null;
             var queue = GetQueue(targetPeerID);
             if (queue.Count > 0) {
@@ -32,12 +32,12 @@ namespace Xenoage.RpcLib.Queue {
                 if (dequeue)
                     queue.RemoveFirst();
             }
-            semaphoreSlim.Release();
+            semaphore.Release();
             return result;
         }
 
         public async Task Enqueue(RpcCall call) {
-            await semaphoreSlim.WaitAsync();
+            await semaphore.WaitAsync();
             var queue = GetQueue(call.TargetPeerID);
             // Apply strategy
             var strategy = call.RetryStrategy;
@@ -51,13 +51,13 @@ namespace Xenoage.RpcLib.Queue {
                 queue.RemoveAll(it => it.Method.Name == call.Method.Name && it.State == RpcCallState.Enqueued);
             }
             queue.AddLast(call);
-            semaphoreSlim.Release();
+            semaphore.Release();
         }
 
         public async Task<int> GetCount(string? targetPeerID) {
-            await semaphoreSlim.WaitAsync();
+            await semaphore.WaitAsync();
             int count = GetQueue(targetPeerID).Count;
-            semaphoreSlim.Release();
+            semaphore.Release();
             return count;
         }
 
@@ -73,7 +73,7 @@ namespace Xenoage.RpcLib.Queue {
         // A queue for each target peer. The key is the client ID or "" for the server.
         private Dictionary<string, LinkedList<RpcCall>> queues = new Dictionary<string, LinkedList<RpcCall>>();
 
-        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(initialCount: 1, maxCount: 1);
+        private static SemaphoreSlim semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
     }
 
