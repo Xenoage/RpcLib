@@ -28,7 +28,7 @@
         /// The RPC engine calls <see cref="SetState"/> and <see cref="Finish"/> to update
         /// the state while it processes the call.
         /// </summary>
-        public RpcCallState State { get; set; } = RpcCallState.Created;
+        // GOON public RpcCallState State { get; set; } = RpcCallState.Created;
 
         /// <summary>
         /// The return value of a successful call. It is set for non-void methods
@@ -59,6 +59,12 @@
         /// a method using compression to reduce traffic between the peers.
         /// </summary>
         public string? SerializerID { get; set; } = null; // TODO 
+
+        /// <summary>
+        /// Returns true, if a retry strategy (not none) is set.
+        /// </summary>
+        public bool IsRetryable =>
+            RetryStrategy != null && RetryStrategy != RpcRetryStrategy.None;
 
         #endregion
 

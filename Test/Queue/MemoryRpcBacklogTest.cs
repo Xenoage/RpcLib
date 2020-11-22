@@ -8,7 +8,7 @@ namespace Xenoage.RpcLib.Queue {
     [TestClass]
     public class MemoryRpcBacklogTest : IRpcBacklogTest {
 
-        protected override IRpcBacklog CreateInstance() =>
+        protected override IRpcBacklog_Old CreateInstance() =>
             new MemoryRpcBacklog();
     }
 

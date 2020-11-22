@@ -10,7 +10,7 @@ using Xenoage.RpcLib.Utils;
 namespace Xenoage.RpcLib.Queue {
 
     /// <summary>
-    /// Tests for all implementations of <see cref="IRpcBacklog"/>.
+    /// Tests for all implementations of <see cref="IRpcBacklog_Old"/>.
     /// Persistent backlogs are tested for retaining the queue after a program restart
     /// by simulating the restart by creating a new instance using <see cref="CreateInstance"/>.
     /// </summary>
@@ -20,7 +20,7 @@ namespace Xenoage.RpcLib.Queue {
         /// <summary>
         /// Requests a new instance of this backlog implementation.
         /// </summary>
-        protected abstract IRpcBacklog CreateInstance();
+        protected abstract IRpcBacklog_Old CreateInstance();
 
         /// <summary>
         /// Over time, enqueues some calls for different target peers, peeks and dequeues them.
@@ -115,7 +115,7 @@ namespace Xenoage.RpcLib.Queue {
             Method = RpcMethod.Create(methodName),
             RetryStrategy = RpcRetryStrategy.Retry,
             TargetPeerID = targetPeerID,
-            State = RpcCallState.Enqueued
+            // State = RpcCallState.Enqueued
         };
 
     }

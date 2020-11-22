@@ -3,7 +3,7 @@
     /// <summary>
     /// The current state of an <see cref="RpcCall"/>.
     /// </summary>
-    public enum RpcCallState {
+    /* public enum RpcCallState {
 
         /// <summary>
         /// The start state. It was just created.
@@ -32,6 +32,6 @@
         /// </summary>
         Failed
 
-    }
+    } */
 
 }

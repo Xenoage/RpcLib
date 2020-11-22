@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,8 +20,6 @@ namespace Xenoage.RpcLib.Queue {
     /// </summary>
     public class JsonFileRpcBacklog : IRpcBacklog {
 
-        public bool IsPersistent => true;
-
         /// <summary>
         /// Creates a new JSON-file-based backlog, using the given directory
         /// for storing the backlog items.
@@ -29,61 +28,53 @@ namespace Xenoage.RpcLib.Queue {
             this.backlogDir = backlogDir;
         }
 
-        public async Task<RpcCall?> Peek(string? targetPeerID) =>
-            await PeekOrDequeue(targetPeerID, dequeue: false);
-
-        public async Task<RpcCall?> Dequeue(string? targetPeerID) =>
-            await PeekOrDequeue(targetPeerID, dequeue: true);
-
-        private async Task<RpcCall?> PeekOrDequeue(string? targetPeerID, bool dequeue) {
+        public async Task<Queue<RpcCall>> ReadAll(string? targetPeerID) {
             await semaphore.WaitAsync();
-            RpcCall? result = null;
-            if (GetLatestFile(targetPeerID) is FileInfo file) {
-                result = LoadFromFile(file);
-                if (dequeue)
-                    file.Delete();
-            }
+            var queue = new Queue<RpcCall>(GetFilesOrdered(targetPeerID).Select(ReadFromFile));
             semaphore.Release();
-            return result;
+            return queue;
         }
 
-        public async Task Enqueue(RpcCall call) {
+        public async Task Add(RpcCall call) {
             await semaphore.WaitAsync();
-            var dir = GetDirectory(call.TargetPeerID);
-            // Apply strategy
-            var strategy = call.RetryStrategy;
-            if (strategy == null || strategy == RpcRetryStrategy.None) {
-                // No retry strategy chosen. This method should not have been called at all. Do nothing.
-                return;
-            } else if (strategy == RpcRetryStrategy.Retry) {
-                // No preparation needed; just enqueue this call
-            } else if (strategy == RpcRetryStrategy.RetryLatest) {
-                // Remove all preceding method calls with this name, if still in enqueued state
-                foreach (var file in GetFilesByMethodName(call.TargetPeerID, call.Method.Name)) {
-                    if (LoadFromFile(file).State == RpcCallState.Enqueued) // Very inefficient; just for demo purposes
-                        file.Delete();
-                }
-            }
-            var filename = call.Method.ID + "-" + call.Method.Name;
-            File.WriteAllBytes(Path.Combine(dir.FullName, filename), Serializer.Serialize(call));
+            WriteToFile(call);
             semaphore.Release();
         }
 
-        public async Task<int> GetCount(string? targetPeerID) {
-            int count = GetDirectory(targetPeerID).GetFiles().Length;
-            return count;
+        public async Task RemoveByMethodID(string? targetPeerID, ulong methodID) {
+            await semaphore.WaitAsync();
+            if (GetFileByMethodID(targetPeerID, methodID) is FileInfo file)
+                file.Delete();
+            semaphore.Release();
+        }
+
+        public async Task RemoveByMethodName(string? targetPeerID, string methodName) {
+            await semaphore.WaitAsync();
+            foreach (var file in GetFilesByMethodName(targetPeerID, methodName))
+                file.Delete();
+            semaphore.Release();
         }
 
 
-        private RpcCall LoadFromFile(FileInfo file) =>
+        private RpcCall ReadFromFile(FileInfo file) =>
             Serializer.Deserialize<RpcCall>(File.ReadAllBytes(file.FullName));
 
-        private FileInfo? GetLatestFile(string? targetPeerID) =>
-            GetDirectory(targetPeerID).GetFiles().OrderBy( // Very inefficient; just for demo purposes
-                file => ulong.Parse(file.Name.Split('-')[0])).FirstOrDefault();
+        private void WriteToFile(RpcCall call) {
+            var dir = GetDirectory(call.TargetPeerID);
+            string filename = call.Method.ID + "-" + call.Method.Name;
+            File.WriteAllBytes(Path.Combine(dir.FullName, filename), Serializer.Serialize(call));
+        }
+
+        private IEnumerable<FileInfo> GetFilesOrdered(string? targetPeerID) =>
+            GetDirectory(targetPeerID).GetFiles().OrderBy(file => ulong.Parse(file.Name.Split('-')[0]));
 
         private FileInfo[] GetFilesByMethodName(string? targetPeerID, string methodName) =>
             GetDirectory(targetPeerID).GetFiles("*-" + methodName); // Very inefficient; just for demo purposes
+
+        private FileInfo? GetFileByMethodID(string? targetPeerID, ulong methodID) {
+            var files = GetDirectory(targetPeerID).GetFiles(methodID + "-*"); // Very inefficient; just for demo purposes
+            return files.Length > 0 ? files[0] : null;
+        }
 
         private DirectoryInfo GetDirectory(string? targetPeerID) {
             var dir = new DirectoryInfo(backlogDir.FullName + "/" + (targetPeerID ?? "Server"));
@@ -92,9 +83,11 @@ namespace Xenoage.RpcLib.Queue {
             return dir;
         }
 
-        private DirectoryInfo backlogDir;
 
-        private static SemaphoreSlim semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
+        // Directory where the JSON files are stored.
+        private DirectoryInfo backlogDir;
+        // Semaphore which allows only one thread to enter it at the same time. The others will wait.
+        private SemaphoreSlim semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
     }
 

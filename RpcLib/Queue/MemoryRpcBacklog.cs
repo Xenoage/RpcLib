@@ -7,13 +7,13 @@ using Xenoage.RpcLib.Utils;
 namespace Xenoage.RpcLib.Queue {
 
     /// <summary>
-    /// Implementation of a <see cref="IRpcBacklog"/>,
+    /// Implementation of a <see cref="IRpcBacklog_Old"/>,
     /// using in-memory <see cref="LinkedList"/>s.
     /// This means, that all enqueued retryable calls will be lost as soon
     /// the program is closed. When they should be retained over program restarts,
-    /// use a permanent storage solution as demonstrated in <see cref="JsonFileRpcBacklog"/>.
+    /// use a permanent storage solution as demonstrated in <see cref="JsonFileRpcBacklog_Old"/>.
     /// </summary>
-    public class MemoryRpcBacklog : IRpcBacklog {
+    public class MemoryRpcBacklog : IRpcBacklog_Old {
 
         public bool IsPersistent => false;
 
@@ -48,7 +48,7 @@ namespace Xenoage.RpcLib.Queue {
                 // No preparation needed; just enqueue this call
             } else if (strategy == RpcRetryStrategy.RetryLatest) {
                 // Remove all preceding method calls with this name, if still in enqueued state
-                queue.RemoveAll(it => it.Method.Name == call.Method.Name && it.State == RpcCallState.Enqueued);
+                queue.RemoveAll(it => it.Method.Name == call.Method.Name /* && it.State == RpcCallState.Enqueued */);
             }
             queue.AddLast(call);
             semaphore.Release();
