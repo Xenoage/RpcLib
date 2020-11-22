@@ -91,7 +91,7 @@ namespace Xenoage.RpcLib.Queue {
                 allCalls.Add(call);
             }
             // Remove some calls
-            for (int iRemove = 0; iRemove < callsCount; iRemove += random.Next(50)) {
+            for (int iRemove = 0; iRemove < allCalls.Count; iRemove += random.Next(50)) {
                 var callToRemove = allCalls[iRemove];
                 await backlog.RemoveByMethodID(callToRemove.TargetPeerID, callToRemove.Method.ID);
                 allCalls.RemoveAt(iRemove);
