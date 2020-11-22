@@ -1,18 +1,16 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Model;
-using Xenoage.RpcLib.Utils;
 
 namespace Xenoage.RpcLib.Queue {
 
     /// <summary>
-    /// Tests for all implementations of <see cref="IRpcBacklog_Old"/>.
-    /// Persistent backlogs are tested for retaining the queue after a program restart
-    /// by simulating the restart by creating a new instance using <see cref="CreateInstance"/>.
+    /// Tests for all implementations of <see cref="IRpcBacklog"/>.
+    /// The program restart is simulated by creating a new instance using <see cref="CreateInstance"/>.
+    /// Notice: Thus, this test will not work correctly if the backlog implementation uses static fields.
     /// </summary>
     [TestClass]
     public abstract class IRpcBacklogTest {
@@ -20,103 +18,151 @@ namespace Xenoage.RpcLib.Queue {
         /// <summary>
         /// Requests a new instance of this backlog implementation.
         /// </summary>
-        protected abstract IRpcBacklog_Old CreateInstance();
+        protected abstract IRpcBacklog CreateInstance();
+        
 
         /// <summary>
-        /// Over time, enqueues some calls for different target peers, peeks and dequeues them.
-        /// The order must be retained.
+        /// Enqueues some calls for different target peers.
         /// </summary>
         [TestMethod]
-        public async Task Enqueue_All() {
+        public async Task Add_CountByReadAll() {
             int callsCount = 500;
             int clientsCount = 5;
-            var backlog = CreateInstance();
-            // Enqueue - equally distributed on the clients
+            int[] countByClient = new int[clientsCount];
+            // Add
             for (int iCall = 0; iCall < callsCount; iCall++) {
-                string targetPeerID = "client" + (iCall % clientsCount);
-                await backlog.Enqueue(CreateCall("TestMethod", targetPeerID));
-            }
-            // All tasks must have been enqueued
-            for (int iClient = 0; iClient < clientsCount; iClient++) {
-                int count = await backlog.GetCount("client" + iClient);
-                Assert.AreEqual(callsCount / clientsCount, count);
+                int clientIndex = random.Next(clientsCount);
+                string targetPeerID = "client" + clientIndex;
+                await backlog.Add(CreateCall("TestMethod", targetPeerID));
+                countByClient[clientIndex]++;
+                // Read all to find out number of calls
+                int callsCountOfThisClient = (await backlog.ReadAll(targetPeerID)).Count;
+                Assert.AreEqual(countByClient[clientIndex], callsCountOfThisClient);
             }
         }
 
         /// <summary>
-        /// Over time, enqueues some calls for different target peers, peeks and dequeues them.
-        /// The order must be retained.
+        /// Enqueues some calls for different target peers.
+        /// They must all exist after enqueuing and even after "restart".
         /// </summary>
         [TestMethod]
-        public async Task Peek_And_Dequeue_CorrectOrder() {
+        public async Task ReadAll_AfterRestart() {
             int callsCount = 500;
-            int clientsCount = 1;
-            var random = new Random();
-            var backlog = CreateInstance();
-            var allTasks = new List<Task>();
-            // Enqueue
-            allTasks.Add(Task.Run(async () => {
-                await Task.Delay(2000); // Wait a moment, so that the test starts with an empty backlog
-                for (int iCall = 0; iCall < callsCount; iCall++) {
-                    string targetPeerID = "client" + (iCall % clientsCount);
-                    await backlog.Enqueue(CreateCall("TestMethod", targetPeerID));
-                    await Task.Delay(10);
-                }
-            }));
-            // Peek and dequeue, with checking the order
-            for (int iClient = 0; iClient < clientsCount; iClient++) {
-                string clientID = "client" + iClient;
-                allTasks.Add(Task.Run(async () => {
-                    ulong lastID = 0;
-                    int receivedCallsCount = 0;
-                    while (receivedCallsCount < callsCount / clientsCount) {
-                        if (await backlog.Peek(clientID) is RpcCall peekedCall) {
-                            // Check client ID and that the ID is higher than the last one
-                            Assert.AreEqual(clientID, peekedCall.TargetPeerID);
-                            Assert.IsTrue(peekedCall.Method.ID > lastID);
-                            // Dequeue
-                            var dequeuedCall = await backlog.Dequeue(clientID);
-                            Assert.IsTrue(clientID == dequeuedCall?.TargetPeerID);
-                            // Dequeued call must be the same call (same ID) as the previously peeked call
-                            Assert.AreEqual(dequeuedCall!.Method.ID, peekedCall.Method.ID);
-                            lastID = dequeuedCall.Method.ID;
-                            receivedCallsCount++;
-                        }
-                        // Dequeue slower than enqueue, so that the queues become longer over time
-                        await Task.Delay(10);
-                    }
-                }));
+            int clientsCount = 5;
+            List<List<RpcCall>> callsByClient =
+                Enumerable.Range(0, clientsCount).Select(it => new List<RpcCall>()).ToList();
+            // Add
+            for (int iCall = 0; iCall < callsCount; iCall++) {
+                int clientIndex = random.Next(clientsCount);
+                string targetPeerID = "client" + clientIndex;
+                var call = CreateCall("TestMethod" + random.Next(10), targetPeerID);
+                await backlog.Add(call);
+                callsByClient[clientIndex].Add(call);
             }
-            // Give time to finish, but only a certain amount of time
-            if (false == await AwaitAll(allTasks, timeoutMs: 20_000))
-                Assert.Fail($"Timeout");
+            // Test after restart, if still the same
+            SimulateRestart();
+            for (int iClient = 0; iClient < clientsCount; iClient++) {
+                string targetPeerID = "client" + iClient;
+                // Read all and compare
+                var calls = new List<RpcCall>(await backlog.ReadAll(targetPeerID));
+                Assert.AreEqual(callsByClient[iClient].Count, calls.Count);
+                for (int iCall = 0; iCall < calls.Count; iCall++)
+                    Assert.AreEqual(callsByClient[iClient][iCall], calls[iCall]);
+            }
         }
 
         /// <summary>
-        /// Awaits the given tasks, but no longer than the given timeout in milliseconds (up to 100 ms tolerance).
-        /// Returns true, when all tasks could be finished, otherwise false (timeout).
+        /// Removes some specific calls by method ID.
         /// </summary>
-        private async Task<bool> AwaitAll(IEnumerable<Task> tasks, int timeoutMs) {
-            for (int t = 0; t < timeoutMs; t += 100) {
-                foreach (var task in tasks)
-                    if (task.IsCompleted)
-                        await task; // It's already completed, but in this way we get
-                                    // notified if there was an Assert failure/Exception
-                if (tasks.All(it => it.IsCompleted))
-                    return true; // All tasks successfully finished
-                await Task.Delay(100);
+        [TestMethod]
+        public async Task RemoveByMethodID_Test() {
+            int callsCount = 500;
+            int clientsCount = 5;
+            List<List<RpcCall>> callsByClient =
+                Enumerable.Range(0, clientsCount).Select(it => new List<RpcCall>()).ToList();
+            List<RpcCall> allCalls = new List<RpcCall>();
+            // Add
+            for (int iCall = 0; iCall < callsCount; iCall++) {
+                int clientIndex = random.Next(clientsCount);
+                string targetPeerID = "client" + clientIndex;
+                var call = CreateCall("TestMethod" + random.Next(10), targetPeerID);
+                await backlog.Add(call);
+                callsByClient[clientIndex].Add(call);
+                allCalls.Add(call);
             }
-            return false;
+            // Remove some calls
+            for (int iRemove = 0; iRemove < callsCount; iRemove += random.Next(50)) {
+                var callToRemove = allCalls[iRemove];
+                await backlog.RemoveByMethodID(callToRemove.TargetPeerID, callToRemove.Method.ID);
+                allCalls.RemoveAt(iRemove);
+                callsByClient.ForEach(list => list.RemoveAll(it => it.Method.ID == callToRemove.Method.ID));
+            }
+            // Test if calls were removed
+            for (int iClient = 0; iClient < clientsCount; iClient++) {
+                string targetPeerID = "client" + iClient;
+                // Read all and compare
+                var calls = new List<RpcCall>(await backlog.ReadAll(targetPeerID));
+                Assert.AreEqual(callsByClient[iClient].Count, calls.Count);
+                for (int iCall = 0; iCall < calls.Count; iCall++)
+                    Assert.AreEqual(callsByClient[iClient][iCall], calls[iCall]);
+            }
         }
 
-        //protected class IRpcBacklogProxy: 
+        /// <summary>
+        /// Removes some calls by method name.
+        /// </summary>
+        [TestMethod]
+        public async Task RemoveByMethodName_Test() {
+            int callsCount = 500;
+            int clientsCount = 5;
+            List<List<RpcCall>> callsByClient =
+                Enumerable.Range(0, clientsCount).Select(it => new List<RpcCall>()).ToList();
+            // Add
+            for (int iCall = 0; iCall < callsCount; iCall++) {
+                int clientIndex = random.Next(clientsCount);
+                string targetPeerID = "client" + clientIndex;
+                var call = CreateCall("TestMethod" + random.Next(10), targetPeerID);
+                await backlog.Add(call);
+                callsByClient[clientIndex].Add(call);
+            }
+            // Remove all calls with method ID "TestMethod5"
+            for (int iClient = 0; iClient < clientsCount; iClient++) {
+                string targetPeerID = "client" + iClient;
+                await backlog.RemoveByMethodName(targetPeerID, "TestMethod5");
+                callsByClient[iClient].RemoveAll(it => it.Method.Name == "TestMethod5");
+            }
+            // Test if calls were removed
+            for (int iClient = 0; iClient < clientsCount; iClient++) {
+                string targetPeerID = "client" + iClient;
+                // Read all and compare
+                var calls = new List<RpcCall>(await backlog.ReadAll(targetPeerID));
+                Assert.AreEqual(callsByClient[iClient].Count, calls.Count);
+                for (int iCall = 0; iCall < calls.Count; iCall++)
+                    Assert.AreEqual(callsByClient[iClient][iCall], calls[iCall]);
+            }
+        }
+
+
+        [TestInitialize]
+        public void Init() {
+            backlog = CreateInstance();
+        }
+
+        /// <summary>
+        /// Simulates a restart by creating a new backlog instance.
+        /// </summary>
+        private void SimulateRestart() {
+            backlog = CreateInstance();
+        }
 
         private RpcCall CreateCall(string methodName, string targetPeerID) => new RpcCall {
             Method = RpcMethod.Create(methodName),
             RetryStrategy = RpcRetryStrategy.Retry,
-            TargetPeerID = targetPeerID,
-            // State = RpcCallState.Enqueued
+            TargetPeerID = targetPeerID
         };
+
+        private IRpcBacklog backlog;
+        private Random random = new Random();
 
     }
 

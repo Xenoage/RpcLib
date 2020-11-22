@@ -16,7 +16,7 @@ namespace Xenoage.RpcLib.Queue {
     /// access the same target peer's queue, a <see cref="Peek"/> and a following <see cref="Dequeue"/>
     /// may return different items. Thus, only one thread should process one target peer at a time.
     /// 
-    /// See <see cref="MemoryRpcBacklog"/> for a production-ready in-memory implementation,
+    /// See <see cref="MemoryRpcBacklog_Old"/> for a production-ready in-memory implementation,
     /// or <see cref="JsonFileRpcBacklog_Old"/> for a simple example of a persistent backlog, just for demo purposes.
     /// 
     /// The method names and signatures were chosen to be similar to .NET's
@@ -47,7 +47,7 @@ namespace Xenoage.RpcLib.Queue {
         /// Adds the given call to the end of the queue of the call's target peer.
         /// When the retry strategy of the call allows only a single method call with this name
         /// (<see cref="RpcRetryStrategy.RetryLatest"/>), all other calls with the
-        /// same method name, which are still in <see cref="RpcCallState.Enqueued"/>, are removed from the queue.
+        /// same method name, which are still in <see cref="RpcCallState_Old.Enqueued"/>, are removed from the queue.
         /// </summary>
         Task Enqueue(RpcCall call);
 

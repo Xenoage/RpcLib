@@ -76,6 +76,16 @@ namespace Xenoage.RpcLib.Model {
 
         #endregion
 
+        #region Comparison
+
+        public override bool Equals(object? obj) {
+            return obj is RpcMethod method &&
+                ID == method.ID &&
+                Name == method.Name &&
+                Parameters.SequenceEqual(method.Parameters);
+        }
+
+        #endregion
     }
 
 }

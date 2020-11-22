@@ -13,7 +13,7 @@ namespace Xenoage.RpcLib.Queue {
     /// the program is closed. When they should be retained over program restarts,
     /// use a permanent storage solution as demonstrated in <see cref="JsonFileRpcBacklog_Old"/>.
     /// </summary>
-    public class MemoryRpcBacklog : IRpcBacklog_Old {
+    public class MemoryRpcBacklog_Old : IRpcBacklog_Old {
 
         public bool IsPersistent => false;
 

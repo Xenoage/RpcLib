@@ -1,4 +1,6 @@
-﻿namespace Xenoage.RpcLib.Model {
+﻿using System.Collections.Generic;
+
+namespace Xenoage.RpcLib.Model {
 
     /// <summary>
     /// An RPC call, i.e. a <see cref="RpcMethod"/> invocation with additional
@@ -24,16 +26,8 @@
         #region State
 
         /// <summary>
-        /// The current state of this call.
-        /// The RPC engine calls <see cref="SetState"/> and <see cref="Finish"/> to update
-        /// the state while it processes the call.
-        /// </summary>
-        // GOON public RpcCallState State { get; set; } = RpcCallState.Created;
-
-        /// <summary>
         /// The return value of a successful call. It is set for non-void methods
-        /// as soon as the <see cref="State"/> is <see cref="RpcCallState.Successful"/>,
-        /// otherwise it is null.
+        /// as soon as the call is finished successfully, otherwise it is null.
         /// </summary>
         public byte[]? Result { get; set; } = null;
 
@@ -65,6 +59,21 @@
         /// </summary>
         public bool IsRetryable =>
             RetryStrategy != null && RetryStrategy != RpcRetryStrategy.None;
+
+        #endregion
+
+        #region Comparison
+
+        public override bool Equals(object? obj) {
+            return obj is RpcCall call &&
+                   Method.Equals(call.Method) &&
+                   TargetPeerID == call.TargetPeerID &&
+                   EqualityComparer<byte[]?>.Default.Equals(Result, call.Result) &&
+                   RetryStrategy == call.RetryStrategy &&
+                   TimeoutMs == call.TimeoutMs &&
+                   SerializerID == call.SerializerID &&
+                   IsRetryable == call.IsRetryable;
+        }
 
         #endregion
 
