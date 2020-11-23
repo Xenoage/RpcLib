@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Model;
+using Xenoage.RpcLib.Utils;
 
 namespace Xenoage.RpcLib.Queue {
 
@@ -80,7 +81,7 @@ namespace Xenoage.RpcLib.Queue {
                 }
             }));
             // Give time to finish, but only a certain amount of time
-            if (false == await AwaitAll(allTasks, timeoutMs: 20_000))
+            if (false == await allTasks.AwaitAll(timeoutMs: 20_000))
                 Assert.Fail($"Timeout");
             // Backlog must also be empty now
             Assert.AreEqual(0, (await backlog.ReadAll(targetPeerID)).Count);
@@ -88,25 +89,49 @@ namespace Xenoage.RpcLib.Queue {
 
 
         /// <summary>
-        /// Awaits the given tasks, but no longer than the given timeout in milliseconds (up to 100 ms tolerance).
-        /// Returns true, when all tasks could be finished, otherwise false (timeout).
+        /// Over time, enqueues some calls, but Method5 and Method8 are of type
+        /// <see cref="RpcRetryStrategy.RetryLatest"/>, so previous calls have to
+        /// be removed from the backlog (not from the queue itself).
         /// </summary>
-        private async Task<bool> AwaitAll(IEnumerable<Task> tasks, int timeoutMs) {
-            for (int t = 0; t < timeoutMs; t += 100) {
-                foreach (var task in tasks)
-                    if (task.IsCompleted)
-                        await task; // It's already completed, but in this way we get
-                                    // notified if there was an Assert failure/Exception
-                if (tasks.All(it => it.IsCompleted))
-                    return true; // All tasks successfully finished
-                await Task.Delay(100);
+        [TestMethod]
+        public async Task Enqueue_RemoveObsolete() {
+            int callsCount = 100;
+            string targetPeerID = "TestClient";
+            var retryLatestMethods = new HashSet<string> { "Method5", "Method8" };
+            var backlog = new JsonFileRpcBacklog(new DirectoryInfo(backlogDir));
+            var queue = await RpcQueue.Create(targetPeerID, backlog);
+            var allCalls = new List<RpcCall>();
+            // Enqueue
+            for (int iCall = 0; iCall < callsCount; iCall++) {
+                string methodName = "Method" + random.Next(10);
+                var retry = retryLatestMethods.Contains(methodName)
+                    ? RpcRetryStrategy.RetryLatest : RpcRetryStrategy.Retry;
+                var call = CreateCall(methodName, targetPeerID, retry);
+                allCalls.Add(call);
+                await queue.Enqueue(call);
+                await Task.Delay(50);
             }
-            return false;
+            // Test backlog: Only last call of the RetryLatest methods must be there
+            var backlogCalls = await backlog.ReadAll(targetPeerID);
+            var callsWithoutObsolete = allCalls.Where((call, index) => {
+                if (call.RetryStrategy == RpcRetryStrategy.RetryLatest)
+                    return allCalls.FindLastIndex(it => it.Method.Name == call.Method.Name) == index;
+                return true;
+            }).ToList();
+            CollectionAssert.AreEqual(callsWithoutObsolete, backlogCalls);
+            // Test queue: All methods must still be there
+            Assert.AreEqual(allCalls.Count, queue.Count);
+            for (int i = 0; i < allCalls.Count; i++)
+                Assert.AreEqual(allCalls[i], await queue.Dequeue());
         }
 
-        private RpcCall CreateCall(string methodName, string targetPeerID) => new RpcCall {
+
+        
+
+        private RpcCall CreateCall(string methodName, string targetPeerID,
+                RpcRetryStrategy retry = RpcRetryStrategy.Retry) => new RpcCall {
             Method = RpcMethod.Create(methodName),
-            RetryStrategy = RpcRetryStrategy.Retry,
+            RetryStrategy = retry,
             TargetPeerID = targetPeerID
         };
 
