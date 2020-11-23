@@ -7,14 +7,13 @@ using Xenoage.RpcLib.Model;
 namespace Xenoage.RpcLib.Queue {
 
     /// <summary>
-    /// Queue of calls and responses to a specific <see cref="TargetPeerID"/>
+    /// Queue of calls to a specific <see cref="TargetPeerID"/>
     /// (one of the clients or the server).
     /// 
     /// When a <see cref="Backlog"/> is registered, enqueued calls are also stored there,
     /// and dequeued (and obsolete) calls are removed.
     /// When the class is initialized, it is filled with the calls which are still in the
     /// <see cref="Backlog"/>, if any.
-    /// Responses are not saved in the backlog, only calls.
     /// 
     /// This class is thread-safe.
     /// </summary>
