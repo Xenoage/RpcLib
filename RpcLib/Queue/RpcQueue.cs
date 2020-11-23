@@ -53,6 +53,12 @@ namespace Xenoage.RpcLib.Queue {
         }
 
         /// <summary>
+        /// Returns the number of calls in the queue.
+        /// </summary>
+        public int Count =>
+            queue.Count;
+
+        /// <summary>
         /// Gets the call from the beginning of this queue without removing it,
         /// or returns null if the queue is empty.
         /// </summary>
