@@ -5,14 +5,9 @@
     /// </summary>
     public class RpcFailure {
 
-        public RpcFailure(RpcFailureType type, string message) {
-            Type = type;
-            Message = message;
-        }
+        public RpcFailureType Type { get; set; } = RpcFailureType.Other;
 
-        public RpcFailureType Type { get; }
-
-        public string Message { get; }
+        public string? Message { get; set; }
 
     }
     

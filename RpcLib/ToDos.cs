@@ -13,4 +13,6 @@ using Xenoage.RpcLib.Serialization;
 /// 
 /// - Implement <see cref="RpcCall.SerializerID"/>
 /// 
+/// - Rename "target" peer ID to "remote" peer ID
+/// 
 /// </summary>

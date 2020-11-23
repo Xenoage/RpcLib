@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Xenoage.RpcLib.Serialization;
 using static Xenoage.RpcLib.Serialization.Serializer;
 using static Xenoage.RpcLib.Utils.CoreUtils;
 
@@ -31,13 +32,13 @@ namespace Xenoage.RpcLib.Model {
         public string Name { get; set; }
 
         /// <summary>
-        /// The list of the serialized parameter values.
+        /// The list of the serialized parameter values, if any.
         /// See <see cref="ISerializer"/> how the parameter values are encoded.
         /// </summary>
         public List<byte[]> Parameters { get; set; }
 
         #endregion
-
+        
         #region Creation
 
         /// <summary>

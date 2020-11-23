@@ -26,10 +26,10 @@ namespace Xenoage.RpcLib.Model {
         #region State
 
         /// <summary>
-        /// The return value of a successful call. It is set for non-void methods
-        /// as soon as the call is finished successfully, otherwise it is null.
+        /// The result of a finished call, whether successful or not.
+        /// Null, when the response for this call has not yet been received.
         /// </summary>
-        public byte[]? Result { get; set; } = null;
+        public RpcResult? Result { get; set; } = null;
 
         #endregion
 
@@ -68,7 +68,7 @@ namespace Xenoage.RpcLib.Model {
             return obj is RpcCall call &&
                    Method.Equals(call.Method) &&
                    TargetPeerID == call.TargetPeerID &&
-                   EqualityComparer<byte[]?>.Default.Equals(Result, call.Result) &&
+                   EqualityComparer<RpcResult?>.Default.Equals(Result, call.Result) &&
                    RetryStrategy == call.RetryStrategy &&
                    TimeoutMs == call.TimeoutMs &&
                    SerializerID == call.SerializerID &&

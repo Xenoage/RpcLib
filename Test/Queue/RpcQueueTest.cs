@@ -126,8 +126,6 @@ namespace Xenoage.RpcLib.Queue {
         }
 
 
-        
-
         private RpcCall CreateCall(string methodName, string targetPeerID,
                 RpcRetryStrategy retry = RpcRetryStrategy.Retry) => new RpcCall {
             Method = RpcMethod.Create(methodName),
