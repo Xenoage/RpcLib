@@ -142,6 +142,20 @@ namespace Xenoage.RpcLib.Queue {
             }
         }
 
+        /// <summary>
+        /// Tests the target peer ID null (server).
+        /// </summary>
+        [TestMethod]
+        public async Task Add_Server() {
+            int callsCount = 10;
+            // Add
+            for (int iCall = 0; iCall < callsCount; iCall++)
+                await backlog.Add(CreateCall("TestMethod", targetPeerID: null));
+            // Read all to find out number of calls
+            int actualCallsCount = (await backlog.ReadAll(targetPeerID: null)).Count;
+            Assert.AreEqual(callsCount, actualCallsCount);
+        }
+
 
         [TestInitialize]
         public void Init() {
@@ -155,7 +169,7 @@ namespace Xenoage.RpcLib.Queue {
             backlog = CreateInstance();
         }
 
-        private RpcCall CreateCall(string methodName, string targetPeerID) => new RpcCall {
+        private RpcCall CreateCall(string methodName, string? targetPeerID) => new RpcCall {
             Method = RpcMethod.Create(methodName),
             RetryStrategy = RpcRetryStrategy.Retry,
             TargetPeerID = targetPeerID
