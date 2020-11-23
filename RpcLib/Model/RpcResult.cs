@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Xenoage.RpcLib.Model {
 
@@ -26,9 +27,10 @@ namespace Xenoage.RpcLib.Model {
 
         public override bool Equals(object? obj) {
             return obj is RpcResult result &&
-                   MethodID == result.MethodID &&
-                   EqualityComparer<RpcFailure?>.Default.Equals(Failure, result.Failure) &&
-                   EqualityComparer<byte[]?>.Default.Equals(ReturnValue, result.ReturnValue);
+                MethodID == result.MethodID &&
+                EqualityComparer<RpcFailure?>.Default.Equals(Failure, result.Failure) &&
+                ((ReturnValue == null && result.ReturnValue == null) ||
+                    (ReturnValue != null && result.ReturnValue != null && ReturnValue.SequenceEqual(result.ReturnValue)));
         }
 
     }

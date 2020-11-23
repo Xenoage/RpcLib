@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Xenoage.RpcLib.Model;
 
-namespace Xenoage.RpcLib.Peer {
+namespace Xenoage.RpcLib.Peers {
 
     /// <summary>
     /// Low-level RPC communication protocol.
@@ -30,33 +30,43 @@ namespace Xenoage.RpcLib.Peer {
         /// <summary>
         /// The encoded data.
         /// </summary>
-        public byte[] Data { get; private set; }
+        public byte[] Data { get; set; } = new byte[0];
 
-        public RpcMessage(byte[] data) {
-            Data = data;
-        }
+
+        /// <summary>
+        /// Creates a new message from the given encoded data.
+        /// </summary>
+        public static RpcMessage FromData(byte[] data) =>
+            new RpcMessage { Data = data };
 
         /// <summary>
         /// Encodes the given method call to a RPC message.
         /// </summary>
         public static RpcMessage Encode(RpcMethod methodCall) {
             byte[] name = Encoding.UTF8.GetBytes(methodCall.Name);
+            int parametersCount = methodCall.Parameters?.Count ?? 0;
             int length = 2 /* Header */ + 8 /* ID */ +
                 name.Length + 1 + /* Method name and ";" */
-                1 + methodCall.Parameters.Sum(it => 4 + it.Length); /* Parameters: Count, and for each: length and data */
+                1 + (methodCall.Parameters?.Sum(it => 4 + it.Length) ?? 0); /* Parameters: Count, and for each: length and data */
             byte[] data = new byte[length];
             int pos = 0;
             data[pos++] = (byte)'1'; // Header
             data[pos++] = (byte)'M';
-            Array.Copy(BitConverter.GetBytes(methodCall.ID), 0, data, pos += 8, 8); // ID
-            Array.Copy(name, 0, data, pos += name.Length, name.Length); // Name
+            Array.Copy(BitConverter.GetBytes(methodCall.ID), 0, data, pos, 8); // ID
+            pos += 8;
+            Array.Copy(name, 0, data, pos, name.Length); // Name
+            pos += name.Length;
             data[pos++] = (byte)';';
-            data[pos++] = (byte)methodCall.Parameters.Count;
-            foreach (var param in methodCall.Parameters) {
-                Array.Copy(BitConverter.GetBytes(param.Length), 0, data, pos += 4, 4); // Param length
-                Array.Copy(param, 0, data, pos += param.Length, param.Length); // Param data
+            data[pos++] = (byte)parametersCount;
+            if (parametersCount > 0) {
+                foreach (var param in methodCall.Parameters!) {
+                    Array.Copy(BitConverter.GetBytes(param.Length), 0, data, pos, 4); // Param length
+                    pos += 4;
+                    Array.Copy(param, 0, data, pos, param.Length); // Param data
+                    pos += param.Length;
+                }
             }
-            return new RpcMessage(data);
+            return new RpcMessage { Data = data };
         }
 
         /// <summary>
@@ -74,31 +84,42 @@ namespace Xenoage.RpcLib.Peer {
             }
             else {
                 // Failure
-                failureType = Encoding.UTF8.GetBytes(""+result.Failure);
+                failureType = Encoding.UTF8.GetBytes(""+result.Failure.Type);
                 failureMessageLength = result.Failure.Message?.Length ?? 0;
                 if (failureMessageLength > 0)
                     failureMessage = Encoding.UTF8.GetBytes(result.Failure.Message!);
-                length += failureType.Length + 1 /* ";" */ + failureMessageLength;
+                length += failureType.Length + 1 /* ";" */ + 4 + failureMessageLength;
             }
             byte[] data = new byte[length];
             int pos = 0;
             data[pos++] = (byte)'1'; // Header
-            data[pos++] = (byte)'M';
+            data[pos++] = (byte)'R';
+            Array.Copy(BitConverter.GetBytes(result.MethodID), 0, data, pos, 8); // ID
+            pos += 8;
+            // Success or failure
             if (result.Failure == null) {
                 // Successful
                 data[pos++] = (byte)'S';
-                Array.Copy(BitConverter.GetBytes(returnValueLength), 0, data, pos += 4, 4); // Return value length
-                if (returnValueLength > 0)
-                    Array.Copy(result.ReturnValue!, 0, data, pos += returnValueLength, returnValueLength); // Return value data
+                Array.Copy(BitConverter.GetBytes(returnValueLength), 0, data, pos, 4); // Return value length
+                pos += 4;
+                if (returnValueLength > 0) {
+                    Array.Copy(result.ReturnValue!, 0, data, pos, returnValueLength); // Return value data
+                    pos += returnValueLength;
+                }
             } else {
                 // Failure
-                Array.Copy(failureType!, 0, data, pos += failureType!.Length, failureType.Length); // Failure type
+                data[pos++] = (byte)'F';
+                Array.Copy(failureType!, 0, data, pos, failureType!.Length); // Failure type
+                pos += failureType!.Length;
                 data[pos++] = (byte)';';
-                Array.Copy(BitConverter.GetBytes(failureMessageLength), 0, data, pos += 4, 4); // Failure message length
-                if (failureMessageLength > 0)
-                    Array.Copy(failureMessage!, 0, data, pos += failureMessageLength, failureMessageLength); // Failure message
+                Array.Copy(BitConverter.GetBytes(failureMessageLength), 0, data, pos, 4); // Failure message length
+                pos += 4;
+                if (failureMessageLength > 0) {
+                    Array.Copy(failureMessage!, 0, data, pos, failureMessageLength); // Failure message
+                    pos += failureMessageLength;
+                }
             }
-            return new RpcMessage(data);
+            return new RpcMessage { Data = data };
         }
 
         /// <summary>
@@ -129,7 +150,8 @@ namespace Xenoage.RpcLib.Peer {
                 int pos = 2;
                 var ret = new RpcMethod();
                 // ID
-                ret.ID = BitConverter.ToUInt64(Data, pos += 8);
+                ret.ID = BitConverter.ToUInt64(Data, pos);
+                pos += 8;
                 // Method name
                 int methodNameEnd = Array.FindIndex(Data, pos, it => it == (byte)';');
                 if (methodNameEnd == -1)
@@ -141,9 +163,11 @@ namespace Xenoage.RpcLib.Peer {
                 if (paramsCount > 0) {
                     ret.Parameters = new List<byte[]>(capacity: paramsCount);
                     for (byte iParam = 0; iParam < paramsCount; iParam++) {
-                        int paramLength = BitConverter.ToInt32(Data, pos += 4);
+                        int paramLength = BitConverter.ToInt32(Data, pos);
+                        pos += 4;
                         ret.Parameters.Add(
-                            new ArraySegment<byte>(Data, pos += paramLength, paramLength).ToArray());
+                            new ArraySegment<byte>(Data, pos, paramLength).ToArray());
+                        pos += paramLength;
                     }
                 }
                 return ret;
@@ -165,13 +189,18 @@ namespace Xenoage.RpcLib.Peer {
                 int pos = 2;
                 var ret = new RpcResult();
                 // ID
-                ret.MethodID = BitConverter.ToUInt64(Data, pos += 8);
+                ret.MethodID = BitConverter.ToUInt64(Data, pos);
+                pos += 8;
+                // Success or failure
                 bool isSuccess = Data[pos++] == (byte)'S';
                 if (isSuccess) {
                     // Successful
-                    int returnValueLength = BitConverter.ToInt32(Data, pos += 4);
-                    if (returnValueLength > 0)
-                        ret.ReturnValue = new ArraySegment<byte>(Data, pos += returnValueLength, returnValueLength).ToArray();
+                    int returnValueLength = BitConverter.ToInt32(Data, pos);
+                    pos += 4;
+                    if (returnValueLength > 0) {
+                        ret.ReturnValue = new ArraySegment<byte>(Data, pos, returnValueLength).ToArray();
+                        pos += returnValueLength;
+                    }
                 }
                 else {
                     // Failure
@@ -184,9 +213,12 @@ namespace Xenoage.RpcLib.Peer {
                         Encoding.UTF8.GetString(Data, pos, failureTypeEnd - pos));
                     pos = failureTypeEnd + 1;
                     // Message
-                    int messageLength = BitConverter.ToInt32(Data, pos += 4);
-                    if (messageLength > 0)
-                        ret.Failure.Message = Encoding.UTF8.GetString(Data, pos += messageLength, messageLength);
+                    int messageLength = BitConverter.ToInt32(Data, pos);
+                    pos += 4;
+                    if (messageLength > 0) {
+                        ret.Failure.Message = Encoding.UTF8.GetString(Data, pos, messageLength);
+                        pos += messageLength;
+                    }
                 }
                 return ret;
             } catch (Exception ex) {

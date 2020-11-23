@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Queue;
 
-namespace Xenoage.RpcLib.Peer {
+namespace Xenoage.RpcLib.Peers {
 
     /// <summary>
     /// For each client, one instance of this class is running both on the client

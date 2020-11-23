@@ -9,6 +9,11 @@
 
         public string? Message { get; set; }
 
+        public override bool Equals(object? obj) {
+            return obj is RpcFailure failure &&
+                   Type == failure.Type &&
+                   Message == failure.Message;
+        }
     }
     
 }

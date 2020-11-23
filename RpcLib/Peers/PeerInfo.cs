@@ -1,4 +1,4 @@
-﻿namespace Xenoage.RpcLib.Peer {
+﻿namespace Xenoage.RpcLib.Peers {
 
     /// <summary>
     /// Information on a remote peer.
