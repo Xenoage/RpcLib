@@ -47,7 +47,7 @@ namespace Xenoage.RpcLib.Queue {
         /// Over time, enqueues some calls, peeks and dequeues them.
         /// The order must be retained.
         /// </summary>
-        [TestMethod]
+        [TestMethod, Timeout(20_000)]
         public async Task Enqueue_And_Peek_And_Dequeue_CorrectOrder() {
             int callsCount = 100;
             string targetPeerID = "TestClient";
@@ -80,9 +80,8 @@ namespace Xenoage.RpcLib.Queue {
                     await Task.Delay(50);
                 }
             }));
-            // Give time to finish, but only a certain amount of time
-            if (false == await allTasks.AwaitAll(timeoutMs: 20_000))
-                Assert.Fail($"Timeout");
+            // Wait until tasks are finished
+            await Task.WhenAll(allTasks);
             // Backlog must also be empty now
             Assert.AreEqual(0, (await backlog.ReadAll(targetPeerID)).Count);
         }
@@ -93,7 +92,7 @@ namespace Xenoage.RpcLib.Queue {
         /// <see cref="RpcRetryStrategy.RetryLatest"/>, so previous calls have to
         /// be removed from the backlog (not from the queue itself).
         /// </summary>
-        [TestMethod]
+        [TestMethod, Timeout(20_000)]
         public async Task Enqueue_RemoveObsolete() {
             int callsCount = 100;
             string targetPeerID = "TestClient";

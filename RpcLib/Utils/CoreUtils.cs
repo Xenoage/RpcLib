@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Xenoage.RpcLib.Utils {
@@ -29,20 +30,44 @@ namespace Xenoage.RpcLib.Utils {
         }
 
         /// <summary>
-        /// Awaits all these tasks, but no longer than the given timeout in milliseconds (up to 100 ms tolerance).
-        /// Returns true, when all tasks could be finished, otherwise false (timeout).
+        /// Awaits this tasks, but no longer than the given timeout.
+        /// Returns with the result of the task when finished, otherwise re-throws the exception of the
+        /// task execution or a <see cref="TimeoutException"/> when the timeout is reached.
+        /// Original source: https://stackoverflow.com/a/22078975/518491 .
         /// </summary>
-        public static async Task<bool> AwaitAll(this IEnumerable<Task> tasks, int timeoutMs) {
-            for (int t = 0; t < timeoutMs; t += 100) {
-                foreach (var task in tasks)
-                    if (task.IsCompleted)
-                        await task; // It's already completed, but in this way we get
-                                    // notified if there was an Assert failure/Exception
-                if (tasks.All(it => it.IsCompleted))
-                    return true; // All tasks successfully finished
-                await Task.Delay(100);
+        public static async Task<T> TimeoutAfter<T>(this Task<T> task, TimeSpan timeout) {
+            using (var timeoutHelper = new CancellationTokenSource()) {
+                var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutHelper.Token));
+                if (completedTask == task) {
+                    timeoutHelper.Cancel();
+                    return await task; // It's already completed, but in this way we get
+                                       // notified if there was an Exception
+                } else {
+                    throw new TimeoutException();
+                }
             }
-            return false;
+        }
+
+        /// <summary>
+        /// Awaits these tasks, but no longer than the given timeout.
+        /// If there is a problem, re-throws the exception of the first failing task
+        /// or throws a <see cref="TimeoutException"/> when the timeout is reached.
+        /// </summary>
+        public static async Task TimeoutAfter(this List<Task> tasks, TimeSpan timeout) {
+            using (var timeoutHelper = new CancellationTokenSource()) {
+                var allTasks = new List<Task>(tasks.Count + 1);
+                allTasks.AddRange(tasks);
+                var timeoutTask = Task.Delay(timeout, timeoutHelper.Token);
+                allTasks.Add(timeoutTask);
+                var completedTask = await Task.WhenAny(allTasks);
+                if (completedTask != timeoutTask) {
+                    timeoutHelper.Cancel();
+                    await completedTask; // It's already completed, but in this way we get
+                                         // notified if there was an Exception
+                } else {
+                    throw new TimeoutException();
+                }
+            }
         }
 
     }
