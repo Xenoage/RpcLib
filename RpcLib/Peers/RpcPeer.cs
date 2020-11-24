@@ -42,8 +42,8 @@ namespace Xenoage.RpcLib.Peers {
         /// and optionally the given backlog.
         /// </summary>
         public async Task<RpcPeer> Create(PeerInfo remoteInfo, WebSocket webSocket,
-                RpcOptions? defaultOptions = null, IRpcBacklog? backlog = null) {
-            var ret = new RpcPeer(remoteInfo, webSocket, defaultOptions);
+                IRpcMethodExecutor executor, IRpcBacklog? backlog = null) {
+            var ret = new RpcPeer(remoteInfo, webSocket, executor);
             ret.callsQueue = await RpcQueue.Create(remoteInfo.PeerID, backlog);
             return ret;
         }
@@ -51,10 +51,10 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Use <see cref="Create"/> for creating new instances.
         /// </summary>
-        private RpcPeer(PeerInfo remoteInfo, WebSocket webSocket, RpcOptions? defaultOptions) {
+        private RpcPeer(PeerInfo remoteInfo, WebSocket webSocket, IRpcMethodExecutor executor) {
             RemoteInfo = remoteInfo;
             this.webSocket = webSocket;
-            this.defaultOptions = defaultOptions ?? new RpcOptions();
+            this.executor = executor;
         }
 
         /// <summary>
@@ -139,7 +139,7 @@ namespace Xenoage.RpcLib.Peers {
                         if (rxResult.EndOfMessage) {
                             // Message is finished now
                             var message = RpcMessage.FromData(messagePart.ToArray());
-                            HandleReceivedMessage(message);
+                            await HandleReceivedMessage(message);
                             messagePart = new MemoryStream();
                         } else {
                             // Wait for more data
@@ -152,14 +152,27 @@ namespace Xenoage.RpcLib.Peers {
             }
         }
 
-        private void HandleReceivedMessage(RpcMessage message) {
+        private async Task HandleReceivedMessage(RpcMessage message) {
             try {
                 string logFrom = $"received from {RemoteInfo}, {message.Data.Length} bytes";
                 if (message.IsRpcMethod()) {
                     // Received a method call. Execute it immediately and enqueue the result.
                     var method = message.DecodeRpcMethod();
                     Log.Trace($"Method call {method.ID} {method.Name} {logFrom}");
-                    // GOON
+                    // Do not await the method execution, since it could require some time and we do not
+                    // want to block the receiving channel during this time.
+                    _ = Task.Run(async () => {
+                        var result = new RpcResult { MethodID = method.ID };
+                        try {
+                            result.ReturnValue = await executor.Execute(method);
+                        } catch (Exception ex) {
+                            result.Failure = new RpcFailure {
+                                Type = RpcFailureType.RemoteException, // Not retryable; the command failed on caller side
+                                Message = ex.Message // Some information for identifying the problem
+                            };
+                        }
+                        resultsQueue.Enqueue(result);
+                    });
                 } else if (message.IsRpcResult()) {
                     // Received a return value
                     nextSendTimeMs = 0; // Allow the next call to start immediately
@@ -208,12 +221,12 @@ namespace Xenoage.RpcLib.Peers {
         }
 
         private TimeSpan GetTimeout(RpcCall call) =>
-            TimeSpan.FromMilliseconds(call.TimeoutMs ?? defaultOptions.TimeoutMs);
+            TimeSpan.FromMilliseconds(call.TimeoutMs ?? executor.DefaultOptions.TimeoutMs);
 
         // The websocket connection
         private WebSocket webSocket;
-        // Default RPC options
-        private RpcOptions defaultOptions;
+        // Run the actual C# implementations of the RPC methods
+        private IRpcMethodExecutor executor;
         // Queue of responses to send to the other side
         private ConcurrentQueue<RpcResult> resultsQueue = new ConcurrentQueue<RpcResult>();
         // Queue of calls to send to the other side
