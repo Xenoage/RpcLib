@@ -7,7 +7,7 @@
 
         public RpcFailureType Type { get; set; } = RpcFailureType.Other;
 
-        public string? Message { get; set; }
+        public string? Message { get; set; } = null;
 
         public override bool Equals(object? obj) {
             return obj is RpcFailure failure &&

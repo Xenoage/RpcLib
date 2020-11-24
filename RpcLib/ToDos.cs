@@ -9,7 +9,9 @@ using Xenoage.RpcLib.Serialization;
 /// - Prevent CSWSH (Cross-Site WebSocket Hijacking) by using a whitelist of the allowed origins.
 ///   See: https://www.codetinkerer.com/2018/06/05/aspnet-core-websockets.html
 /// 
-/// - Ignore null values when serializing JSON. .NET 5 is required, see <see cref="JsonSerializer"/>.
+/// - When switching to .NET 5:
+///   - Ignore null values when serializing JSON, see <see cref="JsonSerializer"/>
+///   - Use <see cref="TaskCompletionSource"/> without generic, see <see cref="RpcCallExecution"/>
 /// 
 /// - Implement <see cref="RpcCall.SerializerID"/>
 /// 
