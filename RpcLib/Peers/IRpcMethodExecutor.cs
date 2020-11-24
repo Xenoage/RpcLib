@@ -11,7 +11,7 @@ namespace Xenoage.RpcLib.Peers {
     public interface IRpcMethodExecutor {
 
         /// <summary>
-        /// Calls the corresponding method and returns the return value.
+        /// Calls the corresponding method and returns the return value, or null for a void method.
         /// When no implementation can be found, a <see cref="NotImplementedException"/> is thrown.
         /// </summary>
         public abstract Task<byte[]?> Execute(RpcMethod method);

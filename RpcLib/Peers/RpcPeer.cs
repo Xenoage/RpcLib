@@ -43,7 +43,7 @@ namespace Xenoage.RpcLib.Peers {
         /// Creates a new peer with the given information, already connected websocket,
         /// and optionally the given backlog.
         /// </summary>
-        public async Task<RpcPeer> Create(PeerInfo remoteInfo, IRpcChannel channel,
+        public static async Task<RpcPeer> Create(PeerInfo remoteInfo, IRpcChannel channel,
                 IRpcMethodExecutor executor, IRpcBacklog? backlog = null) {
             var ret = new RpcPeer(remoteInfo, channel, executor);
             ret.callsQueue = await RpcQueue.Create(remoteInfo.PeerID, backlog);
@@ -126,6 +126,8 @@ namespace Xenoage.RpcLib.Peers {
                     var message = await channel.Receive(cancellationToken.Token);
                     if (message != null)
                         HandleReceivedMessage(message);
+                    else // When we had something to do, immediately continue. Otherwise, wait a short moment.
+                        await Task.Delay(100);
                 }
             } catch (Exception ex) {
                 Log.Debug($"Unexpectedly closed connection to {RemoteInfo}: {ex.Message}");
