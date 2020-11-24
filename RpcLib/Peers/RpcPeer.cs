@@ -26,7 +26,7 @@ namespace Xenoage.RpcLib.Peers {
     /// closed, it must be reestablished, i.e. a new instance of this class has
     /// to be launched, using the new connection.
     /// 
-    /// This class is thread-safe, i.e. the method TODO can be called from
+    /// This class is thread-safe, i.e. the method <see cref="Run"/> can be called from
     /// everywhere and anytime.
     /// </summary>
     public class RpcPeer {

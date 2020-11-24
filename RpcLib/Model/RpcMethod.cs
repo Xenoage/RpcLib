@@ -77,6 +77,16 @@ namespace Xenoage.RpcLib.Model {
 
         #endregion
 
+        #region Typed access
+
+        /// <summary>
+        /// Gets the decoded message parameter with the given index.
+        /// </summary>
+        public T GetParam<T>(int index) =>
+            Deserialize<T>(Parameters[index]);
+
+        #endregion
+
         #region Comparison
 
         public override bool Equals(object? obj) {

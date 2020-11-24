@@ -1,9 +1,11 @@
-﻿namespace Xenoage.RpcLib.Serialization {
+﻿using System.Threading.Tasks;
+
+namespace Xenoage.RpcLib.Serialization {
 
     /// <summary>
     /// Concise (de)serializing calls, using the currently set <see cref="ISerializer"/>.
     /// </summary>
-    public class Serializer {
+    public static class Serializer {
 
         /// <summary>
         /// By default, the included <see cref="JsonSerializer"/> is used.
