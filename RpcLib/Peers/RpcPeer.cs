@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Xenoage.RpcLib.Channels;
 using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Queue;
@@ -13,7 +14,7 @@ using static Xenoage.RpcLib.Utils.CoreUtils;
 namespace Xenoage.RpcLib.Peers {
 
     /// <summary>
-    /// Websocket endpoint for the RPC traffic. For each connection between a client
+    /// Endpoint for the RPC traffic. For each connection between a client
     /// and the server, one instance of this class is running both on the client
     /// and on the server. That means, the server has multiple instances of this
     /// class running, while a client has exactly one.
@@ -22,15 +23,16 @@ namespace Xenoage.RpcLib.Peers {
     /// receives their response, and it receives calls from the other side,
     /// executes them and sends the responses.
     /// 
-    /// This is done over a given websocket connection. When this connection is
-    /// closed, it must be reestablished, i.e. a new instance of this class has
-    /// to be launched, using the new connection.
+    /// This is done over a given communication channel, normally a
+    /// <see cref="WebSocketRpcChannel"/>. When this connection is closed, it must be
+    /// reestablished, i.e. a new instance of this class has to be launched, using the
+    /// new connection.
     /// 
     /// This class is thread-safe, i.e. the method <see cref="Run"/> can be called from
     /// everywhere and anytime.
     /// </summary>
     public class RpcPeer {
-
+        
         /// <summary>
         /// Information on the connected remote peer.
         /// </summary>
@@ -41,9 +43,9 @@ namespace Xenoage.RpcLib.Peers {
         /// Creates a new peer with the given information, already connected websocket,
         /// and optionally the given backlog.
         /// </summary>
-        public async Task<RpcPeer> Create(PeerInfo remoteInfo, WebSocket webSocket,
+        public async Task<RpcPeer> Create(PeerInfo remoteInfo, IRpcChannel channel,
                 IRpcMethodExecutor executor, IRpcBacklog? backlog = null) {
-            var ret = new RpcPeer(remoteInfo, webSocket, executor);
+            var ret = new RpcPeer(remoteInfo, channel, executor);
             ret.callsQueue = await RpcQueue.Create(remoteInfo.PeerID, backlog);
             return ret;
         }
@@ -51,9 +53,9 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Use <see cref="Create"/> for creating new instances.
         /// </summary>
-        private RpcPeer(PeerInfo remoteInfo, WebSocket webSocket, IRpcMethodExecutor executor) {
+        private RpcPeer(PeerInfo remoteInfo, IRpcChannel channel, IRpcMethodExecutor executor) {
             RemoteInfo = remoteInfo;
-            this.webSocket = webSocket;
+            this.channel = channel;
             this.executor = executor;
         }
 
@@ -74,13 +76,12 @@ namespace Xenoage.RpcLib.Peers {
         /// </summary>
         private async Task SendLoop() {
             try {
-                var rx = new ArraySegment<byte>(new byte[1024]);
                 var messagePart = new StringBuilder();
-                while (webSocket.State == WebSocketState.Open) {
+                while (channel.IsOpen()) {
                     bool didSomething = false;
                     // Result in the queue? Then send it.
                     if (resultsQueue.TryDequeue(out var result)) {
-                        await SendMessage(RpcMessage.Encode(result));
+                        await channel.Send(RpcMessage.Encode(result), cancellationToken.Token);
                         didSomething = true;
                     }
                     // Next call already queued? Then see if we can send it already.
@@ -95,13 +96,13 @@ namespace Xenoage.RpcLib.Peers {
                         else if (TimeNowMs() > nextSendTimeMs) {
                             // Send it. Do not dequeue it yet, only after is has been finished.
                             nextSendTimeMs = TimeNowMs() + GetTimeout(call).Milliseconds; // Is reset to 0 when we receive a response
-                            await SendMessage(RpcMessage.Encode(call.Method));
+                            await channel.Send(RpcMessage.Encode(call.Method), cancellationToken.Token);
                             didSomething = true;
                         }
                     }
                     // Close nicely, when locally requested
                     if (cancellationToken.IsCancellationRequested) {
-                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closed", CancellationToken.None);
+                        await channel.Close();
                         didSomething = true;
                     }
                     // When we had something to do, immediately continue. Otherwise, wait a short moment.
@@ -113,10 +114,6 @@ namespace Xenoage.RpcLib.Peers {
             }
         }
 
-        private async Task SendMessage(RpcMessage message) =>
-            await webSocket.SendAsync(new ArraySegment<byte>(message.Data),
-                    WebSocketMessageType.Binary, endOfMessage: true, cancellationToken.Token);
-
         /// <summary>
         /// Runs the receiving operations in a loop, as long as the websocket is open.
         /// It is receiving both the results of its own calls and the calls sent from the remote side.
@@ -124,35 +121,18 @@ namespace Xenoage.RpcLib.Peers {
         /// </summary>
         private async Task ReceiveLoop() {
             try {
-                var rx = new ArraySegment<byte>(new byte[1024]);
-                var messagePart = new MemoryStream();
-                while (webSocket.State == WebSocketState.Open) {
+                while (channel.IsOpen()) {
                     // Receive call or response from remote side
-                    var rxResult = await webSocket.ReceiveAsync(rx, cancellationToken.Token);
-                    if (rxResult.MessageType == WebSocketMessageType.Close) {
-                        // Closed by remote peer
-                        Log.Debug($"Connection closed by {RemoteInfo}");
-                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-                    } else if (rxResult.MessageType == WebSocketMessageType.Binary) {
-                        // Received message
-                        messagePart.Write(rx);
-                        if (rxResult.EndOfMessage) {
-                            // Message is finished now
-                            var message = RpcMessage.FromData(messagePart.ToArray());
-                            await HandleReceivedMessage(message);
-                            messagePart = new MemoryStream();
-                        } else {
-                            // Wait for more data
-                            Log.Trace($"Message part received from {RemoteInfo}, {rx.Count} bytes");
-                        }
-                    }
+                    var message = await channel.Receive(cancellationToken.Token);
+                    if (message != null)
+                        HandleReceivedMessage(message);
                 }
             } catch (Exception ex) {
                 Log.Debug($"Unexpectedly closed connection to {RemoteInfo}: {ex.Message}");
             }
         }
 
-        private async Task HandleReceivedMessage(RpcMessage message) {
+        private void HandleReceivedMessage(RpcMessage message) {
             try {
                 string logFrom = $"received from {RemoteInfo}, {message.Data.Length} bytes";
                 if (message.IsRpcMethod()) {
@@ -223,8 +203,8 @@ namespace Xenoage.RpcLib.Peers {
         private TimeSpan GetTimeout(RpcCall call) =>
             TimeSpan.FromMilliseconds(call.TimeoutMs ?? executor.DefaultOptions.TimeoutMs);
 
-        // The websocket connection
-        private WebSocket webSocket;
+        // The communication channel
+        private IRpcChannel channel;
         // Run the actual C# implementations of the RPC methods
         private IRpcMethodExecutor executor;
         // Queue of responses to send to the other side
