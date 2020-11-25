@@ -4,7 +4,7 @@ namespace Xenoage.RpcLib.Model {
 
     /// <summary>
     /// An RPC call, i.e. a <see cref="RpcMethod"/> invocation with additional
-    /// information who is called and including the current state and settings of the call.
+    /// information who is called and settings of the call.
     /// </summary>
     public class RpcCall {
 
@@ -20,16 +20,6 @@ namespace Xenoage.RpcLib.Model {
         /// i.e. the client ID or null for the server.
         /// </summary>
         public string? TargetPeerID { get; set; }
-
-        #endregion
-
-        #region State
-
-        /// <summary>
-        /// The result of a finished call, whether successful or not.
-        /// Null, when the response for this call has not yet been received.
-        /// </summary>
-        public RpcResult? Result { get; set; } = null;
 
         #endregion
 
@@ -54,25 +44,23 @@ namespace Xenoage.RpcLib.Model {
         /// </summary>
         public string? SerializerID { get; set; } = null; // TODO 
 
+        #endregion
+
+        #region Helper methods
+
         /// <summary>
         /// Returns true, if a retry strategy (not none) is set.
         /// </summary>
-        public bool IsRetryable =>
+        public bool IsRetryable() =>
             RetryStrategy != null && RetryStrategy != RpcRetryStrategy.None;
-
-        #endregion
-
-        #region Comparison
 
         public override bool Equals(object? obj) {
             return obj is RpcCall call &&
                    Method.Equals(call.Method) &&
                    TargetPeerID == call.TargetPeerID &&
-                   EqualityComparer<RpcResult?>.Default.Equals(Result, call.Result) &&
                    RetryStrategy == call.RetryStrategy &&
                    TimeoutMs == call.TimeoutMs &&
-                   SerializerID == call.SerializerID &&
-                   IsRetryable == call.IsRetryable;
+                   SerializerID == call.SerializerID;
         }
 
         #endregion

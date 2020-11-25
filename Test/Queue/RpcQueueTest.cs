@@ -124,6 +124,39 @@ namespace Xenoage.RpcLib.Queue {
                 Assert.AreEqual(allCalls[i], await queue.Dequeue());
         }
 
+        [TestMethod]
+        public async Task Enqueue_LoadTest_SingleThread() {
+            int count = 10_000;
+            var queue = await RpcQueue.Create(targetPeerID: null, backlog: null);
+            // As fast as possible, enqueue all items
+            for (int i = 0; i < count; i++)
+                await queue.Enqueue(new RpcCall());
+            // Check all items are here
+            Assert.AreEqual(count, queue.Count);
+        }
+
+        [TestMethod]
+        public async Task Enqueue_LoadTest_MultipleThreads() {
+            int count = 10_000;
+            int threadsCount = 100;
+            var queue = await RpcQueue.Create(targetPeerID: null, backlog: null);
+            // As fast as possible, enqueue all items
+            List<Task> allTasks = new List<Task>();
+            for (int i = 0; i < threadsCount; i++) {
+                var task = EnqueueCalls(queue, i, threadsCount, count);
+                allTasks.Add(task);
+            }
+            await Task.WhenAll(allTasks);
+            // Check all items are here
+            Assert.AreEqual(count, queue.Count);
+        }
+        private async Task EnqueueCalls(RpcQueue queue, int threadNumber, int threadsCount, int callsCount) {
+            for (int i = threadNumber; i < callsCount; i += threadsCount) {
+                await queue.Enqueue(new RpcCall());
+                if (threadNumber == 0)
+                    await Task.Delay(10); // Task 0 is slow for testing
+            }
+        }
 
         private RpcCall CreateCall(string methodName, string targetPeerID,
                 RpcRetryStrategy retry = RpcRetryStrategy.Retry) => new RpcCall {

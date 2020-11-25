@@ -8,11 +8,12 @@ namespace Xenoage.RpcLib.Channels {
     /// <summary>
     /// RPC communication channel for testing purposes.
     /// The list of messages "to receive" are given beforehand,
+    /// including the time in ms they require to "execute",
     /// and sent messages are collected.
     /// </summary>
     public class ReceivingMockRpcChannel : IRpcChannel {
 
-        public ReceivingMockRpcChannel(Queue<RpcMessage> receiving) {
+        public ReceivingMockRpcChannel(Queue<(RpcMessage, int)> receiving) {
             this.receiving = receiving;
         }
 
@@ -21,10 +22,13 @@ namespace Xenoage.RpcLib.Channels {
 
         public async Task<RpcMessage?> Receive(CancellationToken cancellationToken) {
             while (isRunning) {
-                if (receiving.Count > 0)
-                    return receiving.Dequeue();
-                else
+                if (receiving.Count > 0) {
+                    var (msg, timeMs) = receiving.Dequeue();
+                    await Task.Delay(timeMs);
+                    return msg;
+                } else {
                     await Task.Delay(25);
+                }
             }
             return null;
         }
@@ -41,7 +45,7 @@ namespace Xenoage.RpcLib.Channels {
 
         public List<RpcMessage> SentMessages => sent;
 
-        private Queue<RpcMessage> receiving;
+        private Queue<(RpcMessage, int)> receiving;
         private List<RpcMessage> sent = new List<RpcMessage>();
         private bool isRunning = true;
 

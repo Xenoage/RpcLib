@@ -24,6 +24,20 @@ namespace Xenoage.RpcLib.Model {
         /// </summary>
         public byte[]? ReturnValue { get; set; } = null;
 
+        /// <summary>
+        /// Returns true, iff this result contains a failure which indicates
+        /// that it should be retried (only if the method should be retried, of course).
+        /// </summary>
+        public bool IsRetryNeeded() =>
+            Failure != null && Failure.Type.IsRetryable();
+
+
+        public static RpcResult Timeout(ulong methodID) => new RpcResult {
+            MethodID = methodID,
+            Failure = new RpcFailure {
+                Type = RpcFailureType.Timeout
+            }
+        };
 
         public override bool Equals(object? obj) {
             return obj is RpcResult result &&

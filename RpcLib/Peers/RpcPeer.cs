@@ -85,22 +85,27 @@ namespace Xenoage.RpcLib.Peers {
                         await channel.Send(RpcMessage.Encode(result), cancellationToken.Token);
                         didSomething = true;
                     }
-                    // Next call already queued? Then see if we can send it already.
-                    if (await callsQueue.Peek() is RpcCall call) {
-                        if (false == openCalls.ContainsKey(call.Method.ID)) {
-                            // The call has already been disappeared, probably because the timeout
-                            // was hit before it could even be sent. So ignore it.
-                            Log.Trace($"Do not send method {call.Method.ID} {call.Method.Name}, because already in timeout");
+                    // Current call ran into a timeout?
+                    if (currentCall != null && currentCallStartTime + GetTimeoutMs(currentCall) < TimeNowMs()) {
+                        string logMsg = $"Method {currentCall.Method.ID} {currentCall.Method.Name} ran into timeout";
+                        if (currentCall.IsRetryable()) {
+                            Log.Trace(logMsg + ", trying it again");
+                        } else {
+                            Log.Trace(logMsg + ", discard it");
                             await callsQueue.Dequeue();
-                            didSomething = true;
                         }
-                        else if (TimeNowMs() > nextCallSendTimeMs) {
-                            // Send it. Do not dequeue it yet, only after is has been finished.
-                            nextCallSendTimeMs = TimeNowMs() + GetTimeout(call); // Is reset to 0 when we receive a response
-                            Log.Trace($"Sending method {call.Method.ID} {call.Method.Name}");
-                            await channel.Send(RpcMessage.Encode(call.Method), cancellationToken.Token);
-                            didSomething = true;
-                        }
+                        if (openCalls.TryRemove(currentCall.Method.ID, out var executingTask))
+                            executingTask.Finish(RpcResult.Timeout(currentCall.Method.ID));
+                        currentCall = null;
+                    }
+                    // Next call already queued? Then see if we can send it already.
+                    if (currentCall == null && await callsQueue.Peek() is RpcCall call) {
+                        // Send it. Do not dequeue it yet, only after is has been finished.
+                        Log.Trace($"Sending method {call.Method.ID} {call.Method.Name}");
+                        currentCall = call;
+                        currentCallStartTime = TimeNowMs();
+                        await channel.Send(RpcMessage.Encode(call.Method), cancellationToken.Token);
+                        didSomething = true;
                     }
                     // Close nicely, when locally requested
                     if (cancellationToken.IsCancellationRequested) {
@@ -139,7 +144,7 @@ namespace Xenoage.RpcLib.Peers {
 
         private async Task HandleReceivedMessage(RpcMessage message) {
             try {
-                string logFrom = $" from {RemoteInfo}, {message.Data.Length} bytes";
+                string logFrom = $"from {RemoteInfo}, {message.Data.Length} bytes";
                 if (message.IsRpcMethod()) {
                     // Received a method call. Execute it immediately and enqueue the result.
                     var method = message.DecodeRpcMethod();
@@ -163,27 +168,32 @@ namespace Xenoage.RpcLib.Peers {
                 } else if (message.IsRpcResult()) {
                     // Received a return value
                     var result = message.DecodeRpcResult();
-                    Log.Trace($"Receiving result {result.MethodID} {logFrom}");
+                    Log.Trace($"Receiving result {result.MethodID} {logFrom}" +
+                        (result.Failure != null ? $" with failure {result.Failure.Type}" : ""));
                     // Set the result
-                    if (openCalls.TryGetValue(result.MethodID, out var callExecution)) {
-                        callExecution.Finish(result);
+                    if (result.MethodID == currentCall?.Method.ID) {
+                        if (openCalls.TryRemove(result.MethodID, out var callExecution))
+                            callExecution.Finish(result);
                     } else {
-                        nextCallSendTimeMs = 0; // Allow the next call to start
                         throw new Exception("Out of order: Received return value for non-open call");
                     }
                     // When it has failed, but is a retryable command, send it again.
                     // Otherwise, dequeue the call so that the next one can be started.
-                    if (result.Failure == null || false == result.Failure.Type.IsRetryable())
+                    if (currentCall.IsRetryable() && result.IsRetryNeeded()) {
+                        // Let it in the queue to send it again
+                    } else {
+                        // Finished; dequeue it.
                         await callsQueue.Dequeue();
+                    }
                     // Allow the next call to start immediately
-                    nextCallSendTimeMs = 0;
+                    currentCall = null;
                     sendingWaiter.TrySetResult(true);
                 } else {
                     // Unsupported message
                     Log.Trace($"Unsupported message {logFrom}");
                 }
             } catch (Exception ex) {
-                Log.Debug($"Error when handling message from {RemoteInfo}: {ex.Message}");
+                Log.Debug($"Problem when handling message from {RemoteInfo}: {ex.Message}");
             }
         }
 
@@ -205,17 +215,17 @@ namespace Xenoage.RpcLib.Peers {
         public async Task<RpcResult> Run(RpcCall call) {
             if (call.TargetPeerID != RemoteInfo.PeerID)
                 throw new ArgumentException("Call is not for this peer");
-            // Enquees the call and awaits the result
+            // Enqueues the call and awaits the result
             var execution = new RpcCallExecution(call);
             openCalls.TryAdd(call.Method.ID, execution);
             await callsQueue.Enqueue(call);
-            var result = await execution.AwaitResult(GetTimeout(call));
-            openCalls.TryRemove(call.Method.ID, out var _);
-            nextCallSendTimeMs = 0; // Allow the next call immediately
+            sendingWaiter.TrySetResult(true);
+            // Wait for the result, whether successful, failed or timeout
+            var result = await execution.AwaitResult();
             return result;
         }
 
-        private int GetTimeout(RpcCall call) =>
+        private int GetTimeoutMs(RpcCall call) =>
             call.TimeoutMs ?? executor.DefaultOptions.TimeoutMs;
 
         // The communication channel
@@ -226,18 +236,18 @@ namespace Xenoage.RpcLib.Peers {
         private ConcurrentQueue<RpcResult> resultsQueue = new ConcurrentQueue<RpcResult>();
         // Queue of calls to send to the other side
         private RpcQueue callsQueue = null!; // Async set in Create
-        // Unix milliseconds timestamp when to send the next call.
-        // By setting to 0, we may immediately send the next call. Using this field, we switch
-        // between the modes "able to send next call" and "wait for receiving response of last call",
-        // while still be tolerant for failures (when we never receive a response for a sent call).
-        private long nextCallSendTimeMs = 0;
         // The sending task waits a short moment in the loop to reduce CPU load.
         // Complete this task to immediately start the next round. Using a TaskCompletionSource
         // seems to be much faster than using a CancellationTokenSource (while debugging, experienced ~2 ms vs ~13 ms)
         private TaskCompletionSource<bool> sendingWaiter = new TaskCompletionSource<bool>(); // Remove unneeded generic in .NET 5
-        // The execution state of the current and the enqueued calls
+        // The execution state of the current and the enqueued calls, where still a caller is waiting
+        // for the result. Once a timeout occurs, the call disappears from this dictionary.
+        // Always remove a call from this dictionary when it is also removed from the callsQueue!
         private ConcurrentDictionary<ulong, RpcCallExecution> openCalls =
             new ConcurrentDictionary<ulong, RpcCallExecution>();
+        // The current call (only one is currently executing on the remote side at a time)
+        private RpcCall? currentCall = null;
+        private long currentCallStartTime = 0;
         // Cancellation token for stopping the loop
         private CancellationTokenSource cancellationToken = new CancellationTokenSource();
 

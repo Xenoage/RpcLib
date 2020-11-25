@@ -1,11 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Channels;
 using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Model;
-using Xenoage.RpcLib.Utils;
+using static Xenoage.RpcLib.Utils.CoreUtils;
 
 namespace Xenoage.RpcLib.Peers {
 
@@ -23,7 +26,7 @@ namespace Xenoage.RpcLib.Peers {
         [TestMethod, Timeout(1000)]
         public async Task Start_And_Stop_Test() {
             var rpcPeer = await RpcPeer.Create(new PeerInfo(null, "localhost"),
-                new ReceivingMockRpcChannel(new Queue<RpcMessage>()),
+                new ReceivingMockRpcChannel(new Queue<(RpcMessage, int)>()),
                 new MockRpcMethodExecutor(), backlog: null);
             var rpcPeerTask = rpcPeer.Start();
             await Task.Delay(500);
@@ -40,11 +43,11 @@ namespace Xenoage.RpcLib.Peers {
         public async Task ReceiveMethod_And_SendResult_Test() {
             // Method call to receive
             ulong id = 25;
-            var receiving = new Queue<RpcMessage>();
-            receiving.Enqueue(RpcMessage.Encode(new RpcMethod {
+            var receiving = new Queue<(RpcMessage, int)>();
+            receiving.Enqueue((RpcMessage.Encode(new RpcMethod {
                 ID = id,
                 Name = "MyMethod"
-            }));
+            }), 0));
             var channel = new ReceivingMockRpcChannel(receiving);
             // Start peer
             var rpcPeer = await RpcPeer.Create(new PeerInfo(null, "localhost"),
@@ -103,7 +106,7 @@ namespace Xenoage.RpcLib.Peers {
         /// </summary>
         [TestMethod, Timeout(1000)]
         public async Task Run_LocalTimeout_Test() {
-            await Timeout_Test(timeoutMs: 1, waitBeforeAssertTimeoutMs: 50);
+            await Timeout_Test(timeoutMs: 1, waitBeforeAssertTimeoutMs: 200);
         }
 
         /// <summary>
@@ -146,44 +149,88 @@ namespace Xenoage.RpcLib.Peers {
         }
 
         /// <summary>
+        /// Tests retrying with a retryable method, that fails a few times because of
+        /// timeout, and is then successful.
+        /// </summary>
+        [TestMethod, Timeout(5000)]
+        public async Task Run_RetryUntilWorking() {
+            var channel = new DivMockRpcChannel(enableReceivingCalls: false);
+            var rpcPeer = await RpcPeer.Create(new PeerInfo(null, "localhost"),
+                channel, new DivMockRpcMethodExecutor(), backlog: null);
+            _ = rpcPeer.Start();
+            // Set remote execution time very high, so that the response can not be received
+            // during the following asserts. Each call should fail because of timeout.
+            channel.SetExecutionTimeMs(100_000);
+            long startTime = TimeNowMs();
+            var callTask = rpcPeer.Run(new RpcCall {
+                Method = Div.CreateNew(1000).ToMethod(),
+                RetryStrategy = RpcRetryStrategy.Retry,
+                TimeoutMs = 100
+            });
+            await callTask;
+            long duration = TimeNowMs() - startTime;
+            Assert.IsTrue(100 <= duration && duration < 200);
+            Assert.AreEqual(RpcFailureType.Timeout, callTask.Result.Failure?.Type);
+            // It should be repeated, but now we can not receive the result any more.
+            // But we should observe the increasing number of sent attempts.
+            int attempts = channel.SentDivs.Count;
+            int newAttempts;
+            for (int i = 0; i < 3; i++) {
+                await Task.Delay(300);
+                newAttempts = channel.SentDivs.Count;
+                Assert.IsTrue(newAttempts > attempts && Math.Abs(newAttempts - attempts) <= 3,
+                    $"Failed in step {i}, attempts = {attempts}, newAttempts = {newAttempts}");
+                attempts = newAttempts;
+            }
+            // When we set the remote execution time down to 100, the call should be finished.
+            attempts = channel.SentDivs.Count;
+            channel.SetExecutionTimeMs(50);
+            await Task.Delay(300);
+            newAttempts = channel.SentDivs.Count;
+            Assert.IsTrue(newAttempts == attempts + 1 || newAttempts == attempts + 2);
+            rpcPeer.Stop();
+        }
+
+        /// <summary>
         /// Sends, receives and processes lot of calls with a number division calculation task,
         /// using the <see cref="DivMockRpcChannel"/>.
         /// At the end, checks if each of the calls, in both directions, was correctly processed.
         /// </summary>
         [TestMethod]
         public async Task LoadTest() {
-            ulong nextID = 0;
-            var channel = new DivMockRpcChannel();
+            int callsCount = 0;
+            var channel = new DivMockRpcChannel(enableReceivingCalls: true);
             var testDurationMs = 3000;
             // Start peer
             var rpcPeer = await RpcPeer.Create(new PeerInfo(null, "localhost"),
                 channel, new DivMockRpcMethodExecutor(), backlog: null);
             _ = rpcPeer.Start();
             // For the time of the test, send calculations
-            long testStartTime = CoreUtils.TimeNowMs();
-            int sentCalls = 0;
+            long testStartTime = TimeNowMs();
             _ = Task.Run(async () => {
-                while (CoreUtils.TimeNowMs() - testStartTime < testDurationMs) {
+                while (TimeNowMs() - testStartTime < testDurationMs) {
                     _ = rpcPeer.Run(new RpcCall {
-                        Method = Div.CreateNew(nextID++).ToMethod()
+                        Method = Div.CreateNew((ulong)callsCount).ToMethod()
                     });
-                    sentCalls++;
-                    if (nextID % 5 == 0)
-                    await Task.Delay(20);
+                    callsCount++;
+                    if (callsCount % 5 == 0)
+                        await Task.Delay(20);
                 }
             });
             // When the test time is over, tell the mock channel to stop receiving new div tasks
             await Task.Delay(testDurationMs);
             channel.StopReceivingDivs();
             // Wait a short moment to let ongoing computations complete
-            await Task.Delay(Debugger.IsAttached ? 2000 : 500); // More time when debugging (Task switching much slower)
+            await Task.Delay(Debugger.IsAttached ? 2000 : 500); // More time when debugging (much slower taks and/or logging)
             // Check results of sent and received calls
-            Assert.AreEqual(sentCalls, channel.SentDivs.Count);
-            for (int i = 0; i < channel.SentDivs.Count; i++)
-                Assert.AreEqual(channel.SentDivs[i].ComputeExpectedResult(), channel.SentDivs[i].result);
-            Assert.IsTrue(channel.ReceivedDivs.Count > testDurationMs / 100);
-            for (int i = 0; i < channel.ReceivedDivs.Count; i++)
-                Assert.AreEqual(channel.ReceivedDivs[i].ComputeExpectedResult(), channel.ReceivedDivs[i].result);
+            var sentCalls = channel.SentDivs.ToList();
+            Assert.AreEqual(callsCount, sentCalls.Count);
+            for (int i = 0; i < sentCalls.Count; i++)
+                Assert.AreEqual(sentCalls[i].ComputeExpectedResult(), sentCalls[i].result);
+            var receivedCalls = channel.ReceivedDivs.ToList();
+            Assert.IsTrue(receivedCalls.Count > testDurationMs / 100);
+            for (int i = 0; i < receivedCalls.Count; i++)
+                Assert.AreEqual(receivedCalls[i].ComputeExpectedResult(), receivedCalls[i].result);
         }
 
     }

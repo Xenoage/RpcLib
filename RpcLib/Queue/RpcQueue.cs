@@ -79,7 +79,7 @@ namespace Xenoage.RpcLib.Queue {
         public async Task<RpcCall?> Dequeue() {
             await semaphore.WaitAsync();
             var call = queue.Dequeue();
-            if (Backlog != null && call.IsRetryable) {
+            if (Backlog != null && call.IsRetryable()) {
                 // Remove from backlog
                 await Backlog.RemoveByMethodID(TargetPeerID, call.Method.ID);
             }
@@ -98,7 +98,7 @@ namespace Xenoage.RpcLib.Queue {
                 throw new ArgumentException("Target peer ID does not match");
             await semaphore.WaitAsync();
             queue.Enqueue(call);
-            if (Backlog != null && call.IsRetryable) {
+            if (Backlog != null && call.IsRetryable()) {
                 // Remove obsolete calls
                 if (call.RetryStrategy == RpcRetryStrategy.RetryLatest)
                     await Backlog.RemoveByMethodName(TargetPeerID, call.Method.Name);
