@@ -19,8 +19,15 @@ namespace Xenoage.RpcLib.Channels {
         public bool IsOpen() =>
             isRunning;
 
-        public Task<RpcMessage?> Receive(CancellationToken cancellationToken) =>
-            Task.FromResult(isRunning && receiving.Count > 0 ? receiving.Dequeue() : null);
+        public async Task<RpcMessage?> Receive(CancellationToken cancellationToken) {
+            while (isRunning) {
+                if (receiving.Count > 0)
+                    return receiving.Dequeue();
+                else
+                    await Task.Delay(25);
+            }
+            return null;
+        }
 
         public Task Send(RpcMessage message, CancellationToken cancellationToken) {
             sent.Add(message);

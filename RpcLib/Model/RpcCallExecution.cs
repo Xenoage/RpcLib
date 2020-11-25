@@ -20,10 +20,10 @@ namespace Xenoage.RpcLib.Model {
         /// In case of failure, no exception is thrown, but a result with failure information
         /// is returned.
         /// </summary>
-        public async Task<RpcResult> AwaitResult(TimeSpan timeout) {
+        public async Task<RpcResult> AwaitResult(int timeoutMs) {
             try {
                 // Return result, as soon as it is there
-                return await completionHelper.Task.TimeoutAfter(timeout);
+                return await completionHelper.Task.TimeoutAfter(timeoutMs);
             } catch (TimeoutException) {
                 // Timeout
                 return new RpcResult {

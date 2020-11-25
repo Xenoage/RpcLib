@@ -43,13 +43,13 @@ namespace Xenoage.RpcLib.Utils {
                         if (tasksCount == 1) {
                             // Test the method with a single task
                             var task = Compute42(TimeSpan.FromMilliseconds(completionMs), success);
-                            await task.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs));
+                            await task.TimeoutAfter(timeoutMs);
                         }
                         else {
                             // Test the method with a list of tasks
                             var tasks = Enumerable.Range(0, tasksCount).Select(_ =>
                                 Compute(TimeSpan.FromMilliseconds(completionMs), success)).ToList();
-                            await tasks.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs));
+                            await tasks.TimeoutAfter(timeoutMs);
                         }
                         Assert.IsTrue(timeoutMs > completionMs, "Timeout did not fire");
                     } catch (AssertFailedException) {

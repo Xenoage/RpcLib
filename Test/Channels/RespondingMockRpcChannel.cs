@@ -10,9 +10,9 @@ namespace Xenoage.RpcLib.Channels {
     /// Whenever a message is sent, a moment later the next of the
     /// messages "to respond", which are given beforehand, are received.
     /// </summary>
-    public class RespondingMockChannel : IRpcChannel {
+    public class RespondingMockRpcChannel : IRpcChannel {
 
-        public RespondingMockChannel(Queue<RpcMessage> responding, int responseTimeMs) {
+        public RespondingMockRpcChannel(Queue<RpcMessage> responding, int responseTimeMs) {
             this.responding = responding;
             this.responseTimeMs = responseTimeMs;
         }
@@ -22,12 +22,16 @@ namespace Xenoage.RpcLib.Channels {
 
         public async Task<RpcMessage?> Receive(CancellationToken cancellationToken) {
             RpcMessage? ret = null;
-            await semaphore.WaitAsync();
-            if (isRunning && allowedResponses > 0 && responding.Count > 0) {
-                ret = responding.Dequeue();
-                allowedResponses--;
+            while (isRunning && ret == null) {
+                await semaphore.WaitAsync();
+                if (allowedResponses > 0 && responding.Count > 0) {
+                    ret = responding.Dequeue();
+                    allowedResponses--;
+                }
+                semaphore.Release();
+                if (ret == null)
+                    await Task.Delay(50);
             }
-            semaphore.Release();
             return ret;
         }
 

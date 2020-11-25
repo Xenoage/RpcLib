@@ -30,14 +30,14 @@ namespace Xenoage.RpcLib.Utils {
         }
 
         /// <summary>
-        /// Awaits this tasks, but no longer than the given timeout.
+        /// Awaits this tasks, but no longer than the given timeout in milliseconds.
         /// Returns with the result of the task when finished, otherwise re-throws the exception of the
         /// task execution or a <see cref="TimeoutException"/> when the timeout is reached.
         /// Original source: https://stackoverflow.com/a/22078975/518491 .
         /// </summary>
-        public static async Task<T> TimeoutAfter<T>(this Task<T> task, TimeSpan timeout) {
+        public static async Task<T> TimeoutAfter<T>(this Task<T> task, int timeoutMs) {
             using (var timeoutHelper = new CancellationTokenSource()) {
-                var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutHelper.Token));
+                var completedTask = await Task.WhenAny(task, Task.Delay(timeoutMs, timeoutHelper.Token));
                 if (completedTask == task) {
                     timeoutHelper.Cancel();
                     return await task; // It's already completed, but in this way we get
@@ -49,15 +49,15 @@ namespace Xenoage.RpcLib.Utils {
         }
 
         /// <summary>
-        /// Awaits these tasks, but no longer than the given timeout.
+        /// Awaits these tasks, but no longer than the given timeout in milliseconds.
         /// If there is a problem, re-throws the exception of the first failing task
         /// or throws a <see cref="TimeoutException"/> when the timeout is reached.
         /// </summary>
-        public static async Task TimeoutAfter(this List<Task> tasks, TimeSpan timeout) {
+        public static async Task TimeoutAfter(this List<Task> tasks, int timeoutMs) {
             using (var timeoutHelper = new CancellationTokenSource()) {
                 var allTasks = new List<Task>(tasks.Count + 1);
                 allTasks.AddRange(tasks);
-                var timeoutTask = Task.Delay(timeout, timeoutHelper.Token);
+                var timeoutTask = Task.Delay(timeoutMs, timeoutHelper.Token);
                 allTasks.Add(timeoutTask);
                 var completedTask = await Task.WhenAny(allTasks);
                 if (completedTask != timeoutTask) {
