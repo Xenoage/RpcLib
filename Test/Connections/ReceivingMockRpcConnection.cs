@@ -3,17 +3,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Model;
 
-namespace Xenoage.RpcLib.Channels {
+namespace Xenoage.RpcLib.Connections {
 
     /// <summary>
-    /// RPC communication channel for testing purposes.
+    /// Simulated RPC connection for testing purposes.
     /// The list of messages "to receive" are given beforehand,
     /// including the time in ms they require to "execute",
     /// and sent messages are collected.
     /// </summary>
-    public class ReceivingMockRpcChannel : IRpcChannel {
+    public class ReceivingMockRpcConnection : IRpcConnection {
 
-        public ReceivingMockRpcChannel(Queue<(RpcMessage, int)> receiving) {
+        public ReceivingMockRpcConnection(Queue<(RpcMessage, int)> receiving) {
             this.receiving = receiving;
         }
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -8,22 +7,22 @@ using System.Threading.Tasks;
 using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Model;
 
-namespace Xenoage.RpcLib.Channels {
+namespace Xenoage.RpcLib.Connections {
 
     /// <summary>
-    /// RPC communication channel for testing purposes, simulating a remote peer that
+    /// Simulated RPC connection for testing purposes, acting as a remote peer that
     /// accepts and sends number division commands.
     /// If requested in the constructor, new calc tasks will be continously available on the receive queue,
-    /// until the channel is stopped or <see cref="StopReceivingDivs"/> is called.
+    /// until the connection is stopped or <see cref="StopReceivingDivs"/> is called.
     /// The execution time (time before a call result is available on the receiving queue) can be
     /// set during runtime by calling <see cref="SetExecutionTimeMs"/>.
     /// Both the sent and received calculation tasks and their results are collected in
     /// <see cref="SentDivs"/> and <see cref="ReceivedDivs"/>, so that a unit test
     /// can assert that everything went right.
     /// </summary>
-    public class DivMockRpcChannel : IRpcChannel {
+    public class DivMockRpcConnection : IRpcConnection {
 
-        public DivMockRpcChannel(bool enableReceivingCalls) {
+        public DivMockRpcConnection(bool enableReceivingCalls) {
             if (enableReceivingCalls) {
                 // While running, create calculation tasks which the peer can receive
                 Task.Run(async () => {

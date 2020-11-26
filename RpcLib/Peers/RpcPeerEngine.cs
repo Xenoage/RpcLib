@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Xenoage.RpcLib.Channels;
+using Xenoage.RpcLib.Connections;
 using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Queue;
@@ -21,8 +21,8 @@ namespace Xenoage.RpcLib.Peers {
     /// receives their response, and it receives calls from the other side,
     /// executes them and sends the responses.
     /// 
-    /// This is done over a given communication channel, normally a
-    /// <see cref="WebSocketRpcChannel"/>. When this connection is closed, it must be
+    /// This is done over a given established connection, normally a
+    /// <see cref="WebSocketRpcConnection"/>. When this connection is closed, it must be
     /// reestablished, i.e. a new instance of this class has to be launched, using the
     /// new connection.
     /// 
@@ -38,12 +38,12 @@ namespace Xenoage.RpcLib.Peers {
 
 
         /// <summary>
-        /// Creates a new peer with the given information, already connected websocket,
+        /// Creates a new peer with the given information, already established connection,
         /// and optionally the given backlog.
         /// </summary>
-        public static async Task<RpcPeerEngine> Create(RpcPeerInfo remoteInfo, IRpcChannel channel,
+        public static async Task<RpcPeerEngine> Create(RpcPeerInfo remoteInfo, IRpcConnection connection,
                 IRpcMethodExecutor executor, IRpcBacklog? backlog = null) {
-            var ret = new RpcPeerEngine(remoteInfo, channel, executor);
+            var ret = new RpcPeerEngine(remoteInfo, connection, executor);
             ret.callsQueue = await RpcQueue.Create(remoteInfo.PeerID, backlog);
             return ret;
         }
@@ -51,9 +51,9 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Use <see cref="Create"/> for creating new instances.
         /// </summary>
-        private RpcPeerEngine(RpcPeerInfo remoteInfo, IRpcChannel channel, IRpcMethodExecutor executor) {
+        private RpcPeerEngine(RpcPeerInfo remoteInfo, IRpcConnection connection, IRpcMethodExecutor executor) {
             RemoteInfo = remoteInfo;
-            this.channel = channel;
+            this.connection = connection;
             this.executor = executor;
         }
 
@@ -75,12 +75,12 @@ namespace Xenoage.RpcLib.Peers {
         private async Task SendLoop() {
             try {
                 var messagePart = new StringBuilder();
-                while (channel.IsOpen()) {
+                while (connection.IsOpen()) {
                     bool didSomething = false;
                     // Result in the queue? Then send it.
                     if (resultsQueue.TryDequeue(out var queuedResult)) {
                         Log.Trace($"Sending result {queuedResult.MethodID}");
-                        await channel.Send(RpcMessage.Encode(queuedResult), cancellationToken.Token);
+                        await connection.Send(RpcMessage.Encode(queuedResult), cancellationToken.Token);
                         didSomething = true;
                     }
                     // Current call ran into a timeout?
@@ -106,12 +106,12 @@ namespace Xenoage.RpcLib.Peers {
                         // Send it. Do not dequeue it yet, only after is has been finished.
                         Log.Trace($"Sending method {call.Method.ID} {call.Method.Name}");
                         currentCall = call;
-                        await channel.Send(RpcMessage.Encode(call.Method), cancellationToken.Token);
+                        await connection.Send(RpcMessage.Encode(call.Method), cancellationToken.Token);
                         didSomething = true;
                     }
                     // Close nicely, when locally requested
                     if (cancellationToken.IsCancellationRequested) {
-                        await channel.Close();
+                        await connection.Close();
                         didSomething = true;
                     }
                     // When we had something to do, immediately continue. Otherwise, wait a short moment
@@ -133,9 +133,9 @@ namespace Xenoage.RpcLib.Peers {
         /// </summary>
         private async Task ReceiveLoop() {
             try {
-                while (channel.IsOpen()) {
+                while (connection.IsOpen()) {
                     // Receive call or response from remote side
-                    var message = await channel.Receive(cancellationToken.Token);
+                    var message = await connection.Receive(cancellationToken.Token);
                     if (message != null)
                         await HandleReceivedMessage(message);
                 }
@@ -152,7 +152,7 @@ namespace Xenoage.RpcLib.Peers {
                     var method = message.DecodeRpcMethod();
                     Log.Trace($"Receiving method {method.ID} {method.Name} {logFrom}");
                     // Do not await the method execution, since it could require some time and we do not
-                    // want to block the receiving channel during this time.
+                    // want to block the receiving loop during this time.
                     _ = Task.Run(async () => {
                         var result = new RpcResult { MethodID = method.ID };
                         try {
@@ -225,8 +225,8 @@ namespace Xenoage.RpcLib.Peers {
         private int GetTimeoutMs(RpcCall call) =>
             call.TimeoutMs ?? executor.DefaultOptions.TimeoutMs;
 
-        // The communication channel
-        private IRpcChannel channel;
+        // The established connection to the remote peer
+        private IRpcConnection connection;
         // Run the actual C# implementations of the RPC methods
         private IRpcMethodExecutor executor;
         // Queue of responses to send to the other side

@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Model;
 
-namespace Xenoage.RpcLib.Channels {
+namespace Xenoage.RpcLib.Connections {
 
-    public class WebSocketRpcChannel : IRpcChannel {
 
-        public WebSocketRpcChannel(RemoteInfo remoteInfo, WebSocket webSocket) {
+    public class WebSocketRpcConnection : IRpcConnection {
+
+        public WebSocketRpcConnection(RpcPeerInfo remoteInfo, WebSocket webSocket) {
             this.remoteInfo = remoteInfo;
             this.webSocket = webSocket;
         }
@@ -50,7 +51,7 @@ namespace Xenoage.RpcLib.Channels {
         public async Task Close() =>
             await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closed", CancellationToken.None);
 
-        private RemoteInfo remoteInfo;
+        private RpcPeerInfo remoteInfo;
         private WebSocket webSocket;
         private ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
 

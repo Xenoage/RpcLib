@@ -2,17 +2,17 @@
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Model;
 
-namespace Xenoage.RpcLib.Channels {
+namespace Xenoage.RpcLib.Connections {
 
     /// <summary>
-    /// This interface allows the RPC library to use different communication channels
-    /// between the peers. The usual one is the <see cref="WebSocketRpcChannel"/>,
+    /// This interface allows the RPC library to use different transmission protocols
+    /// between the peers. The usual one is the <see cref="WebSocketRpcConnection"/>,
     /// but other ones can be used e.g. for testing.
     /// 
     /// Implementations need not to be thread-safe, because <see cref="Send"/>
     /// and <see cref="Receive"/> will not be executed more than once at a time.
     /// </summary>
-    public interface IRpcChannel {
+    public interface IRpcConnection {
 
         /// <summary>
         /// Returns true, iff the connection is still open for receiving and
@@ -34,7 +34,7 @@ namespace Xenoage.RpcLib.Channels {
 
         /// <summary>
         /// Requests to close this connection. A notification should be sent
-        /// to the other peer, so that it knows that the channel is closed now.
+        /// to the other peer, so that it knows that the connection is closed now.
         /// The returned task does not wait for any reaction of the remote peer.
         /// </summary>
         public Task Close();
