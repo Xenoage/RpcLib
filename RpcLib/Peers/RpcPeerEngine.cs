@@ -29,7 +29,7 @@ namespace Xenoage.RpcLib.Peers {
     /// This class is thread-safe, i.e. the method <see cref="Run"/> can be called from
     /// everywhere and anytime.
     /// </summary>
-    public class RpcPeer {
+    public class RpcPeerEngine {
         
         /// <summary>
         /// Information on the connected remote peer.
@@ -41,9 +41,9 @@ namespace Xenoage.RpcLib.Peers {
         /// Creates a new peer with the given information, already connected websocket,
         /// and optionally the given backlog.
         /// </summary>
-        public static async Task<RpcPeer> Create(RpcPeerInfo remoteInfo, IRpcChannel channel,
+        public static async Task<RpcPeerEngine> Create(RpcPeerInfo remoteInfo, IRpcChannel channel,
                 IRpcMethodExecutor executor, IRpcBacklog? backlog = null) {
-            var ret = new RpcPeer(remoteInfo, channel, executor);
+            var ret = new RpcPeerEngine(remoteInfo, channel, executor);
             ret.callsQueue = await RpcQueue.Create(remoteInfo.PeerID, backlog);
             return ret;
         }
@@ -51,7 +51,7 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Use <see cref="Create"/> for creating new instances.
         /// </summary>
-        private RpcPeer(RpcPeerInfo remoteInfo, IRpcChannel channel, IRpcMethodExecutor executor) {
+        private RpcPeerEngine(RpcPeerInfo remoteInfo, IRpcChannel channel, IRpcMethodExecutor executor) {
             RemoteInfo = remoteInfo;
             this.channel = channel;
             this.executor = executor;

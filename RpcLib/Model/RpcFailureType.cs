@@ -25,14 +25,6 @@
         Timeout,
 
         /// <summary>
-        /// The local side could not enqueue this call, because the queue is already full.
-        /// This exception is thrown immediately after trying to enqueue the call.
-        /// In this case, the RPC call can be repeated when the other peer is reachable again.
-        /// See <see cref="RpcRetryStrategy"/> how to automate this.
-        /// </summary>
-        QueueOverflow,
-
-        /// <summary>
         /// The peer received a response from the remote peer, but it was not an expected RPC response
         /// (in case of a remote exception, a well-formated response with a <see cref="RemoteException"/>
         /// would be expected). We can repeat this RPC call, since it seems, that the server is not
@@ -40,13 +32,6 @@
         /// See <see cref="RpcRetryStrategy"/> how to automate this.
         /// </summary>
         RpcError,
-
-        /// <summary>
-        /// The method was already executed earlier on the target peer, but the cached result is not
-        /// available any more so that we can not send it again. Since we must not execute a method twice,
-        /// we use this failure to notify the calling peer about the problem.
-        /// </summary>
-        ObsoleteID,
 
         /// <summary>
         /// Unexpected exception.
@@ -63,7 +48,6 @@
         /// </summary>
         public static bool IsRetryable(this RpcFailureType type) =>
             type == RpcFailureType.Timeout
-            || type == RpcFailureType.QueueOverflow
             || type == RpcFailureType.RpcError;
     }
 

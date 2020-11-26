@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Xenoage.RpcLib.Methods;
+using Xenoage.RpcLib.Peers;
 
 namespace Xenoage.RpcLib.Demo {
 
@@ -10,7 +11,10 @@ namespace Xenoage.RpcLib.Demo {
     /// </summary>
     public class CalcRpcStub : RpcMethodsStub, ICalcRpc {
 
-        public CalcRpcStub(string? targetPeerID) : base(targetPeerID) {
+        public CalcRpcStub(RpcClient localClient) : base(localClient) {
+        }
+
+        public CalcRpcStub(RpcServer localServer, string remoteClientID) : base(localServer, remoteClientID) {
         }
 
         public Task<int> AddNumbers(int number1, int number2) =>

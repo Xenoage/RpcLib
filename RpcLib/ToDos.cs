@@ -13,7 +13,7 @@ using Xenoage.RpcLib.Serialization;
 /// 
 /// - When switching to .NET 5:
 ///   - Ignore null values when serializing JSON, see <see cref="JsonSerializer"/>
-///   - Use <see cref="TaskCompletionSource"/> without generic, see <see cref="RpcCallExecution"/> and <see cref="RpcPeer"/>
+///   - Use <see cref="TaskCompletionSource"/> without generic, see <see cref="RpcCallExecution"/> and <see cref="RpcPeerEngine"/>
 ///   - Autogenerate implementations of <see cref="RpcMethods.Execute"/> and the stubs using C# source generator
 /// 
 /// - Implement <see cref="RpcCall.SerializerID"/>
