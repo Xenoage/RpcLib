@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Xenoage.RpcLib.Peers {
-    public class RpcServer : RpcPeerBase {
-        protected override RpcChannel GetPeer(string? targetPeerID) {
-            // GOON
-            throw new NotImplementedException();
+    public class RpcServer : RpcPeer {
+        // GOON
+        protected override RpcChannel GetChannel(string? remotePeerID) {
+            throw new System.NotImplementedException();
         }
     }
 }

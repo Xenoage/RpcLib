@@ -207,7 +207,7 @@ namespace Xenoage.RpcLib.Peers {
         /// values of retried calls can not be received by the caller.
         /// </summary>
         public async Task<RpcResult> Run(RpcCall call) {
-            if (call.TargetPeerID != RemoteInfo.PeerID)
+            if (call.RemotePeerID != RemoteInfo.PeerID)
                 throw new ArgumentException("Call is not for this peer");
             // Enqueues the call and awaits the result
             Log.Trace($"Enqueuing call {call.Method.ID} {call.Method.Name}");

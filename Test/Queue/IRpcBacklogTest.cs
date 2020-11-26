@@ -93,7 +93,7 @@ namespace Xenoage.RpcLib.Queue {
             // Remove some calls
             for (int iRemove = 0; iRemove < allCalls.Count; iRemove += random.Next(50)) {
                 var callToRemove = allCalls[iRemove];
-                await backlog.RemoveByMethodID(callToRemove.TargetPeerID, callToRemove.Method.ID);
+                await backlog.RemoveByMethodID(callToRemove.RemotePeerID, callToRemove.Method.ID);
                 allCalls.RemoveAt(iRemove);
                 callsByClient.ForEach(list => list.RemoveAll(it => it.Method.ID == callToRemove.Method.ID));
             }
@@ -172,7 +172,7 @@ namespace Xenoage.RpcLib.Queue {
         private RpcCall CreateCall(string methodName, string? targetPeerID) => new RpcCall {
             Method = RpcMethod.Create(methodName),
             RetryStrategy = RpcRetryStrategy.Retry,
-            TargetPeerID = targetPeerID
+            RemotePeerID = targetPeerID
         };
 
         private IRpcBacklog backlog;

@@ -22,4 +22,6 @@ using Xenoage.RpcLib.Serialization;
 /// 
 /// - Make all classes internal, that are not required outside the library
 /// 
+/// - Optimise <see cref="RpcPeer.ApplyRpcOptionsFromCallStack"/> by caching the results
+/// 
 /// </summary>

@@ -61,7 +61,7 @@ namespace Xenoage.RpcLib.Model {
         /// Creates a new RPC method call, using the given name and parameters.
         /// The parameters must be serializable objects.
         /// </summary>
-        private RpcMethod(string name, params object[] parameters) {
+        public RpcMethod(string name, params object[] parameters) {
             lock (lockSync) {
                 // This works for up to 10.000 calls per millisecond. Should really be enough!
                 loop++;

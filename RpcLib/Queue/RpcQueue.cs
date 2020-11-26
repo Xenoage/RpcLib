@@ -98,7 +98,7 @@ namespace Xenoage.RpcLib.Queue {
         /// </summary>
         public async Task Enqueue(RpcCall call) {
             // Check target peer ID
-            if (TargetPeerID != call.TargetPeerID)
+            if (TargetPeerID != call.RemotePeerID)
                 throw new ArgumentException("Target peer ID does not match");
             await semaphore.WaitAsync();
             queue.Enqueue(call);

@@ -17,10 +17,10 @@ namespace Xenoage.RpcLib.Model {
         public RpcMethod Method { get; set; } = null!; // Hide compiler warning
 
         /// <summary>
-        /// The ID of the target peer where to run this call on,
+        /// The ID of the remote peer where to run this call on,
         /// i.e. the client ID or null for the server.
         /// </summary>
-        public string? TargetPeerID { get; set; }
+        public string? RemotePeerID { get; set; }
 
         #endregion
 
@@ -75,7 +75,7 @@ namespace Xenoage.RpcLib.Model {
         public override bool Equals(object? obj) {
             return obj is RpcCall call &&
                    Method.Equals(call.Method) &&
-                   TargetPeerID == call.TargetPeerID &&
+                   RemotePeerID == call.RemotePeerID &&
                    RetryStrategy == call.RetryStrategy &&
                    TimeoutMs == call.TimeoutMs &&
                    SerializerID == call.SerializerID;

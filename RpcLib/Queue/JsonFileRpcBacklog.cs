@@ -60,7 +60,7 @@ namespace Xenoage.RpcLib.Queue {
             Serializer.Deserialize<RpcCall>(File.ReadAllBytes(file.FullName));
 
         private void WriteToFile(RpcCall call) {
-            var dir = GetDirectory(call.TargetPeerID);
+            var dir = GetDirectory(call.RemotePeerID);
             string filename = call.Method.ID + "-" + call.Method.Name;
             File.WriteAllBytes(Path.Combine(dir.FullName, filename), Serializer.Serialize(call));
         }

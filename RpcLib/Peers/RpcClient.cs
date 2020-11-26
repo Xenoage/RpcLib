@@ -12,17 +12,18 @@ namespace Xenoage.RpcLib.Peers {
     /// may send method calls. These are possible in both directions, once the
     /// connection is established.
     /// </summary>
-    public class RpcClient : RpcPeerBase {
+    public class RpcClient : RpcPeer {
+
+        // GOON
+        protected override RpcChannel GetChannel(string? remotePeerID) {
+            throw new System.NotImplementedException();
+        }
 
         // The RPC engine
         private RpcChannel? peer;
         // The open websocket connection
         private WebSocketRpcConnection? connection;
 
-        protected override RpcChannel GetPeer(string? targetPeerID) {
-            // GOON
-            throw new System.NotImplementedException();
-        }
     }
 
 }

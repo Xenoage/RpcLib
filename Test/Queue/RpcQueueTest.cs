@@ -162,7 +162,7 @@ namespace Xenoage.RpcLib.Queue {
                 RpcRetryStrategy retry = RpcRetryStrategy.Retry) => new RpcCall {
             Method = RpcMethod.Create(methodName),
             RetryStrategy = retry,
-            TargetPeerID = targetPeerID
+            RemotePeerID = targetPeerID
         };
 
         private Random random = new Random();
