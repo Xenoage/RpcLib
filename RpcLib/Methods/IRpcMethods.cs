@@ -1,4 +1,4 @@
-﻿namespace Xenoage.RpcLib {
+﻿namespace Xenoage.RpcLib.Methods {
 
     /// <summary>
     /// Marker interface for all classes/interfaces that define methods which can be called by

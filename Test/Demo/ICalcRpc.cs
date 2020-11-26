@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Xenoage.RpcLib.Methods;
 
 namespace Xenoage.RpcLib.Demo {
 

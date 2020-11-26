@@ -1,4 +1,5 @@
 ﻿using System;
+using Xenoage.RpcLib.Methods;
 
 namespace Xenoage.RpcLib.Model {
 
