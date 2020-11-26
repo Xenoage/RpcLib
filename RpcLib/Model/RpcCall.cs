@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Xenoage.RpcLib.Utils;
 
 namespace Xenoage.RpcLib.Model {
 
@@ -46,6 +47,22 @@ namespace Xenoage.RpcLib.Model {
 
         #endregion
 
+        #region Execution state
+
+        public long StartTime { get; private set; } = CoreUtils.TimeNowMs();
+        public RpcResult? Result { get; set; } = null;
+
+        /// <summary>
+        /// Resets the start time to the current time and sets the
+        /// result back to null.
+        /// </summary>
+        public void ResetStartTimeAndResult() {
+            StartTime = CoreUtils.TimeNowMs();
+            Result = null;
+        }
+
+        #endregion
+
         #region Helper methods
 
         /// <summary>
@@ -54,6 +71,7 @@ namespace Xenoage.RpcLib.Model {
         public bool IsRetryable() =>
             RetryStrategy != null && RetryStrategy != RpcRetryStrategy.None;
 
+        // GOON: Needed? DOES NOT INCLUDE RESULT/ENQUEUETIME
         public override bool Equals(object? obj) {
             return obj is RpcCall call &&
                    Method.Equals(call.Method) &&

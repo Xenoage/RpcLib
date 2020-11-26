@@ -192,12 +192,30 @@ namespace Xenoage.RpcLib.Peers {
         }
 
         /// <summary>
+        /// <see cref="LoadTest"/> without timeouts.
+        /// </summary>
+        [TestMethod]
+        public async Task LoadTest_NoTimeouts() {
+            await LoadTest(useTimeouts: false);
+        }
+
+        /// <summary>
+        /// <see cref="LoadTest"/> with timeouts.
+        /// </summary>
+        [TestMethod]
+        public async Task LoadTest_WithTimeouts() {
+            await LoadTest(useTimeouts: true);
+        }
+
+        /// <summary>
         /// Sends, receives and processes lot of calls with a number division calculation task,
         /// using the <see cref="DivMockRpcChannel"/>.
         /// At the end, checks if each of the calls, in both directions, was correctly processed.
         /// </summary>
-        [TestMethod]
-        public async Task LoadTest() {
+        /// <param name="useTimeouts">Iff true, all <see cref="Div"/>s are sent as retryable
+        ///   calls and a timeout of 50 ms is set (the RPC peer is not fast enough
+        ///   to process a calls without timeouts)</param>
+        private async Task LoadTest(bool useTimeouts) {
             int callsCount = 0;
             var channel = new DivMockRpcChannel(enableReceivingCalls: true);
             var testDurationMs = 3000;
@@ -209,21 +227,37 @@ namespace Xenoage.RpcLib.Peers {
             long testStartTime = TimeNowMs();
             _ = Task.Run(async () => {
                 while (TimeNowMs() - testStartTime < testDurationMs) {
+                    var div = Div.CreateNew((ulong)callsCount);
                     _ = rpcPeer.Run(new RpcCall {
-                        Method = Div.CreateNew((ulong)callsCount).ToMethod()
+                        Method = div.ToMethod(),
+                        RetryStrategy = useTimeouts ? RpcRetryStrategy.Retry : (RpcRetryStrategy?)null,
+                        TimeoutMs = 50
                     });
                     callsCount++;
                     if (callsCount % 5 == 0)
                         await Task.Delay(20);
                 }
             });
+            // When we test timeouts, let the first second respond very slowly
+            if (useTimeouts) {
+                channel.SetExecutionTimeMs(100);
+                await Task.Delay(1000);
+                testDurationMs -= 1000;
+                channel.SetExecutionTimeMs(0);
+            }
             // When the test time is over, tell the mock channel to stop receiving new div tasks
             await Task.Delay(testDurationMs);
             channel.StopReceivingDivs();
             // Wait a short moment to let ongoing computations complete
             await Task.Delay(Debugger.IsAttached ? 2000 : 500); // More time when debugging (much slower taks and/or logging)
             // Check results of sent and received calls
-            var sentCalls = channel.SentDivs.ToList();
+            var sentCallsWithTimeouts = channel.SentDivs.ToList();
+            var sentCalls = sentCallsWithTimeouts.Where((call, index) =>
+                index == sentCallsWithTimeouts.FindLastIndex(it => it.methodID == call.methodID)).ToList(); // Filter out retried calls
+            if (useTimeouts)
+                Assert.IsTrue(sentCallsWithTimeouts.Count > sentCalls.Count + 10);
+            else
+                Assert.AreEqual(sentCallsWithTimeouts.Count, sentCalls.Count);
             Assert.AreEqual(callsCount, sentCalls.Count);
             for (int i = 0; i < sentCalls.Count; i++)
                 Assert.AreEqual(sentCalls[i].ComputeExpectedResult(), sentCalls[i].result);
@@ -232,6 +266,8 @@ namespace Xenoage.RpcLib.Peers {
             for (int i = 0; i < receivedCalls.Count; i++)
                 Assert.AreEqual(receivedCalls[i].ComputeExpectedResult(), receivedCalls[i].result);
         }
+
+        private Random random = new Random();
 
     }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Model;
@@ -39,7 +40,10 @@ namespace Xenoage.RpcLib.Queue {
             if (backlog != null) {
                 // Restore queue from backlog
                 await ret.semaphore.WaitAsync();
-                ret.queue = await backlog.ReadAll(targetPeerID);
+                foreach (var call in await backlog.ReadAll(targetPeerID)) {
+                    call.ResetStartTimeAndResult();
+                    ret.queue.Enqueue(call);
+                }
                 ret.semaphore.Release();
             }
             return ret;
