@@ -34,14 +34,14 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Information on the connected remote peer.
         /// </summary>
-        public PeerInfo RemoteInfo { get; private set; }
+        public RpcPeerInfo RemoteInfo { get; private set; }
 
 
         /// <summary>
         /// Creates a new peer with the given information, already connected websocket,
         /// and optionally the given backlog.
         /// </summary>
-        public static async Task<RpcPeer> Create(PeerInfo remoteInfo, IRpcChannel channel,
+        public static async Task<RpcPeer> Create(RpcPeerInfo remoteInfo, IRpcChannel channel,
                 IRpcMethodExecutor executor, IRpcBacklog? backlog = null) {
             var ret = new RpcPeer(remoteInfo, channel, executor);
             ret.callsQueue = await RpcQueue.Create(remoteInfo.PeerID, backlog);
@@ -51,7 +51,7 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Use <see cref="Create"/> for creating new instances.
         /// </summary>
-        private RpcPeer(PeerInfo remoteInfo, IRpcChannel channel, IRpcMethodExecutor executor) {
+        private RpcPeer(RpcPeerInfo remoteInfo, IRpcChannel channel, IRpcMethodExecutor executor) {
             RemoteInfo = remoteInfo;
             this.channel = channel;
             this.executor = executor;

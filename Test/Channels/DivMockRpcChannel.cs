@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Model;
-using Xenoage.RpcLib.Peers;
 
 namespace Xenoage.RpcLib.Channels {
 

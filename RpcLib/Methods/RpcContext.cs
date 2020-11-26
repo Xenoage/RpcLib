@@ -1,4 +1,4 @@
-﻿using Xenoage.RpcLib.Peers;
+﻿using Xenoage.RpcLib.Model;
 
 namespace Xenoage.RpcLib.Methods {
 
@@ -11,9 +11,9 @@ namespace Xenoage.RpcLib.Methods {
         /// Information on the calling peer. For example, the server can find out
         /// which client is calling the current method.
         /// </summary>
-        public PeerInfo RemotePeer { get; }
+        public RpcPeerInfo RemotePeer { get; }
 
-        public RpcContext(PeerInfo remotePeer) {
+        public RpcContext(RpcPeerInfo remotePeer) {
             RemotePeer = remotePeer;
         }
 

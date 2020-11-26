@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Xenoage.RpcLib.Peers;
+using Xenoage.RpcLib.Model;
 
 namespace Xenoage.RpcLib.Channels {
 

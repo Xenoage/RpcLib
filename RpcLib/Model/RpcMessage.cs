@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Xenoage.RpcLib.Model;
 
-namespace Xenoage.RpcLib.Peers {
+namespace Xenoage.RpcLib.Model {
 
     /// <summary>
     /// Low-level RPC communication protocol.
@@ -81,10 +80,9 @@ namespace Xenoage.RpcLib.Peers {
             if (result.Failure == null) {
                 // Successful
                 length += 4 + returnValueLength; /* Length and data */
-            }
-            else {
+            } else {
                 // Failure
-                failureType = Encoding.UTF8.GetBytes(""+result.Failure.Type);
+                failureType = Encoding.UTF8.GetBytes("" + result.Failure.Type);
                 failureMessageLength = result.Failure.Message?.Length ?? 0;
                 if (failureMessageLength > 0)
                     failureMessage = Encoding.UTF8.GetBytes(result.Failure.Message!);
@@ -171,8 +169,7 @@ namespace Xenoage.RpcLib.Peers {
                     }
                 }
                 return ret;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 throw new FormatException("Content wrong: " + ex.Message, ex);
             }
         }
@@ -201,8 +198,7 @@ namespace Xenoage.RpcLib.Peers {
                         ret.ReturnValue = new ArraySegment<byte>(Data, pos, returnValueLength).ToArray();
                         pos += returnValueLength;
                     }
-                }
-                else {
+                } else {
                     // Failure
                     ret.Failure = new RpcFailure();
                     // Failure type
