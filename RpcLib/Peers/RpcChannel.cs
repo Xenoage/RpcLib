@@ -12,10 +12,10 @@ using static Xenoage.RpcLib.Utils.CoreUtils;
 namespace Xenoage.RpcLib.Peers {
 
     /// <summary>
-    /// Endpoint for the RPC traffic. For each connection between a client
-    /// and the server, one instance of this class is running both on the client
-    /// and on the server. That means, the server has multiple instances of this
-    /// class running, while a client has exactly one.
+    /// Bidirectional channel for peer-to-peer communication.
+    /// For each connection between a client and the server, one instance of this
+    /// class is running both on the client and on the server. Thus, the server has multiple
+    /// instances of this class running, while each client has exactly one.
     /// 
     /// It sends calls to the other side (server to client, or vice versa) and
     /// receives their response, and it receives calls from the other side,
@@ -29,7 +29,7 @@ namespace Xenoage.RpcLib.Peers {
     /// This class is thread-safe, i.e. the method <see cref="Run"/> can be called from
     /// everywhere and anytime.
     /// </summary>
-    public class RpcPeerEngine {
+    public class RpcChannel {
         
         /// <summary>
         /// Information on the connected remote peer.
@@ -38,12 +38,12 @@ namespace Xenoage.RpcLib.Peers {
 
 
         /// <summary>
-        /// Creates a new peer with the given information, already established connection,
+        /// Creates a new channel with the given information, already established connection,
         /// and optionally the given backlog.
         /// </summary>
-        public static async Task<RpcPeerEngine> Create(RpcPeerInfo remoteInfo, IRpcConnection connection,
+        public static async Task<RpcChannel> Create(RpcPeerInfo remoteInfo, IRpcConnection connection,
                 IRpcMethodExecutor executor, IRpcBacklog? backlog = null) {
-            var ret = new RpcPeerEngine(remoteInfo, connection, executor);
+            var ret = new RpcChannel(remoteInfo, connection, executor);
             ret.callsQueue = await RpcQueue.Create(remoteInfo.PeerID, backlog);
             return ret;
         }
@@ -51,7 +51,7 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Use <see cref="Create"/> for creating new instances.
         /// </summary>
-        private RpcPeerEngine(RpcPeerInfo remoteInfo, IRpcConnection connection, IRpcMethodExecutor executor) {
+        private RpcChannel(RpcPeerInfo remoteInfo, IRpcConnection connection, IRpcMethodExecutor executor) {
             RemoteInfo = remoteInfo;
             this.connection = connection;
             this.executor = executor;

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Xenoage.RpcLib.Peers {
     public class RpcServer : RpcPeerBase {
-        protected override RpcPeerEngine GetPeer(string? targetPeerID) {
+        protected override RpcChannel GetPeer(string? targetPeerID) {
             // GOON
             throw new NotImplementedException();
         }

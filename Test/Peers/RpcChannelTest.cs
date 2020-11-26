@@ -13,10 +13,10 @@ using static Xenoage.RpcLib.Utils.CoreUtils;
 namespace Xenoage.RpcLib.Peers {
 
     /// <summary>
-    /// Tests for <see cref="RpcPeerEngine"/>, using a <see cref="ReceivingMockRpcConnection"/>.
+    /// Tests for <see cref="RpcChannel"/>, using a <see cref="ReceivingMockRpcConnection"/>.
     /// </summary>
     [TestClass]
-    public class RpcPeerEngineTest {
+    public class RpcChannelTest {
 
         [TestInitialize]
         public void Init() {
@@ -25,13 +25,13 @@ namespace Xenoage.RpcLib.Peers {
 
         [TestMethod, Timeout(1000)]
         public async Task Start_And_Stop_Test() {
-            var rpcPeer = await RpcPeerEngine.Create(new RpcPeerInfo(null, "localhost"),
+            var channel = await RpcChannel.Create(new RpcPeerInfo(null, "localhost"),
                 new ReceivingMockRpcConnection(new Queue<(RpcMessage, int)>()),
                 new MockRpcMethodExecutor(), backlog: null);
-            var rpcPeerTask = rpcPeer.Start();
+            var rpcPeerTask = channel.Start();
             await Task.Delay(500);
             Assert.IsFalse(rpcPeerTask.IsCompleted);
-            rpcPeer.Stop();
+            channel.Stop();
             await Task.Delay(200);
             Assert.IsTrue(rpcPeerTask.IsCompleted);
         }
@@ -49,10 +49,10 @@ namespace Xenoage.RpcLib.Peers {
                 Name = "MyMethod"
             }), 0));
             var connection = new ReceivingMockRpcConnection(receiving);
-            // Start peer
-            var rpcPeer = await RpcPeerEngine.Create(new RpcPeerInfo(null, "localhost"),
+            // Start channel
+            var channel = await RpcChannel.Create(new RpcPeerInfo(null, "localhost"),
                 connection, new MockRpcMethodExecutor(), backlog: null);
-            _ = rpcPeer.Start();
+            _ = channel.Start();
             await Task.Delay(200); // Give a moment to execute
             // Check sent message
             Assert.AreEqual(1, connection.SentMessages.Count);
@@ -60,7 +60,7 @@ namespace Xenoage.RpcLib.Peers {
                 MethodID = id,
                 ReturnValue = new byte[] { 42 }
             }, connection.SentMessages[0].DecodeRpcResult());
-            rpcPeer.Stop();
+            channel.Stop();
         }
 
         /// <summary>
@@ -77,11 +77,11 @@ namespace Xenoage.RpcLib.Peers {
             }));
             int responseTimeMs = 500;
             var connection = new RespondingMockRpcConnection(responding, responseTimeMs);
-            // Start peer
-            var rpcPeer = await RpcPeerEngine.Create(new RpcPeerInfo(null, "localhost"),
+            // Start channel
+            var channel = await RpcChannel.Create(new RpcPeerInfo(null, "localhost"),
                 connection, new MockRpcMethodExecutor(), backlog: null);
-            _ = rpcPeer.Start();
-            var callTask = rpcPeer.Run(new RpcCall {
+            _ = channel.Start();
+            var callTask = channel.Run(new RpcCall {
                 Method = new RpcMethod {
                     ID = id,
                     Name = "MyMethod"
@@ -98,7 +98,7 @@ namespace Xenoage.RpcLib.Peers {
                 MethodID = id,
                 ReturnValue = new byte[] { 42 }
             }, callTask.Result);
-            rpcPeer.Stop();
+            channel.Stop();
         }
 
         /// <summary>
@@ -123,11 +123,11 @@ namespace Xenoage.RpcLib.Peers {
             var responding = new Queue<RpcMessage>();
             int responseTimeMs = 500;
             var connection = new RespondingMockRpcConnection(responding, responseTimeMs);
-            // Start peer
-            var rpcPeer = await RpcPeerEngine.Create(new RpcPeerInfo(null, "localhost"),
+            // Start channel
+            var channel = await RpcChannel.Create(new RpcPeerInfo(null, "localhost"),
                 connection, new MockRpcMethodExecutor(), backlog: null);
-            _ = rpcPeer.Start();
-            var callTask = rpcPeer.Run(new RpcCall {
+            _ = channel.Start();
+            var callTask = channel.Run(new RpcCall {
                 Method = new RpcMethod {
                     ID = id,
                     Name = "MyMethod"
@@ -145,7 +145,7 @@ namespace Xenoage.RpcLib.Peers {
             await Task.Delay(waitBeforeAssertTimeoutMs);
             Assert.IsTrue(callTask.IsCompleted);
             Assert.AreEqual(RpcFailureType.Timeout, callTask.Result.Failure?.Type);
-            rpcPeer.Stop();
+            channel.Stop();
         }
 
         /// <summary>
@@ -155,14 +155,14 @@ namespace Xenoage.RpcLib.Peers {
         [TestMethod, Timeout(5000)]
         public async Task Run_RetryUntilWorking() {
             var connection = new DivMockRpcConnection(enableReceivingCalls: false);
-            var rpcPeer = await RpcPeerEngine.Create(new RpcPeerInfo(null, "localhost"),
+            var channel = await RpcChannel.Create(new RpcPeerInfo(null, "localhost"),
                 connection, new DivMockRpcMethodExecutor(), backlog: null);
-            _ = rpcPeer.Start();
+            _ = channel.Start();
             // Set remote execution time very high, so that the response can not be received
             // during the following asserts. Each call should fail because of timeout.
             connection.SetExecutionTimeMs(100_000);
             long startTime = TimeNowMs();
-            var callTask = rpcPeer.Run(new RpcCall {
+            var callTask = channel.Run(new RpcCall {
                 Method = Div.CreateNew(1000).ToMethod(),
                 RetryStrategy = RpcRetryStrategy.Retry,
                 TimeoutMs = 100
@@ -188,7 +188,7 @@ namespace Xenoage.RpcLib.Peers {
             await Task.Delay(300);
             newAttempts = connection.SentDivs.Count;
             Assert.IsTrue(newAttempts == attempts + 1 || newAttempts == attempts + 2);
-            rpcPeer.Stop();
+            channel.Stop();
         }
 
         /// <summary>
@@ -219,16 +219,16 @@ namespace Xenoage.RpcLib.Peers {
             int callsCount = 0;
             var connection = new DivMockRpcConnection(enableReceivingCalls: true);
             var testDurationMs = 3000;
-            // Start peer
-            var rpcPeer = await RpcPeerEngine.Create(new RpcPeerInfo(null, "localhost"),
+            // Start channel
+            var channel = await RpcChannel.Create(new RpcPeerInfo(null, "localhost"),
                 connection, new DivMockRpcMethodExecutor(), backlog: null);
-            _ = rpcPeer.Start();
+            _ = channel.Start();
             // For the time of the test, send calculations
             long testStartTime = TimeNowMs();
             _ = Task.Run(async () => {
                 while (TimeNowMs() - testStartTime < testDurationMs) {
                     var div = Div.CreateNew((ulong)callsCount);
-                    _ = rpcPeer.Run(new RpcCall {
+                    _ = channel.Run(new RpcCall {
                         Method = div.ToMethod(),
                         RetryStrategy = useTimeouts ? RpcRetryStrategy.Retry : (RpcRetryStrategy?)null,
                         TimeoutMs = 50
@@ -266,8 +266,6 @@ namespace Xenoage.RpcLib.Peers {
             for (int i = 0; i < receivedCalls.Count; i++)
                 Assert.AreEqual(receivedCalls[i].ComputeExpectedResult(), receivedCalls[i].result);
         }
-
-        private Random random = new Random();
 
     }
 

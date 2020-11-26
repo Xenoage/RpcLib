@@ -11,7 +11,7 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// GOON
         /// </summary>
-        protected abstract RpcPeerEngine GetPeer(string? targetPeerID);
+        protected abstract RpcChannel GetPeer(string? targetPeerID);
 
         public async Task<T> ExecuteOnRemotePeer<T>(string? remotePeerID,
                 string methodName, params object[] methodParameters) {
