@@ -1,4 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using Xenoage.RpcLib.Methods;
 using Xenoage.RpcLib.Utils;
 
 namespace Xenoage.RpcLib.Model {

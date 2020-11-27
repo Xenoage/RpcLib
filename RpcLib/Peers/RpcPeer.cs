@@ -63,14 +63,16 @@ namespace Xenoage.RpcLib.Peers {
         /// in the calling stack, the <see cref="RpcOptionsAttribute"/> (if any) of the method
         /// with this command name are read and applied.
         /// </summary>
-        public void ApplyRpcOptionsFromCallStack(RpcCall call) {
+        public void ApplyRpcOptionsFromCallStack(RpcCall call, StackTrace? stackTrace = null) {
+            // Use the given stack trace or the current one
+            stackTrace = stackTrace ?? new StackTrace();
             // Find attributes (e.g. custom timeout, retry strategy) for this method definition.
             // In the call stack, find a caller (e.g. "MyRpcStub") compatible with the "IRpcMethods" interface.
             // Find a method with the command's name and have a look at its RpcOptions attribute.
-            foreach (var stackFrame in new StackTrace().GetFrames()) {
+            foreach (var stackFrame in stackTrace.GetFrames()) {
                 var frameType = stackFrame?.GetMethod()?.DeclaringType;
-                if (frameType?.GetInterfaces().FirstOrDefault(it => it.GetInterfaces().Contains(typeof(IRpcMethods))) is Type intf) {
-                    var method = intf.GetMethod(call.Method.Name);
+                if (frameType != null && typeof(IRpcMethods).IsAssignableFrom(frameType)) {
+                    var method = frameType.GetMethod(call.Method.Name);
                     if (method != null) {
                         if (method.GetCustomAttribute<RpcOptionsAttribute>() is RpcOptionsAttribute options) {
                             if (options.TimeoutMs != RpcOptionsAttribute.useDefaultTimeout)

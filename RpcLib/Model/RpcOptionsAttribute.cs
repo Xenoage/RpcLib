@@ -33,7 +33,7 @@ namespace Xenoage.RpcLib.Model {
         /// when it has failed because of network problems.
         /// By default null.
         /// </summary>
-        public RpcRetryStrategy? RetryStrategy { get; set; } = null;
+        public object? RetryStrategy { get; set; } = null; // Must be an object for C# attribute
 
     }
 
