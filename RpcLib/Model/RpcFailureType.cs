@@ -34,6 +34,13 @@
         RpcError,
 
         /// <summary>
+        /// The called method was not available on the remote peer. Maybe the versions of the client
+        /// and server are different and non-compatible.
+        /// Do not retry this call, it will fail again.
+        /// </summary>
+        MethodNotFound,
+
+        /// <summary>
         /// Unexpected exception.
         /// </summary>
         Other

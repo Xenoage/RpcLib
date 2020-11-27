@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -12,12 +13,36 @@ namespace Xenoage.RpcLib.Peers {
     /// <summary>
     /// Base class for both the <see cref="RpcServer"/> and the <see cref="RpcClient"/>.
     /// </summary>
-    public abstract class RpcPeer : IRpcPeer {
+    public abstract class RpcPeer : IRpcPeer, IRpcMethodExecutor {
+
+        /// <summary>
+        /// The default options, like timeout, for method execution.
+        /// May be changed during runtime.
+        /// </summary>
+        public RpcOptions DefaultOptions { get; set; } = new RpcOptions();
+
+        public RpcPeer(IEnumerable<RpcMethods> methods, RpcOptions defaultOptions) {
+            this.methods = methods.ToList();
+            DefaultOptions = defaultOptions;
+        }
 
         /// <summary>
         /// Gets the channel for communication with the given remote peer.
         /// </summary>
         protected abstract RpcChannel GetChannel(string? remotePeerID);
+
+        /// <summary>
+        /// Starts the communication. When the connection breaks,
+        /// it is automatically reestablished.
+        /// The returned task runs until <see cref="Stop"/> is called.
+        /// </summary>
+        public abstract Task Start();
+
+        /// <summary>
+        /// Stops the communication, i.e. the task returned by
+        /// <see cref="Start"/> will be completed.
+        /// </summary>
+        public abstract Task Stop();
 
         public async Task<T> ExecuteOnRemotePeer<T>(string? remotePeerID,
                 string methodName, params object[] methodParameters) {
@@ -63,7 +88,7 @@ namespace Xenoage.RpcLib.Peers {
         /// in the calling stack, the <see cref="RpcOptionsAttribute"/> (if any) of the method
         /// with this command name are read and applied.
         /// </summary>
-        public void ApplyRpcOptionsFromCallStack(RpcCall call, StackTrace? stackTrace = null) {
+        public static void ApplyRpcOptionsFromCallStack(RpcCall call, StackTrace? stackTrace = null) {
             // Use the given stack trace or the current one
             stackTrace = stackTrace ?? new StackTrace();
             // Find attributes (e.g. custom timeout, retry strategy) for this method definition.
@@ -86,6 +111,23 @@ namespace Xenoage.RpcLib.Peers {
             }
         }
 
+        public async Task<byte[]?> Execute(RpcMethod method) {
+            // Try to find and execute method (TODO: speed up)
+            foreach (var m in methods) {
+                if (m.Execute(method) is Task<byte[]?> task) {
+                    // Found. Execute it and return result (null for void).
+                    byte[]? returnValue = await task;
+                    return returnValue;
+                }
+            }
+            // Method could not be found
+            throw new RpcException(new RpcFailure {
+                Type = RpcFailureType.MethodNotFound
+            });
+        }
+
+        // The registered RPC methods for local execution
+        private List<RpcMethods> methods;
     }
 
 }

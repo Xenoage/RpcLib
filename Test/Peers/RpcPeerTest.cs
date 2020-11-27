@@ -21,7 +21,7 @@ namespace Xenoage.RpcLib.Peers {
 
         private static void TestAttributes(string methodName, int? expectedTimeoutMs, RpcRetryStrategy? expectedRetryStrategy) {
             var call = new RpcCall { Method = new RpcMethod(methodName) };
-            new MockRpcPeer().ApplyRpcOptionsFromCallStack(call);
+            RpcPeer.ApplyRpcOptionsFromCallStack(call);
             Assert.AreEqual(expectedTimeoutMs, call.TimeoutMs);
             Assert.AreEqual(expectedRetryStrategy, call.RetryStrategy);
         }
@@ -41,12 +41,6 @@ namespace Xenoage.RpcLib.Peers {
             [RpcOptions(TimeoutMs = 1234, RetryStrategy = RpcRetryStrategy.Retry)]
             public void AnnotatedWithTimeoutAndRetry() {
                 TestAttributes("AnnotatedWithTimeoutAndRetry", 1234, RpcRetryStrategy.Retry);
-            }
-        }
-
-        private class MockRpcPeer : RpcPeer {
-            protected override RpcChannel GetChannel(string? remotePeerID) {
-                throw new System.NotImplementedException();
             }
         }
 

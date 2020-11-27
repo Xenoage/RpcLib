@@ -13,7 +13,8 @@ using Xenoage.RpcLib.Serialization;
 /// 
 /// - When switching to .NET 5:
 ///   - Ignore null values when serializing JSON, see <see cref="JsonSerializer"/>
-///   - Use <see cref="TaskCompletionSource"/> without generic, see <see cref="RpcCallExecution"/> and <see cref="RpcChannel"/>
+///   - Use <see cref="TaskCompletionSource"/> without generic, see <see cref="RpcCallExecution"/> and
+///     <see cref="RpcChannel"/> and others
 ///   - Autogenerate implementations of <see cref="RpcMethods.Execute"/> and the stubs using C# source generator
 /// 
 /// - Implement <see cref="RpcCall.SerializerID"/>
@@ -23,5 +24,8 @@ using Xenoage.RpcLib.Serialization;
 /// - Make all classes internal, that are not required outside the library
 /// 
 /// - Optimise <see cref="RpcPeer.ApplyRpcOptionsFromCallStack"/> by caching the results
+/// 
+/// - Include ClassName in <see cref="RpcMethod"/>. RPC protocol can stay the same, use format "ClassName.MethodName".
+///   Then use a dictionary in <see cref="RpcPeer"/> for finding the method to call quickly.
 /// 
 /// </summary>

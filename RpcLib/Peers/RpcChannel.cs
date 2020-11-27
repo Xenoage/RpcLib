@@ -139,8 +139,8 @@ namespace Xenoage.RpcLib.Peers {
                     if (message != null)
                         await HandleReceivedMessage(message);
                 }
-            } catch (Exception ex) {
-                Log.Debug($"Unexpectedly closed connection to {RemoteInfo}: {ex.Message}");
+            } catch {
+                // Websocket exception is already logged in the sending loop
             }
         }
 
@@ -157,6 +157,8 @@ namespace Xenoage.RpcLib.Peers {
                         var result = new RpcResult { MethodID = method.ID };
                         try {
                             result.ReturnValue = await executor.Execute(method);
+                        } catch (RpcException ex) {
+                            result.Failure = ex.Failure;
                         } catch (Exception ex) {
                             result.Failure = new RpcFailure {
                                 Type = RpcFailureType.RemoteException, // Not retryable; the command failed on caller side

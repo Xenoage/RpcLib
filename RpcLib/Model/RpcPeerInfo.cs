@@ -1,4 +1,6 @@
-﻿namespace Xenoage.RpcLib.Model {
+﻿using System;
+
+namespace Xenoage.RpcLib.Model {
 
     /// <summary>
     /// Information on a remote peer.
@@ -11,10 +13,14 @@
         public string? PeerID { get; }
 
         /// <summary>
-        /// IP address of the remote peer.
+        /// IP address of the remote client,
+        /// or domain of the remote server.
         /// </summary>
         public string IP { get; }
 
+
+        public static RpcPeerInfo Server(string serverUrl) =>
+            new RpcPeerInfo(peerID: null, new Uri(serverUrl).Host);
 
         public RpcPeerInfo(string? peerID, string iP) {
             PeerID = peerID;
