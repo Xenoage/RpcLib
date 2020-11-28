@@ -8,7 +8,7 @@
         /// <summary>
         /// By default, the included <see cref="ConsoleLogger"/> is used.
         /// </summary>
-        public static ILogger Instance { get; set; } = new ConsoleLogger(LogLevel.Info);
+        public static ILogger Instance { get; set; } = new ConsoleLogger(LogLevel.Debug);
 
         public static void Error(string message) => Instance.Log(message, LogLevel.Error);
         public static void Warn(string message) => Instance.Log(message, LogLevel.Warn);

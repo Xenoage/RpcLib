@@ -34,11 +34,11 @@ namespace Xenoage.RpcLib.Peers {
 
         /// <summary>
         /// Creates a new RPC client-side endpoint with the given <see cref="ServerUrl"/>,
-        /// server-side RPC methods, authentication method, <see cref="ReconnectTimeMs"/>
-        /// and <see cref="DefaultOptions"/>.
+        /// local-side RPC methods (i.e. the methods which are executable on this client),
+        /// authentication method, <see cref="ReconnectTimeMs"/> and <see cref="DefaultOptions"/>.
         /// </summary>
-        public RpcClient(string serverUrl, IEnumerable<RpcMethods> serverMethods, IRpcClientAuth auth,
-                int reconnectTimeMs, RpcOptions defaultOptions) : base(serverMethods, defaultOptions) {
+        public RpcClient(string serverUrl, IEnumerable<RpcMethods> localMethods, IRpcClientAuth auth,
+                int reconnectTimeMs, RpcOptions defaultOptions) : base(localMethods, defaultOptions) {
             ServerUrl = serverUrl;
             this.auth = auth;
             ReconnectTimeMs = reconnectTimeMs;

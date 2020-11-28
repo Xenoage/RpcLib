@@ -21,6 +21,10 @@ namespace Xenoage.RpcLib.Peers {
         /// </summary>
         public RpcOptions DefaultOptions { get; set; } = new RpcOptions();
 
+        /// <summary>
+        /// Creates a new local peer with can locally execute the given RPC methods,
+        /// using the given options by default.
+        /// </summary>
         public RpcPeer(IEnumerable<RpcMethods> methods, RpcOptions defaultOptions) {
             this.methods = methods.ToList();
             DefaultOptions = defaultOptions;
