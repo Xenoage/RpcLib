@@ -31,9 +31,10 @@ namespace Xenoage.RpcLib.Peers {
         }
 
         /// <summary>
-        /// Gets the channel for communication with the given remote peer.
+        /// Gets the channel for communication with the given remote peer,
+        /// or null if no such peer is connected.
         /// </summary>
-        protected abstract RpcChannel GetChannel(string? remotePeerID);
+        protected abstract RpcChannel? GetChannel(string? remotePeerID);
 
         /// <summary>
         /// Starts the communication. When the connection breaks,
@@ -46,7 +47,7 @@ namespace Xenoage.RpcLib.Peers {
         /// Stops the communication, i.e. the task returned by
         /// <see cref="Start"/> will be completed.
         /// </summary>
-        public abstract Task Stop();
+        public abstract void Stop();
 
         public async Task<T> ExecuteOnRemotePeer<T>(string? remotePeerID,
                 string methodName, params object[] methodParameters) {
@@ -57,7 +58,8 @@ namespace Xenoage.RpcLib.Peers {
             try {
                 var method = new RpcMethod(methodName, methodParameters);
                 var call = PrepareCall(remotePeerID, method);
-                var channel = GetChannel(remotePeerID);
+                var channel = GetChannel(remotePeerID)
+                    ?? throw new Exception($"No client with ID {remotePeerID} connected");
                 var result = await channel.Run(call);
                 if (result.Failure != null)
                     throw new RpcException(result.Failure);

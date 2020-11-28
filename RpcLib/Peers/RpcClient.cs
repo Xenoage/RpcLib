@@ -52,9 +52,9 @@ namespace Xenoage.RpcLib.Peers {
                     auth.Authenticate(webSocket);
                     await webSocket.ConnectAsync(new Uri(ServerUrl), stopper.Token);
                     Log.Debug($"Connection to server closed");
-                    var remoteInfo = RpcPeerInfo.Server(ServerUrl);
-                    var connection = new WebSocketRpcConnection(remoteInfo, webSocket);
-                    channel = await RpcChannel.Create(remoteInfo, connection, this, backlog: null); // GOON: backlog
+                    var serverInfo = RpcPeerInfo.Server(ServerUrl);
+                    var connection = new WebSocketRpcConnection(serverInfo, webSocket);
+                    channel = await RpcChannel.Create(serverInfo, connection, this, backlog: null); // GOON: backlog
                     await channel.Start();
                     Log.Debug($"Connection to server closed");
                 } catch (Exception ex) {
@@ -84,17 +84,18 @@ namespace Xenoage.RpcLib.Peers {
             channel?.Stop();
         }
 
-        protected override RpcChannel GetChannel(string? remotePeerID) {
+        protected override RpcChannel? GetChannel(string? remotePeerID) {
             if (channel == null)
                 throw new Exception("Not initialized");
             return channel;
         }
 
+        // The client's authentication technique
         private IRpcClientAuth auth;
+        // The open channel to the server
+        private RpcChannel? channel;
         // Used for stopping the loop
         private CancellationTokenSource stopper = new CancellationTokenSource();
-        // The open channel
-        private RpcChannel? channel;
 
     }
 

@@ -19,12 +19,15 @@ namespace Xenoage.RpcLib.Model {
         public string IP { get; }
 
 
+        public static RpcPeerInfo Client(string clientID, string ip) =>
+            new RpcPeerInfo(peerID: clientID, ip);
+
         public static RpcPeerInfo Server(string serverUrl) =>
             new RpcPeerInfo(peerID: null, new Uri(serverUrl).Host);
 
-        public RpcPeerInfo(string? peerID, string iP) {
+        public RpcPeerInfo(string? peerID, string ip) {
             PeerID = peerID;
-            IP = iP;
+            IP = ip;
         }
 
         public override string ToString() => PeerID == null
