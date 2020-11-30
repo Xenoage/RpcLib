@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Auth;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Peers;
+using Xenoage.RpcLib.Queue;
 
 namespace Chat {
 
@@ -22,7 +24,11 @@ namespace Chat {
             Console.WriteLine("");
 
             var client = new RpcClient("ws://localhost:7000/chat/", new List<Type> { typeof(ChatClientRpc) },
-                auth: new RpcClientBasicAuth(username, password), reconnectTimeMs: 5000, new RpcOptions { TimeoutMs = 1000 });
+                new RpcClientBasicAuth(username, password), new RpcPeerSettings {
+                    DefaultOptions = new RpcOptions { TimeoutMs = 1000 },
+                    ReconnectTimeMs = 5000,
+                    Backlog = new JsonFileRpcBacklog(new DirectoryInfo("RpcBacklog"))
+                });
             _ = client.Start();
 
             var server = new ChatServerRpcStub(client);

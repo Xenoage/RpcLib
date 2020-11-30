@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Xenoage.RpcLib.Methods;
+using Xenoage.RpcLib.Model;
 
 namespace Chat {
 
@@ -12,6 +13,7 @@ namespace Chat {
         /// Call this method from the client to send a message
         /// to all users in the chat.
         /// </summary>
+        [RpcOptions(RetryStrategy = RpcRetryStrategy.Retry)]
         Task SendPublicMessage(string message);
 
         /// <summary>
@@ -20,6 +22,7 @@ namespace Chat {
         /// Returns true, iff the message could be dispatched to the
         /// given user.
         /// </summary>
+        [RpcOptions(RetryStrategy = RpcRetryStrategy.Retry)]
         Task<bool> SendPrivateMessage(string message, string username);
 
     }

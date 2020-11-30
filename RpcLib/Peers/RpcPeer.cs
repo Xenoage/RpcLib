@@ -16,18 +16,19 @@ namespace Xenoage.RpcLib.Peers {
     public abstract class RpcPeer : IRpcPeer, IRpcMethodExecutor {
 
         /// <summary>
-        /// The default options, like timeout, for method execution.
-        /// May be changed during runtime.
+        /// Settings for this local peer.
         /// </summary>
-        public RpcOptions DefaultOptions { get; set; } = new RpcOptions();
+        public RpcPeerSettings Settings { get; set; }
 
         /// <summary>
         /// Creates a new local peer with can locally execute the given RPC methods,
         /// using the given options by default.
         /// </summary>
-        public RpcPeer(IEnumerable<Type> methods, RpcOptions defaultOptions) {
+        public RpcPeer(IEnumerable<Type> methods, RpcPeerSettings settings) {
             this.methods = methods.ToList();
-            DefaultOptions = defaultOptions;
+            Settings = settings;
+            Serializer.Instance = Settings.Serializer;
+            Logging.Log.Instance = Settings.Logger;
         }
 
         /// <summary>
@@ -99,8 +100,8 @@ namespace Xenoage.RpcLib.Peers {
             // Find a method with the command's name and have a look at its RpcOptions attribute.
             foreach (var stackFrame in stackTrace.GetFrames()) {
                 var frameType = stackFrame?.GetMethod()?.DeclaringType;
-                if (frameType != null && typeof(IRpcMethods).IsAssignableFrom(frameType)) {
-                    var method = frameType.GetMethod(call.Method.Name);
+                if (frameType?.GetInterfaces().FirstOrDefault(it => it.GetInterfaces().Contains(typeof(IRpcMethods))) is Type intf) {
+                    var method = intf.GetMethod(call.Method.Name);
                     if (method != null) {
                         if (method.GetCustomAttribute<RpcOptionsAttribute>() is RpcOptionsAttribute options) {
                             if (options.TimeoutMs != RpcOptionsAttribute.useDefaultTimeout)
@@ -133,6 +134,8 @@ namespace Xenoage.RpcLib.Peers {
         }
 
         protected abstract RpcContext CreateRpcContext(RpcPeerInfo callingPeer);
+
+        public RpcOptions DefaultOptions => Settings.DefaultOptions;
 
         // The registered RPC methods for local execution
         private List<Type> methods;

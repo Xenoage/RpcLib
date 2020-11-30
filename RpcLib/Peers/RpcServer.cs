@@ -25,10 +25,10 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Creates a new RPC server with the given <see cref="ServerUrl"/>, local-side RPC methods
         /// (i.e. the methods which are executable on this server),
-        /// authentication verification method and <see cref="DefaultOptions"/>.
+        /// authentication verification method and other settings.
         /// </summary>
         public RpcServer(string serverUrl, IEnumerable<Type> localMethods, IRpcServerAuth auth,
-                RpcOptions defaultOptions) : base(localMethods, defaultOptions) {
+                RpcPeerSettings settings) : base(localMethods, settings) {
             ServerUrl = serverUrl;
             this.auth = auth;
         }

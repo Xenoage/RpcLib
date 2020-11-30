@@ -26,22 +26,16 @@ namespace Xenoage.RpcLib.Peers {
         /// </summary>
         public string ServerUrl { get; }
 
-        /// <summary>
-        /// After the connection gets lost, automatically tries to reestablish the
-        /// connection after this amount of time in milliseconds.
-        /// </summary>
-        public int ReconnectTimeMs { get; }
 
         /// <summary>
         /// Creates a new RPC client-side endpoint with the given <see cref="ServerUrl"/>,
         /// local-side RPC methods (i.e. the methods which are executable on this client),
-        /// authentication method, <see cref="ReconnectTimeMs"/> and <see cref="DefaultOptions"/>.
+        /// authentication method, and other settings.
         /// </summary>
         public RpcClient(string serverUrl, IEnumerable<Type> localMethods, IRpcClientAuth auth,
-                int reconnectTimeMs, RpcOptions defaultOptions) : base(localMethods, defaultOptions) {
+                RpcPeerSettings settings) : base(localMethods, settings) {
             ServerUrl = serverUrl;
             this.auth = auth;
-            ReconnectTimeMs = reconnectTimeMs;
         }
 
         public override async Task Start() {
@@ -54,7 +48,7 @@ namespace Xenoage.RpcLib.Peers {
                     Log.Debug($"Connection to server established");
                     serverInfo = RpcPeerInfo.Server(ServerUrl);
                     var connection = new WebSocketRpcConnection(serverInfo, webSocket);
-                    channel = await RpcChannel.Create(serverInfo, connection, this, backlog: null); // GOON: backlog
+                    channel = await RpcChannel.Create(serverInfo, connection, this, Settings.Backlog);
                     await channel.Start();
                     Log.Debug($"Connection to server closed");
                 } catch (Exception ex) {
@@ -70,9 +64,9 @@ namespace Xenoage.RpcLib.Peers {
 
                 if (false == stopper.IsCancellationRequested) {
                     // Reconnect
-                    Log.Info($"Trying to reconnect after {ReconnectTimeMs} ms");
-                    await Task.Delay(ReconnectTimeMs);
-                    if (ReconnectTimeMs >= 30_000) // Repeat logging after a long pause
+                    Log.Info($"Trying to reconnect after {Settings.ReconnectTimeMs} ms");
+                    await Task.Delay(Settings.ReconnectTimeMs);
+                    if (Settings.ReconnectTimeMs >= 30_000) // Repeat logging after a long pause
                         Log.Info($"Trying to reconnect now");
                 }
             }
