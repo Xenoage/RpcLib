@@ -14,9 +14,9 @@ namespace Xenoage.RpcLib.Peers {
 
         [TestMethod]
         public async Task ApplyRpcOptionsFromCallStack_Test() {
-            new TestRpcMethods1().NotAnnotated();
-            await new TestRpcMethods1().AsyncAnnotatedWithTimeout();
-            new TestRpcMethods2().AnnotatedWithTimeoutAndRetry();
+            await new TestRpcMethodsStub().NotAnnotated();
+            await new TestRpcMethodsStub().AsyncAnnotatedWithTimeout();
+            await new TestRpcMethodsStub().AnnotatedWithTimeoutAndRetry();
         }
 
         private static void TestAttributes(string methodName, int? expectedTimeoutMs, RpcRetryStrategy? expectedRetryStrategy) {
@@ -26,22 +26,33 @@ namespace Xenoage.RpcLib.Peers {
             Assert.AreEqual(expectedRetryStrategy, call.RetryStrategy);
         }
 
-        private class TestRpcMethods1 : IRpcMethods {
-            public StackTrace NotAnnotated() => new StackTrace();
-            [RpcOptions(TimeoutMs = 1234)]
-            public Task AsyncAnnotatedWithTimeout() {
+        private class TestRpcMethodsStub : RpcMethodsStub, ITestRpcMethods {
+
+            public TestRpcMethodsStub() : base(null!) {
+            }
+
+            public Task NotAnnotated() => Task.CompletedTask;
+
+            public Task<int> AsyncAnnotatedWithTimeout() {
                 TestAttributes("AsyncAnnotatedWithTimeout", 1234, null);
+                return Task.FromResult(42);
+            }
+
+            public Task AnnotatedWithTimeoutAndRetry() {
+                TestAttributes("AnnotatedWithTimeoutAndRetry", 1234, RpcRetryStrategy.Retry);
                 return Task.CompletedTask;
             }
         }
 
-        private class TestRpcMethods2 : RpcMethodsStub {
-            public TestRpcMethods2() : base(null!) {
-            }
+        private interface ITestRpcMethods : IRpcMethods {
+
+            public Task NotAnnotated() => Task.CompletedTask;
+
+            [RpcOptions(TimeoutMs = 1234)]
+            public Task<int> AsyncAnnotatedWithTimeout();
+
             [RpcOptions(TimeoutMs = 1234, RetryStrategy = RpcRetryStrategy.Retry)]
-            public void AnnotatedWithTimeoutAndRetry() {
-                TestAttributes("AnnotatedWithTimeoutAndRetry", 1234, RpcRetryStrategy.Retry);
-            }
+            public Task AnnotatedWithTimeoutAndRetry();
         }
 
     }
