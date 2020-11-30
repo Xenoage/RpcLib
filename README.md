@@ -1,3 +1,15 @@
+💡 *This library was completely rewritten, using WebSocket based communication. The README and wiki pages are not yet up to date!*
+
+```diff
+@@ Just arrived: @@
++ WebSocket base communication
++ Compact communication protocol
+- ASP.NET Core dependency
+- HTTP Long Polling
+```
+
+
+
 # Xenoage.RpcLib
 
 *A simple .NET Core RPC library for bidirectional, reliable and typesafe communication between an ASP.NET Core server with HTTP/S Web API endpoints and clients behind a firewall.*
