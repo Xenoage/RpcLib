@@ -1,10 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PackageId>Xenoage.RpcLib</PackageId>
+    <Version>0.10.0</Version>
+    <Authors>Andreas Wenger</Authors>
+    <Company>Xenoage Software</Company>
+    <RepositoryUrl>https://github.com/Xenoage/RpcLib</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AssemblyName>Xenoage.RpcLib</AssemblyName>
-    <RootNamespace>Xenoage.RpcLib</RootNamespace>
-    <Nullable>enable</Nullable>
+    <nullable>Enable</nullable>
+    <Copyright>Copyright © 2020 Xenoage Software</Copyright>
+    <Product>Xenoage.RpcLib</Product>
+    <PackageProjectUrl>https://github.com/Xenoage/RpcLib</PackageProjectUrl>
+    <PackageTags>RPC;Remote Procedure Call;WebSocket;Bidirectional;Typesafe;Retryable;Firewall</PackageTags>
+    <Description>
+      A simple .NET Core WebSocket-based library for bidirectional, reliable and typesafe communication between a server and clients behind a firewall.
+      See https://github.com/Xenoage/RpcLib for documentation and samples.
+    </Description>
   </PropertyGroup>
 
 </Project>
