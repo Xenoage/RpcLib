@@ -25,7 +25,7 @@ namespace Xenoage.RpcLib.Peers {
         /// Creates a new local peer with can locally execute the given RPC methods,
         /// using the given options by default.
         /// </summary>
-        public RpcPeer(IEnumerable<RpcMethods> methods, RpcOptions defaultOptions) {
+        public RpcPeer(IEnumerable<Type> methods, RpcOptions defaultOptions) {
             this.methods = methods.ToList();
             DefaultOptions = defaultOptions;
         }
@@ -51,9 +51,6 @@ namespace Xenoage.RpcLib.Peers {
 
         public async Task<T> ExecuteOnRemotePeer<T>(string? remotePeerID,
                 string methodName, params object[] methodParameters) {
-            // Only calls to the server are supported
-            if (remotePeerID != null)
-                throw new RpcException(RpcFailure.Other("Clients can only call the server"));
             // Enqueue in the corresponding channel and await call
             try {
                 var method = new RpcMethod(methodName, methodParameters);
@@ -117,10 +114,13 @@ namespace Xenoage.RpcLib.Peers {
             }
         }
 
-        public async Task<byte[]?> Execute(RpcMethod method) {
+        public async Task<byte[]?> Execute(RpcMethod method, RpcPeerInfo callingPeer) {
+            var context = CreateRpcContext(callingPeer);
             // Try to find and execute method (TODO: speed up)
             foreach (var m in methods) {
-                if (m.Execute(method) is Task<byte[]?> task) {
+                var methodInstance = (RpcMethods) Activator.CreateInstance(m)!;
+                methodInstance.Context = context;
+                if (methodInstance.Execute(method) is Task<byte[]?> task) {
                     // Found. Execute it and return result (null for void).
                     byte[]? returnValue = await task;
                     return returnValue;
@@ -132,8 +132,10 @@ namespace Xenoage.RpcLib.Peers {
             });
         }
 
+        protected abstract RpcContext CreateRpcContext(RpcPeerInfo callingPeer);
+
         // The registered RPC methods for local execution
-        private List<RpcMethods> methods;
+        private List<Type> methods;
     }
 
 }

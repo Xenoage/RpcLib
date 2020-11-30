@@ -10,7 +10,7 @@ namespace Xenoage.RpcLib.Peers {
 
         public RpcOptions DefaultOptions { get; } = new RpcOptions();
 
-        public async Task<byte[]?> Execute(RpcMethod method) {
+        public async Task<byte[]?> Execute(RpcMethod method, RpcPeerInfo callingPeer) {
             var div = Div.FromMethod(method);
             byte ret = (byte) (div.dividend / div.divisor); // Yes, may throw div/0 exception
             return await Task.FromResult(new byte[] { ret });

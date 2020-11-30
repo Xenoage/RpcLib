@@ -10,7 +10,7 @@ namespace Xenoage.RpcLib.Peers {
 
         public RpcOptions DefaultOptions { get; } = new RpcOptions();
 
-        public Task<byte[]?> Execute(RpcMethod method) =>
+        public Task<byte[]?> Execute(RpcMethod method, RpcPeerInfo callingPeer) =>
             Task.FromResult((byte[]?) new byte[] { 42 });
 
     }

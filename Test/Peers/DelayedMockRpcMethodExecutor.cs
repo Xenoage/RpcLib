@@ -16,7 +16,7 @@ namespace Xenoage.RpcLib.Peers {
 
         public RpcOptions DefaultOptions { get; } = new RpcOptions();
 
-        public async Task<byte[]?> Execute(RpcMethod method) {
+        public async Task<byte[]?> Execute(RpcMethod method, RpcPeerInfo callingPeer) {
             await Task.Delay(delaysMs[callIndex % delaysMs.Count]);
             callIndex++;
             return new byte[] { 42 };

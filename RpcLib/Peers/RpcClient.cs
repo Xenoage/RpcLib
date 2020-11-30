@@ -37,7 +37,7 @@ namespace Xenoage.RpcLib.Peers {
         /// local-side RPC methods (i.e. the methods which are executable on this client),
         /// authentication method, <see cref="ReconnectTimeMs"/> and <see cref="DefaultOptions"/>.
         /// </summary>
-        public RpcClient(string serverUrl, IEnumerable<RpcMethods> localMethods, IRpcClientAuth auth,
+        public RpcClient(string serverUrl, IEnumerable<Type> localMethods, IRpcClientAuth auth,
                 int reconnectTimeMs, RpcOptions defaultOptions) : base(localMethods, defaultOptions) {
             ServerUrl = serverUrl;
             this.auth = auth;
@@ -51,8 +51,8 @@ namespace Xenoage.RpcLib.Peers {
                     webSocket = new ClientWebSocket();
                     auth.Authenticate(webSocket);
                     await webSocket.ConnectAsync(new Uri(ServerUrl), stopper.Token);
-                    Log.Debug($"Connection to server closed");
-                    var serverInfo = RpcPeerInfo.Server(ServerUrl);
+                    Log.Debug($"Connection to server established");
+                    serverInfo = RpcPeerInfo.Server(ServerUrl);
                     var connection = new WebSocketRpcConnection(serverInfo, webSocket);
                     channel = await RpcChannel.Create(serverInfo, connection, this, backlog: null); // GOON: backlog
                     await channel.Start();
@@ -78,7 +78,7 @@ namespace Xenoage.RpcLib.Peers {
             }
         }
 
-        public override async Task Stop() {
+        public override void Stop() {
             Log.Info("Stop requested");
             stopper.Cancel();
             channel?.Stop();
@@ -90,6 +90,11 @@ namespace Xenoage.RpcLib.Peers {
             return channel;
         }
 
+        protected override RpcContext CreateRpcContext(RpcPeerInfo callingPeer) =>
+            RpcContext.OnClient(callingPeer);
+
+        // Info on the connected server
+        private RpcPeerInfo serverInfo;
         // The client's authentication technique
         private IRpcClientAuth auth;
         // The open channel to the server

@@ -34,9 +34,10 @@ namespace Xenoage.RpcLib.Connections {
                     await webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "closed", CancellationToken.None);
                 } else if (received.MessageType == WebSocketMessageType.Binary) {
                     // Received message
-                    messagePart.Write(buffer);
+                    messagePart.Write(buffer.Array!, 0, received.Count);
                     if (received.EndOfMessage) {
                         // Message is finished now
+                        // Log.Trace($"Message completely received from {remoteInfo}, {buffer.Count} bytes");
                         var message = RpcMessage.FromData(messagePart.ToArray());
                         return message;
                     } else {

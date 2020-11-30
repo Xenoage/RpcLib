@@ -1,4 +1,5 @@
-﻿using Xenoage.RpcLib.Model;
+﻿using System.Collections.Generic;
+using Xenoage.RpcLib.Model;
 
 namespace Xenoage.RpcLib.Methods {
 
@@ -13,8 +14,21 @@ namespace Xenoage.RpcLib.Methods {
         /// </summary>
         public RpcPeerInfo RemotePeer { get; }
 
-        public RpcContext(RpcPeerInfo remotePeer) {
+        /// <summary>
+        /// On the server side, returns the current list of connected clients.
+        /// On the client side, returns null.
+        /// </summary>
+        public List<RpcPeerInfo>? Clients { get; }
+
+        public static RpcContext OnClient(RpcPeerInfo serverPeer) =>
+            new RpcContext(serverPeer, clients: null);
+
+        public static RpcContext OnServer(RpcPeerInfo clientPeer, List<RpcPeerInfo> clients) =>
+            new RpcContext(clientPeer, clients);
+
+        public RpcContext(RpcPeerInfo remotePeer, List<RpcPeerInfo>? clients) {
             RemotePeer = remotePeer;
+            Clients = clients;
         }
 
     }

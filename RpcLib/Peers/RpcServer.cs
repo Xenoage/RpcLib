@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
@@ -17,7 +18,7 @@ namespace Xenoage.RpcLib.Peers {
 
         /// <summary>
         /// The URL where this server listens for clients to connect,
-        /// e.g. "ws://localhost.com:9998/rpc/".
+        /// e.g. "http://localhost.com:9998/rpc/".
         /// </summary>
         public string ServerUrl { get; }
 
@@ -26,7 +27,7 @@ namespace Xenoage.RpcLib.Peers {
         /// (i.e. the methods which are executable on this server),
         /// authentication verification method and <see cref="DefaultOptions"/>.
         /// </summary>
-        public RpcServer(string serverUrl, IEnumerable<RpcMethods> localMethods, IRpcServerAuth auth,
+        public RpcServer(string serverUrl, IEnumerable<Type> localMethods, IRpcServerAuth auth,
                 RpcOptions defaultOptions) : base(localMethods, defaultOptions) {
             ServerUrl = serverUrl;
             this.auth = auth;
@@ -95,6 +96,7 @@ namespace Xenoage.RpcLib.Peers {
             } finally {
                 webSocket?.Dispose();
             }
+            channelsByClientID.Remove(clientID);
         }
 
         public override void Stop() {
@@ -111,6 +113,10 @@ namespace Xenoage.RpcLib.Peers {
             else
                 return null;
         }
+
+        protected override RpcContext CreateRpcContext(RpcPeerInfo callingPeer) =>
+            RpcContext.OnServer(callingPeer, 
+                channelsByClientID.Values.Select(it => it.RemotePeer).ToList());
 
         // Listener for new connections
         private HttpListener? httpListener;

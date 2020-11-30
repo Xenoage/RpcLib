@@ -34,7 +34,7 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Information on the connected remote peer.
         /// </summary>
-        public RpcPeerInfo RemoteInfo { get; private set; }
+        public RpcPeerInfo RemotePeer { get; private set; }
 
 
         /// <summary>
@@ -51,8 +51,8 @@ namespace Xenoage.RpcLib.Peers {
         /// <summary>
         /// Use <see cref="Create"/> for creating new instances.
         /// </summary>
-        private RpcChannel(RpcPeerInfo remoteInfo, IRpcConnection connection, IRpcMethodExecutor executor) {
-            RemoteInfo = remoteInfo;
+        private RpcChannel(RpcPeerInfo remotePeer, IRpcConnection connection, IRpcMethodExecutor executor) {
+            RemotePeer = remotePeer;
             this.connection = connection;
             this.executor = executor;
         }
@@ -79,7 +79,7 @@ namespace Xenoage.RpcLib.Peers {
                     bool didSomething = false;
                     // Result in the queue? Then send it.
                     if (resultsQueue.TryDequeue(out var queuedResult)) {
-                        Log.Trace($"Sending result {queuedResult.MethodID}");
+                        Log.Trace($"Sending result {queuedResult.MethodID} to {RemotePeer}");
                         await connection.Send(RpcMessage.Encode(queuedResult), cancellationToken.Token);
                         didSomething = true;
                     }
@@ -99,12 +99,14 @@ namespace Xenoage.RpcLib.Peers {
                             var discarded = await callsQueue.Dequeue();
                             Log.Trace(logMsg + $", dequeuing [{discarded?.Method.ID}]");
                         }
+                        if (openCalls.TryGetValue(result.MethodID, out var callExecution))
+                            callExecution.Finish(result);
                         currentCall = null; // Take next call from queue
                     }
                     // Next call already queued? Then see if we can send it already.
                     if (currentCall == null && await callsQueue.Peek() is RpcCall call) {
                         // Send it. Do not dequeue it yet, only after is has been finished.
-                        Log.Trace($"Sending method {call.Method.ID} {call.Method.Name}");
+                        Log.Trace($"Sending method {call.Method.ID} {call.Method.Name} to {RemotePeer}");
                         currentCall = call;
                         await connection.Send(RpcMessage.Encode(call.Method), cancellationToken.Token);
                         didSomething = true;
@@ -117,12 +119,12 @@ namespace Xenoage.RpcLib.Peers {
                     // When we had something to do, immediately continue. Otherwise, wait a short moment
                     // or until we get notified that the next item is here
                     if (false == didSomething) {
-                        sendingWaiter = new TaskCompletionSource<bool>();
-                        await Task.WhenAny(Task.Delay(100), sendingWaiter.Task);
+                        //sendingWaiter = new TaskCompletionSource<bool>();
+                        await Task.WhenAny(Task.Delay(100));// GOON, sendingWaiter.Task);
                     }
                 }
             } catch (Exception ex) {
-                Log.Debug($"Unexpectedly closed connection to {RemoteInfo}: {ex.Message}");
+                Log.Debug($"Unexpectedly closed connection to {RemotePeer}: {ex.Message}");
             }
         }
 
@@ -135,18 +137,20 @@ namespace Xenoage.RpcLib.Peers {
             try {
                 while (connection.IsOpen()) {
                     // Receive call or response from remote side
+                    Log.Trace($"Listening...");
                     var message = await connection.Receive(cancellationToken.Token);
                     if (message != null)
-                        await HandleReceivedMessage(message);
+                        HandleReceivedMessage(message);
                 }
-            } catch {
+            } catch (Exception ex) {
+                ;
                 // Websocket exception is already logged in the sending loop
             }
         }
 
-        private async Task HandleReceivedMessage(RpcMessage message) {
+        private void HandleReceivedMessage(RpcMessage message) {
             try {
-                string logFrom = $"from {RemoteInfo}, {message.Data.Length} bytes";
+                string logFrom = $"from {RemotePeer}, {message.Data.Length} bytes";
                 if (message.IsRpcMethod()) {
                     // Received a method call. Execute it immediately and enqueue the result.
                     var method = message.DecodeRpcMethod();
@@ -156,7 +160,7 @@ namespace Xenoage.RpcLib.Peers {
                     _ = Task.Run(async () => {
                         var result = new RpcResult { MethodID = method.ID };
                         try {
-                            result.ReturnValue = await executor.Execute(method);
+                            result.ReturnValue = await executor.Execute(method, RemotePeer);
                         } catch (RpcException ex) {
                             result.Failure = ex.Failure;
                         } catch (Exception ex) {
@@ -165,9 +169,10 @@ namespace Xenoage.RpcLib.Peers {
                                 Message = ex.Message // Some information for identifying the problem
                             };
                         }
+                        Log.Trace($"Method executed, result failure type is " + result.Failure?.Type);
                         resultsQueue.Enqueue(result);
                         // Let the sending loop respond immediately
-                        sendingWaiter.TrySetResult(true);
+                        //sendingWaiter.TrySetResult(true); // GOON
                     });
                 } else if (message.IsRpcResult()) {
                     // Received a return value
@@ -176,20 +181,18 @@ namespace Xenoage.RpcLib.Peers {
                         (result.Failure != null ? $" with failure {result.Failure.Type}" : ""));
                     // Set the result
                     if (result.MethodID == currentCall?.Method.ID) {
-                        if (openCalls.TryGetValue(result.MethodID, out var callExecution))
-                            callExecution.Finish(result);
-                    } else {
+                        Log.Trace($"Set result");
+                        currentCall.Result = result;
+                    } else
                         throw new Exception("Out of order: Received return value for non-open call");
-                    }
-                    if (currentCall is RpcCall call)
-                        call.Result = result;
-                    sendingWaiter.TrySetResult(true);
+                    //sendingWaiter.TrySetResult(true); // GOON
+
                 } else {
                     // Unsupported message
                     Log.Trace($"Unsupported message {logFrom}");
                 }
             } catch (Exception ex) {
-                Log.Debug($"Problem when handling message from {RemoteInfo}: {ex.Message}");
+                Log.Debug($"Problem when handling message from {RemotePeer}: {ex.Message}");
             }
         }
 
@@ -209,7 +212,7 @@ namespace Xenoage.RpcLib.Peers {
         /// values of retried calls can not be received by the caller.
         /// </summary>
         public async Task<RpcResult> Run(RpcCall call) {
-            if (call.RemotePeerID != RemoteInfo.PeerID)
+            if (call.RemotePeerID != RemotePeer.PeerID)
                 throw new ArgumentException("Call is not for this peer");
             // Enqueues the call and awaits the result
             Log.Trace($"Enqueuing call {call.Method.ID} {call.Method.Name}");
@@ -217,7 +220,7 @@ namespace Xenoage.RpcLib.Peers {
             var execution = new RpcCallExecution(call);
             openCalls.TryAdd(call.Method.ID, execution);
             await callsQueue.Enqueue(call);
-            sendingWaiter.TrySetResult(true);
+            // GOON sendingWaiter.TrySetResult(true);
             // Wait for the result, whether successful, failed or timeout
             var result = await execution.AwaitResult(GetTimeoutMs(call));
             openCalls.TryRemove(call.Method.ID, out var _);
@@ -238,7 +241,7 @@ namespace Xenoage.RpcLib.Peers {
         // The sending task waits a short moment in the loop to reduce CPU load.
         // Complete this task to immediately start the next round. Using a TaskCompletionSource
         // seems to be much faster than using a CancellationTokenSource (while debugging, experienced ~2 ms vs ~13 ms)
-        private TaskCompletionSource<bool> sendingWaiter = new TaskCompletionSource<bool>(); // Remove unneeded generic in .NET 5
+        // GOON private TaskCompletionSource<bool> sendingWaiter = new TaskCompletionSource<bool>(); // Remove unneeded generic in .NET 5
         // The execution state of the calls in the Run method, where still a caller is waiting for the result.
         private ConcurrentDictionary<ulong, RpcCallExecution> openCalls =
             new ConcurrentDictionary<ulong, RpcCallExecution>();

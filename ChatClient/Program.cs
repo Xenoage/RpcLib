@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Auth;
-using Xenoage.RpcLib.Methods;
+using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Peers;
 
 namespace Chat {
@@ -13,13 +13,17 @@ namespace Chat {
 
             Console.Write("Your user name: ");
             string username = Console.ReadLine();
+            Console.Write("Your passwort (hint: use username in uppercase letters): ");
+            string password = Console.ReadLine();
+            Console.WriteLine("");
             Console.WriteLine("Type your message and press enter.");
             Console.WriteLine("Start the line with @foo to write a private message only to foo.");
             Console.WriteLine("Type exit to close the chat client.");
+            Console.WriteLine("");
 
-            var client = new RpcClient("ws://localhost:7000/chat", new List<RpcMethods> { new ChatClientRpc() },
-                auth: new RpcClientBasicAuth(username, username), reconnectTimeMs: 5000, null);
-            await client.Start();
+            var client = new RpcClient("ws://localhost:7000/chat/", new List<Type> { typeof(ChatClientRpc) },
+                auth: new RpcClientBasicAuth(username, password), reconnectTimeMs: 5000, new RpcOptions { TimeoutMs = 1000 });
+            _ = client.Start();
 
             var server = new ChatServerRpcStub(client);
 
@@ -30,10 +34,14 @@ namespace Chat {
                     Console.WriteLine("Good bye.");
                     isRunning = false;
                 } else {
-                    await server.SendPublicMessage(message);
+                    try {
+                        await server.SendPublicMessage(message);
+                    } catch (RpcException ex) {
+                        Console.WriteLine("Error: Could not send message: " + ex.Message);
+                    }
                 }
             }
-            await client.Stop();
+            client.Stop();
         }
 
     }

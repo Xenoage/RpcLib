@@ -13,7 +13,7 @@ namespace Chat {
             ExecuteOnRemotePeer<bool>("SendPrivateMessage", message, username);
 
         public Task SendPublicMessage(string message) =>
-            ExecuteOnRemotePeer("SendPrivateMessage", message);
+            ExecuteOnRemotePeer("SendPublicMessage", message);
     }
 
 }

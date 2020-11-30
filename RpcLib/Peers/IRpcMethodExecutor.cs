@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Xenoage.RpcLib.Model;
 
 namespace Xenoage.RpcLib.Peers {
@@ -14,8 +13,9 @@ namespace Xenoage.RpcLib.Peers {
         /// Calls the corresponding method and returns the return value, or null for a void method.
         /// When no implementation can be found, a <see cref="RpcException"/> with
         /// <see cref="RpcFailureType.MethodNotFound"/> is thrown.
+        /// The call was initiated by the given remote peer.
         /// </summary>
-        public abstract Task<byte[]?> Execute(RpcMethod method);
+        public abstract Task<byte[]?> Execute(RpcMethod method, RpcPeerInfo callingPeer);
 
         /// <summary>
         /// Gets the default options when executing methods.

@@ -1,5 +1,4 @@
-﻿using Chat;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Xenoage.RpcLib.Methods;
 using Xenoage.RpcLib.Peers;
 

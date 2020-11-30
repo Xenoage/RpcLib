@@ -17,7 +17,7 @@ namespace Xenoage.RpcLib.Model {
             Failure.Type;
 
         public override string Message =>
-            Failure.Message ?? "";
+            Failure.Message ?? Failure.Type.ToString();
 
         /// <summary>
         /// See <see cref="RpcFailureTypeEx.IsRetryable"/>.
