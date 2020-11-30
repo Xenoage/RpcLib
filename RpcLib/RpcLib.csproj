@@ -11,12 +11,16 @@
     <nullable>Enable</nullable>
     <Copyright>Copyright © 2020 Xenoage Software</Copyright>
     <Product>Xenoage.RpcLib</Product>
+    <AssemblyName>Xenoage.RpcLib</AssemblyName>
     <PackageProjectUrl>https://github.com/Xenoage/RpcLib</PackageProjectUrl>
     <PackageTags>RPC;Remote Procedure Call;WebSocket;Bidirectional;Typesafe;Retryable;Firewall</PackageTags>
     <Description>
       A simple .NET Core WebSocket-based library for bidirectional, reliable and typesafe communication between a server and clients behind a firewall.
       See https://github.com/Xenoage/RpcLib for documentation and samples.
     </Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <AssemblyName>Xenoage.RpcLib</AssemblyName>
   </PropertyGroup>
 
 </Project>
