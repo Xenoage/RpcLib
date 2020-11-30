@@ -7,6 +7,7 @@ using Xenoage.RpcLib.Connections;
 using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Queue;
+using Xenoage.RpcLib.Utils;
 using static Xenoage.RpcLib.Utils.CoreUtils;
 
 namespace Xenoage.RpcLib.Peers {
@@ -119,8 +120,8 @@ namespace Xenoage.RpcLib.Peers {
                     // When we had something to do, immediately continue. Otherwise, wait a short moment
                     // or until we get notified that the next item is here
                     if (false == didSomething) {
-                        //sendingWaiter = new TaskCompletionSource<bool>();
-                        await Task.WhenAny(Task.Delay(100));// GOON, sendingWaiter.Task);
+                        sendingWaiter = CreateAsyncTaskCompletionSource<bool>(); // async continuation is crucial
+                        await Task.WhenAny(Task.Delay(100), sendingWaiter.Task);
                     }
                 }
             } catch (Exception ex) {
@@ -172,7 +173,7 @@ namespace Xenoage.RpcLib.Peers {
                         Log.Trace($"Method executed, result failure type is " + result.Failure?.Type);
                         resultsQueue.Enqueue(result);
                         // Let the sending loop respond immediately
-                        //sendingWaiter.TrySetResult(true); // GOON
+                        sendingWaiter.TrySetResult(true);
                     });
                 } else if (message.IsRpcResult()) {
                     // Received a return value
@@ -180,12 +181,11 @@ namespace Xenoage.RpcLib.Peers {
                     Log.Trace($"Receiving result {result.MethodID} {logFrom}" +
                         (result.Failure != null ? $" with failure {result.Failure.Type}" : ""));
                     // Set the result
-                    if (result.MethodID == currentCall?.Method.ID) {
-                        Log.Trace($"Set result");
+                    if (result.MethodID == currentCall?.Method.ID)
                         currentCall.Result = result;
-                    } else
+                    else
                         throw new Exception("Out of order: Received return value for non-open call");
-                    //sendingWaiter.TrySetResult(true); // GOON
+                    sendingWaiter.TrySetResult(true);
 
                 } else {
                     // Unsupported message
@@ -220,7 +220,7 @@ namespace Xenoage.RpcLib.Peers {
             var execution = new RpcCallExecution(call);
             openCalls.TryAdd(call.Method.ID, execution);
             await callsQueue.Enqueue(call);
-            // GOON sendingWaiter.TrySetResult(true);
+            sendingWaiter.TrySetResult(true);
             // Wait for the result, whether successful, failed or timeout
             var result = await execution.AwaitResult(GetTimeoutMs(call));
             openCalls.TryRemove(call.Method.ID, out var _);
@@ -241,7 +241,8 @@ namespace Xenoage.RpcLib.Peers {
         // The sending task waits a short moment in the loop to reduce CPU load.
         // Complete this task to immediately start the next round. Using a TaskCompletionSource
         // seems to be much faster than using a CancellationTokenSource (while debugging, experienced ~2 ms vs ~13 ms)
-        // GOON private TaskCompletionSource<bool> sendingWaiter = new TaskCompletionSource<bool>(); // Remove unneeded generic in .NET 5
+        private TaskCompletionSource<bool> sendingWaiter =
+            CreateAsyncTaskCompletionSource<bool>(); // async continuation is crucial
         // The execution state of the calls in the Run method, where still a caller is waiting for the result.
         private ConcurrentDictionary<ulong, RpcCallExecution> openCalls =
             new ConcurrentDictionary<ulong, RpcCallExecution>();

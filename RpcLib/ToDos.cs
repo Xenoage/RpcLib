@@ -30,9 +30,5 @@ using Xenoage.RpcLib.Serialization;
 ///   
 /// - When a connection goes lost, do not wait for the timeout on open calls, but let them immediately fail
 ///   (by which failure? A new one, "connection lost", which is retryable?)
-///   
-/// - Read https://devblogs.microsoft.com/premier-developer/the-danger-of-taskcompletionsourcet-class/
-///   TaskCompletionSource is a source for errors with async/await - we had a problem in RpcChannel when calling
-///   callExecution.Finish(result) too early, before the result was processed in the sending loop
 /// 
 /// </summary>

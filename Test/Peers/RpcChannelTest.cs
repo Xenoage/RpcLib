@@ -235,7 +235,7 @@ namespace Xenoage.RpcLib.Peers {
                     });
                     callsCount++;
                     if (callsCount % 5 == 0)
-                        await Task.Delay(20);
+                        await Task.Delay(100);
                 }
             });
             // When we test timeouts, let the first second respond very slowly

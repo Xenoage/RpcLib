@@ -70,6 +70,14 @@ namespace Xenoage.RpcLib.Utils {
             }
         }
 
+        /// <summary>
+        /// Creates a new <see cref="TaskCompletionSource"/>, which runs its
+        /// continuations asynchronously. This is crucial to avoid deadlocks in our library.
+        /// See https://devblogs.microsoft.com/premier-developer/the-danger-of-taskcompletionsourcet-class/
+        /// </summary>
+        public static TaskCompletionSource<T> CreateAsyncTaskCompletionSource<T>() =>
+            new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+
     }
 
 }

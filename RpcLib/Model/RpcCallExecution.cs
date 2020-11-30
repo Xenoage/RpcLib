@@ -23,21 +23,7 @@ namespace Xenoage.RpcLib.Model {
         public async Task<RpcResult> AwaitResult(int timeoutMs) {
             try {
                 // Return result, as soon as it is there
-
-                // GOON return await completionHelper.Task.TimeoutAfter(timeoutMs);
-                // >> replacement by active waiting
-                long startTime = CoreUtils.TimeNowMs();
-                while (startTime + timeoutMs > CoreUtils.TimeNowMs()) {
-                    if (result != null)
-                        return result;
-                    await Task.Delay(50);
-                }
-                return new RpcResult {
-                    MethodID = call.Method.ID,
-                    Failure = new RpcFailure { Type = RpcFailureType.Timeout }
-                };
-                // << replacement by active waiting
-
+                return await completionHelper.Task.TimeoutAfter(timeoutMs);
             } catch (TimeoutException) {
                 // Timeout
                 return new RpcResult {
@@ -60,12 +46,11 @@ namespace Xenoage.RpcLib.Model {
         /// Call this method as soon as a result was received for this call.
         /// </summary>
         public void Finish(RpcResult result) =>
-            this.result = result; // GOON completionHelper.TrySetResult(result);
+            completionHelper.TrySetResult(result);
 
         private RpcCall call;
-        // GOON private TaskCompletionSource<RpcResult> completionHelper =
-        //    new TaskCompletionSource<RpcResult>();
-        private RpcResult? result = null;
+        private TaskCompletionSource<RpcResult> completionHelper =
+            CoreUtils.CreateAsyncTaskCompletionSource<RpcResult>(); // async continuation is crucial
 
     }
 
