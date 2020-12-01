@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Methods;
 using Xenoage.RpcLib.Model;
+using Xenoage.RpcLib.Queue;
 using Xenoage.RpcLib.Serialization;
 
 namespace Xenoage.RpcLib.Peers {
@@ -56,8 +57,17 @@ namespace Xenoage.RpcLib.Peers {
             try {
                 var method = new RpcMethod(methodName, methodParameters);
                 var call = PrepareCall(remotePeerID, method);
-                var channel = GetChannel(remotePeerID)
-                    ?? throw new Exception($"No client with ID {remotePeerID} connected");
+                var channel = GetChannel(remotePeerID);
+                if (channel == null) {
+                    string msg = $"No client with ID {remotePeerID} connected";
+                    // The given client is not connected. If the command is retryable and if
+                    // a backlog is registered, remember it.
+                    if (call.IsRetryable() && Settings.Backlog != null) {
+                        await RpcQueue.AddToBacklogIfApplicable(call, Settings.Backlog);
+                        msg += ", but adding the call to the backlog";
+                    }
+                    throw new Exception(msg);
+                }
                 var result = await channel.Run(call);
                 if (result.Failure != null)
                     throw new RpcException(result.Failure);

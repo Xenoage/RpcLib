@@ -8,7 +8,7 @@ using Xenoage.RpcLib.Model;
 namespace Xenoage.RpcLib.Queue {
 
     /// <summary>
-    /// Queue of calls to a specific <see cref="TargetPeerID"/>
+    /// Queue of calls to a specific <see cref="RemotePeerID"/>
     /// (one of the clients or the server).
     /// 
     /// When a <see cref="Backlog"/> is registered, enqueued calls are also stored there,
@@ -23,7 +23,7 @@ namespace Xenoage.RpcLib.Queue {
         /// <summary>
         /// ID of the client for which this queue collects calls, or null for the server.
         /// </summary>
-        public string? TargetPeerID { get; private set; } = null;
+        public string? RemotePeerID { get; private set; } = null;
 
         /// <summary>
         /// Permanent storage for retryable calls.
@@ -52,8 +52,8 @@ namespace Xenoage.RpcLib.Queue {
         /// <summary>
         /// Use <see cref="Create"/> for creating instances of this class.
         /// </summary>
-        private RpcQueue(string? targetPeerID, IRpcBacklog? backlog) {
-            TargetPeerID = targetPeerID;
+        private RpcQueue(string? remotePeerID, IRpcBacklog? backlog) {
+            RemotePeerID = remotePeerID;
             Backlog = backlog;
         }
 
@@ -85,7 +85,7 @@ namespace Xenoage.RpcLib.Queue {
             var call = queue.Dequeue();
             if (Backlog != null && call.IsRetryable()) {
                 // Remove from backlog
-                await Backlog.RemoveByMethodID(TargetPeerID, call.Method.ID);
+                await Backlog.RemoveByMethodID(RemotePeerID, call.Method.ID);
             }
             semaphore.Release();
             return call;
@@ -97,19 +97,23 @@ namespace Xenoage.RpcLib.Queue {
         /// and it will also remove obsolete calls (see <see cref="RpcRetryStrategy.RetryLatest"/>) from there.
         /// </summary>
         public async Task Enqueue(RpcCall call) {
-            // Check target peer ID
-            if (TargetPeerID != call.RemotePeerID)
+            // Check remote peer ID
+            if (RemotePeerID != call.RemotePeerID)
                 throw new ArgumentException("Target peer ID does not match");
             await semaphore.WaitAsync();
             queue.Enqueue(call);
-            if (Backlog != null && call.IsRetryable()) {
+            await AddToBacklogIfApplicable(call, Backlog);
+            semaphore.Release();
+        }
+
+        public static async Task AddToBacklogIfApplicable(RpcCall call, IRpcBacklog? backlog) {
+            if (backlog != null && call.IsRetryable()) {
                 // Remove obsolete calls
                 if (call.RetryStrategy == RpcRetryStrategy.RetryLatest)
-                    await Backlog.RemoveByMethodName(TargetPeerID, call.Method.Name);
+                    await backlog.RemoveByMethodName(call.RemotePeerID, call.Method.Name);
                 // Add to backlog
-                await Backlog.Add(call);
+                await backlog.Add(call);
             }
-            semaphore.Release();
         }
 
         // Queue of calls. Does not have to be thread-safe, because we protect it using the following semaphore.

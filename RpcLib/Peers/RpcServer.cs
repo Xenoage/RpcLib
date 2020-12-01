@@ -80,7 +80,7 @@ namespace Xenoage.RpcLib.Peers {
             WebSocket webSocket = context.WebSocket;
             try {
                 var connection = new WebSocketRpcConnection(clientInfo, webSocket);
-                var channel = await RpcChannel.Create(clientInfo, connection, this, backlog: null); // GOON: backlog
+                var channel = await RpcChannel.Create(clientInfo, connection, this, Settings.Backlog);
                 if (channelsByClientID.TryGetValue(clientID, out var oldChannel)) {
                     Log.Debug($"Channel for client {clientID} was already open; close it and open a new one.");
                     oldChannel.Stop();
