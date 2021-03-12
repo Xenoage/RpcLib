@@ -59,7 +59,8 @@ namespace Xenoage.RpcLib.Peers {
                 var call = PrepareCall(remotePeerID, method);
                 var channel = GetChannel(remotePeerID);
                 if (channel == null) {
-                    string msg = $"No client with ID {remotePeerID} connected";
+                    string msg = remotePeerID != null ?
+                        $"No client with ID {remotePeerID} connected" : "No connection to server";
                     // The given client is not connected. If the command is retryable and if
                     // a backlog is registered, remember it.
                     if (call.IsRetryable() && Settings.Backlog != null) {

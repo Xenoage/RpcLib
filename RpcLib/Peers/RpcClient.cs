@@ -79,8 +79,6 @@ namespace Xenoage.RpcLib.Peers {
         }
 
         protected override RpcChannel? GetChannel(string? remotePeerID) {
-            if (channel == null)
-                throw new Exception("Not initialized");
             return channel;
         }
 
