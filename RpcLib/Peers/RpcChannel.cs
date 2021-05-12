@@ -107,9 +107,10 @@ namespace Xenoage.RpcLib.Peers {
                     // Next call already queued? Then see if we can send it already.
                     if (currentCall == null && await callsQueue.Peek() is RpcCall call) {
                         // Send it. Do not dequeue it yet, only after is has been finished.
-                        Log.Trace($"Sending method {call.Method.ID} {call.Method.Name} to {RemotePeer}");
+                        var method = RpcMessage.Encode(call.Method);
+                        Log.Trace($"Sending method {call.Method.ID} {call.Method.Name} to {RemotePeer}, {method.Data.Length} bytes");
                         currentCall = call;
-                        await connection.Send(RpcMessage.Encode(call.Method), cancellationToken.Token);
+                        await connection.Send(method, cancellationToken.Token);
                         didSomething = true;
                     }
                     // Close nicely, when locally requested
