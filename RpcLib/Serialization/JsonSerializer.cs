@@ -8,6 +8,9 @@ namespace Xenoage.RpcLib.Serialization {
     /// Realized using .NET's built in System.Text.Json library.
     /// Caution: When polymorphic deserialization is required, use a different library like
     /// Newtonsoft's Json.NET with the appropriate settings.
+    /// It may also be a good idea to also include compression for larger messages.
+    /// This is all transparent for this library, since it just provides the channel for
+    /// transporting messages, not enforcing a specific format for the content.
     /// </summary>
     public class JsonSerializer : ISerializer {
 
