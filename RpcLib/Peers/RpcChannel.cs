@@ -100,6 +100,15 @@ namespace Xenoage.RpcLib.Peers {
                             var discarded = await callsQueue.Dequeue();
                             Log.Trace(logMsg + $", dequeuing [{discarded?.Method.ID}]");
                         }
+                        if (result.Failure?.Type == RpcFailureType.Timeout) {
+                            // When we receive a timeout, we immediately close the connection.
+                            // Maybe the connection does not exist any more, although the network lib thinks that it exists.
+                            // We experienced this problem when the router switched routes, e.g. from LAN to mobile net
+                            Log.Info("Closing connection because of timeout");
+                            cancellationToken.Cancel();
+                            await connection.Close();
+                            break;
+                        }
                         if (openCalls.TryGetValue(result.MethodID, out var callExecution))
                             callExecution.Finish(result);
                         currentCall = null; // Take next call from queue
@@ -171,7 +180,8 @@ namespace Xenoage.RpcLib.Peers {
                                 Message = ex.Message // Some information for identifying the problem
                             };
                         }
-                        Log.Trace($"Method executed, result failure type is " + result.Failure?.Type);
+                        Log.Trace($"Method executed" +
+                            (result.Failure != null ? ", result failure type is " + result.Failure?.Type : ""));
                         resultsQueue.Enqueue(result);
                         // Let the sending loop respond immediately
                         sendingWaiter.TrySetResult(true);
@@ -194,12 +204,6 @@ namespace Xenoage.RpcLib.Peers {
                 }
             } catch (Exception ex) {
                 Log.Debug($"Problem when handling message from {RemotePeer}: {ex.Message}");
-                // It is possible that the connection is still open, even when it is not available any more.
-                // Explicitly close it, so that also the ReceiveLoop is left.
-                try {
-                    connection.Close();
-                } catch {
-                }
             }
         }
 
