@@ -194,6 +194,12 @@ namespace Xenoage.RpcLib.Peers {
                 }
             } catch (Exception ex) {
                 Log.Debug($"Problem when handling message from {RemotePeer}: {ex.Message}");
+                // It is possible that the connection is still open, even when it is not available any more.
+                // Explicitly close it, so that also the ReceiveLoop is left.
+                try {
+                    connection.Close();
+                } catch {
+                }
             }
         }
 
