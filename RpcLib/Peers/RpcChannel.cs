@@ -63,9 +63,11 @@ namespace Xenoage.RpcLib.Peers {
         /// when either the connection is closed or after <see cref="Stop"/> is called.
         /// </summary>
         public async Task Start() {
+            Log.Debug($"Start channel with {RemotePeer}");
             var sendTask = SendLoop();
             var receiveTask = ReceiveLoop();
             await Task.WhenAll(sendTask, receiveTask);
+            Log.Debug($"Closed channel with {RemotePeer}");
         }
 
         /// <summary>
@@ -134,6 +136,7 @@ namespace Xenoage.RpcLib.Peers {
                         await Task.WhenAny(Task.Delay(100), sendingWaiter.Task);
                     }
                 }
+                Log.Debug($"SendLoop: Connection to {RemotePeer} closed.");
             } catch (Exception ex) {
                 Log.Debug($"Unexpectedly closed connection to {RemotePeer}: {ex.Message}");
             }
