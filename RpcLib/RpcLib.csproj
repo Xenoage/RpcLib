@@ -7,7 +7,7 @@
     <Company>Xenoage Software</Company>
     <RepositoryUrl>https://github.com/Xenoage/RpcLib</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <nullable>Enable</nullable>
     <Copyright>Copyright © 2020 Xenoage Software</Copyright>
     <Product>Xenoage.RpcLib</Product>
