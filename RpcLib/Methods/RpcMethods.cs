@@ -20,7 +20,7 @@ namespace Xenoage.RpcLib.Methods {
         /// Implement this method to map the encoded RPC methods to
         /// the real methods in this class. Thrown exceptions are catched
         /// and the calling peer gets notified about a
-        /// <see cref="RpcFailureType.RemoteException"> failure.
+        /// <see cref="RpcFailureType.RemoteException"/> failure.
         /// If successfull, returns a task with the encoded result or null
         /// if the method has no return type (void).
         /// If the given command name is undefined in this implementation, returns null

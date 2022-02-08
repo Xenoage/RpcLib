@@ -9,10 +9,10 @@ using Xenoage.RpcLib.Queue;
 
 namespace Chat {
 
-    public class Program {
+    public partial class Program {
 
         static async Task Main(string[] args) {
-
+            HelloFrom("Generated Code");
             Console.Write("Your user name: ");
             string username = Console.ReadLine();
             Console.Write("Your passwort (hint: use username in uppercase letters): ");
@@ -49,6 +49,8 @@ namespace Chat {
             }
             client.Stop();
         }
+
+        static partial void HelloFrom(string name);
 
     }
 
