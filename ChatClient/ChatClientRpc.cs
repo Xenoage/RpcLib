@@ -7,8 +7,8 @@ namespace Chat {
 
     public class ChatClientRpc : RpcMethods, IChatClientRpc {
 
-        public Task ReceiveMessage(string message, string username) {
-            Console.WriteLine(username + ": " + message);
+        public Task ReceiveMessage(ChatMessage message) {
+            Console.WriteLine("[Received by method]    " + message.Sender + ": " + message.Text);
             return Task.CompletedTask;
         }
 
@@ -17,7 +17,7 @@ namespace Chat {
         /// we could auto-generate this method later in .NET 5 with source generators)
         /// </summary>
         public override Task<byte[]?>? Execute(RpcMethod method) => method.Name switch {
-            "ReceiveMessage" => ReceiveMessage(method.GetParam<string>(0), method.GetParam<string>(1)).Serialize(),
+            "ReceiveMessage" => ReceiveMessage(method.GetParam<ChatMessage>(0)).Serialize(),
             _ => null
         };
 

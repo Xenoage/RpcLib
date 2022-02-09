@@ -51,6 +51,19 @@ namespace Xenoage.RpcLib.Methods {
         protected Task ExecuteOnRemotePeer(string methodName, params object[] methodParameters) =>
             ExecuteOnRemotePeer<object>(methodName, methodParameters);
 
+        /// <summary>
+        /// Register for all events with the given names on the remote peer.
+        /// </summary>
+        protected Task RegisterEventsOnRemotePeer(params string[] eventNames) =>
+            ExecuteOnRemotePeer<object>("!+RegisterEvents", eventNames);
+
+        /// <summary>
+        /// Raises the given event, serialized in the given <see cref="RpcMethod"/>.
+        /// When there are no events in the implementing class, this method does not
+        /// have to be overridden.
+        /// </summary>
+        protected virtual void ExecuteEvent(RpcMethod evt) { }
+
     }
 
 }

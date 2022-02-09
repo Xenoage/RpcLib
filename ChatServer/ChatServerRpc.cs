@@ -10,10 +10,14 @@ namespace Chat {
         public async Task SendPublicMessage(string message) {
             var clients = Context.Clients!;
             Console.WriteLine($"Deploy received message '{message}' to all other {clients.Count - 1} clients");
+            var chatMessage = new ChatMessage {
+                Text = message,
+                Sender = Context.RemotePeer.PeerID!
+            };
             foreach (var client in clients) {
                 // Do not send the message to the sending client
                 if (client.PeerID != Context.RemotePeer.PeerID)
-                    await new ChatClientRpcStub(Program.server, client.PeerID!).ReceiveMessage(message, Context.RemotePeer.PeerID!);
+                    await new ChatClientRpcStub(Program.server, client.PeerID!).ReceiveMessage(chatMessage);
             }
         }
 

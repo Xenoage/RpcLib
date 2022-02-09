@@ -9,8 +9,8 @@ namespace Chat {
         public ChatClientRpcStub(RpcServer localServer, string remoteClientID) : base(localServer, remoteClientID) {
         }
 
-        public Task ReceiveMessage(string message, string username) =>
-            ExecuteOnRemotePeer<bool>("ReceiveMessage", message, username);
+        public Task ReceiveMessage(ChatMessage message) =>
+            ExecuteOnRemotePeer("ReceiveMessage", message);
 
     }
 

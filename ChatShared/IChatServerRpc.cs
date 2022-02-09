@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Xenoage.RpcLib.Methods;
 using Xenoage.RpcLib.Model;
 
@@ -8,6 +9,12 @@ namespace Chat {
     /// RPC methods on the server side.
     /// </summary>
     public interface IChatServerRpc : IRpcMethods {
+
+        /// <summary>
+        /// Clients can register for this event to get notified when the
+        /// server has a message available for them.
+        /// </summary>
+        event Action<ChatMessage> MessageReceived;
 
         /// <summary>
         /// Call this method from the client to send a message

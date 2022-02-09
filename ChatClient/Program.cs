@@ -32,6 +32,9 @@ namespace Chat {
             _ = client.Start();
 
             var server = new ChatServerRpcStub(client);
+            server.MessageReceived += message => {
+                Console.WriteLine("[Received by event]     " + message.Sender + ": " + message.Text);
+            };
 
             bool isRunning = true;
             while (isRunning) {

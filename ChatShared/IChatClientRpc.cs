@@ -9,10 +9,10 @@ namespace Chat {
     public interface IChatClientRpc : IRpcMethods {
 
         /// <summary>
-        /// Call this method from the server to send a received message
-        /// from a different user with the given username to this user.
+        /// Call this method from the server to send the given message to this user.
+        /// As an alternative, see the <see cref="IChatServerRpc.MessageReceived"/> event.
         /// </summary>
-        Task ReceiveMessage(string message, string username);
+        Task ReceiveMessage(ChatMessage message);
 
     }
 
