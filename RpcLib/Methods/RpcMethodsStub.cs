@@ -1,4 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Threading.Tasks;
+using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Peers;
 
@@ -27,6 +31,9 @@ namespace Xenoage.RpcLib.Methods {
         public RpcMethodsStub(RpcClient localClient) {
             LocalPeer = localClient;
             RemotePeerID = null;
+
+            // GOON!!
+            localClient.RegisteredMethodStubs.Add(this);
         }
 
         /// <summary>
@@ -54,15 +61,21 @@ namespace Xenoage.RpcLib.Methods {
         /// <summary>
         /// Register for all events with the given names on the remote peer.
         /// </summary>
-        protected Task RegisterEventsOnRemotePeer(params string[] eventNames) =>
-            ExecuteOnRemotePeer<object>("!+RegisterEvents", eventNames);
+        protected void RegisterEventsOnRemotePeer() {
+            var eventNames = GetRegisteredEventNames().ToArray();
+            Log.Debug($"Registering events on remote peer {RemotePeerID}: " + string.Join(", ", eventNames));
+            _ = ExecuteOnRemotePeer<object>("!RegisterEvents", eventNames);
+        }
+
+        protected virtual IEnumerable<string> GetRegisteredEventNames() =>
+            ImmutableList<string>.Empty;
 
         /// <summary>
         /// Raises the given event, serialized in the given <see cref="RpcMethod"/>.
         /// When there are no events in the implementing class, this method does not
         /// have to be overridden.
         /// </summary>
-        protected virtual void ExecuteEvent(RpcMethod evt) { }
+        public virtual void ExecuteEventOnLocalPeer(RpcMethod evt) { }
 
     }
 

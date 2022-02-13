@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Xenoage.RpcLib.Model {
 
@@ -18,6 +20,11 @@ namespace Xenoage.RpcLib.Model {
         /// </summary>
         public string IP { get; }
 
+        /// <summary>
+        /// List of events the remote peer has registered on the local peer.
+        /// </summary>
+        public ISet<string> RegisteredEventNames { get; private set; } = ImmutableHashSet<string>.Empty;
+
 
         public static RpcPeerInfo Client(string clientID, string ip) =>
             new RpcPeerInfo(peerID: clientID, ip);
@@ -29,6 +36,13 @@ namespace Xenoage.RpcLib.Model {
             PeerID = peerID;
             IP = ip;
         }
+
+        public void SetRegisteredEventNames(IEnumerable<string> eventNames) {
+            RegisteredEventNames = new HashSet<string>(eventNames);
+        }
+
+        public bool HasRegisteredEvent(string eventName) =>
+            RegisteredEventNames.Contains(eventName);
 
         public override string ToString() => PeerID == null
             ? $"server at {IP}"

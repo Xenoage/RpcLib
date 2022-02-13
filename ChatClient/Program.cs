@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xenoage.RpcLib.Auth;
+using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Peers;
 using Xenoage.RpcLib.Queue;
@@ -27,7 +28,8 @@ namespace Chat {
                 new RpcClientBasicAuth(username, password), new RpcPeerSettings {
                     DefaultOptions = new RpcOptions { TimeoutMs = 1000 },
                     ReconnectTimeMs = 5000,
-                    Backlog = new JsonFileRpcBacklog(new DirectoryInfo("RpcBacklog"))
+                    Backlog = new JsonFileRpcBacklog(new DirectoryInfo("RpcBacklog")),
+                    Logger = new ConsoleLogger(LogLevel.Info)
                 });
             _ = client.Start();
 

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Methods;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Queue;
@@ -126,8 +127,17 @@ namespace Xenoage.RpcLib.Peers {
             }
         }
 
-        public async Task<byte[]?> Execute(RpcMethod method, RpcPeerInfo callingPeer) {
+        public virtual async Task<byte[]?> Execute(RpcMethod method, RpcPeerInfo callingPeer) {
             var context = CreateRpcContext(callingPeer);
+            // Special method?
+            if (method.Name == "!RegisterEvents") {
+                // Events registration
+                var eventNames = method.Parameters.Select(it => Serializer.Deserialize<string>(it)).ToList();
+                Log.Debug($"Registering events for peer {callingPeer}: " + string.Join(", ", eventNames));
+                callingPeer.SetRegisteredEventNames(eventNames);
+                // GOON: What to return?
+                return null;
+            }
             // Try to find and execute method (TODO: speed up)
             foreach (var m in methods) {
                 var methodInstance = (RpcMethods) Activator.CreateInstance(m)!;

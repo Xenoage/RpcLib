@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Xenoage.RpcLib.Logging;
 using Xenoage.RpcLib.Methods;
 using Xenoage.RpcLib.Model;
 using Xenoage.RpcLib.Peers;
@@ -10,6 +11,10 @@ namespace Chat {
     public class ChatServerRpcStub : RpcMethodsStub, IChatServerRpc {
 
         public ChatServerRpcStub(RpcClient localClient) : base(localClient) {
+            localClient.Reconnected += () => {
+                Log.Debug("Reconnected. Register events.");
+                RegisterEventsOnRemotePeer();
+            };
         }
 
         public Task<bool> SendPrivateMessage(string message, string username) =>
@@ -22,26 +27,26 @@ namespace Chat {
         public event Action<ChatMessage> MessageReceived {
             add {
                 messageReceived += value;
-                RegisterEvents();
+                RegisterEventsOnRemotePeer();
             }
             remove {
                 messageReceived -= value;
-                RegisterEvents();
+                RegisterEventsOnRemotePeer();
             }
         }
         private event Action<ChatMessage> messageReceived = delegate { };
 
         // TODO: Auto generate
-        private void RegisterEvents() {
+        protected override IEnumerable<string> GetRegisteredEventNames() {
             // Collect events which are used at least once
             var eventNames = new List<string>();
             if (messageReceived.GetInvocationList().Length > 0)
-                eventNames.Add("!.MessageReceived");
-            RegisterEventsOnRemotePeer(eventNames.ToArray());
+                eventNames.Add(nameof(MessageReceived));
+            return eventNames.ToArray();
         }
 
         // TODO: Auto generate
-        protected override void ExecuteEvent(RpcMethod evt) {
+        public override void ExecuteEventOnLocalPeer(RpcMethod evt) {
             switch (evt.Name) {
                 case "!.MessageReceived": messageReceived(evt.GetParam<ChatMessage>(0)); break;
             }

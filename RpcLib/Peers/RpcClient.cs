@@ -26,6 +26,9 @@ namespace Xenoage.RpcLib.Peers {
         /// </summary>
         public string ServerUrl { get; }
 
+        // GOON
+        public event Action Reconnected = delegate { };
+
 
         /// <summary>
         /// Creates a new RPC client-side endpoint with the given <see cref="ServerUrl"/>,
@@ -49,6 +52,7 @@ namespace Xenoage.RpcLib.Peers {
                     serverInfo = RpcPeerInfo.Server(ServerUrl);
                     var connection = new WebSocketRpcConnection(serverInfo, webSocket);
                     channel = await RpcChannel.Create(serverInfo, connection, this, Settings.Backlog);
+                    Reconnected();
                     await channel.Start();
                     Log.Debug($"Connection to server closed");
                 } catch (Exception ex) {
@@ -94,6 +98,23 @@ namespace Xenoage.RpcLib.Peers {
         // Used for stopping the loop
         private CancellationTokenSource stopper = new CancellationTokenSource();
 
-    }
 
+
+        // GOON!!! - weak references! No direct access!
+        public List<RpcMethodsStub> RegisteredMethodStubs { get; } = new List<RpcMethodsStub>();
+        public override async Task<byte[]?> Execute(RpcMethod method, RpcPeerInfo callingPeer) {
+            var context = CreateRpcContext(callingPeer);
+            // Special method?
+            if (method.Name.StartsWith("!.")) {
+                // Event execution!
+                foreach (var stub in RegisteredMethodStubs)
+                    stub.ExecuteEventOnLocalPeer(method);
+                // GOON: What to return?
+                return null;
+            } else {
+                return await base.Execute(method, callingPeer);
+            }
+        }
+
+    }
 }
