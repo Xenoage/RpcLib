@@ -1,0 +1,1 @@
+start "Service" CartService\bin\Debug\net6.0\CartService.exe

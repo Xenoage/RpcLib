@@ -1,0 +1,18 @@
+﻿<html>
+<head>
+    <script>
+        const evtSource = new EventSource("api/cart/cartchanged");
+        evtSource.onmessage = function (event) {
+            const newElement = document.createElement("li");
+            const eventList = document.getElementById("list");
+            newElement.textContent = "Received message: " + event.data;
+            eventList.appendChild(newElement);
+        }
+    </script>
+</head>
+<body>
+    <h1>Test for server-side events on <code>api/cart/cartchanged</code></h1>
+    <ul id="list"></ul>
+</body>
+</html>
+
