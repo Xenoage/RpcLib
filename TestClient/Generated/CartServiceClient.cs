@@ -68,53 +68,55 @@ public class CartServiceClient : ICartService {
     /// <inheritdoc/>
     public event Action<Cart> CartChanged {
         add {
-            lock (shortTimeLock) {
+            lock (listenToCartLock) {
                 // Already registered? Then ignore.
                 if (cartChangedListeners.Contains(value))
                     return;
                 // Remember subscription
                 cartChangedListeners.Add(value);
             }
-            // Start listening, if not already started
+            // Start listening handler, if not already started
             _ = ListenToCartChanged();
         }
         remove {
             // Cancel subscription
-            cartChangedListeners.Remove(value);
-        }
-    }
-    private HashSet<Action<Cart>> cartChangedListeners = new();
-
-    private async Task ListenToCartChanged() {
-        // Already running? Then ignore.
-        lock (shortTimeLock) {
-            if (isListingToCartChanged)
-                return;
-            isListingToCartChanged = true;
-        }
-        // Loop, as long as there are subscribers.
-        while (true) {
-            CancellationTokenSource cancelListenToCartChanged = new();
-            // Last subscriber unsubscribed? Do not listen any more.
-            lock (shortTimeLock) {
-                if (cartChangedListeners.Count == 0) {
-                    cancelListenToCartChanged.Cancel();
-                    isListingToCartChanged = false;
-                    return;
+            lock (listenToCartLock) {
+                cartChangedListeners.Remove(value);
+                if (listenToCartLoop != null && cartChangedListeners.Count == 0) {
+                    listenToCartLoop.Cancel();
                 }
             }
+        }
+    }
+
+    private HashSet<Action<Cart>> cartChangedListeners = new();
+    private object listenToCartLock = new();
+    CancellationTokenSource? listenToCartLoop = null;
+
+    private async Task ListenToCartChanged() {
+
+        lock (listenToCartLock) {
+            if (listenToCartLoop != null || cartChangedListeners.Count == 0)
+                return;
+            listenToCartLoop = new CancellationTokenSource();
+        }
+
+        // Loop, as long as there are subscribers.
+        while (!listenToCartLoop.Token.IsCancellationRequested) {
             // Listen to server-sent events
             string url = BaseUrl.TrimEnd('/') + "/api/cart/cartchanged";
             // Prepare HTML client
             try {
                 // Read streamed data
-                using var stream = await HttpClient.GetStreamAsync(url, cancelListenToCartChanged.Token);
+                using var stream = await HttpClient.GetStreamAsync(url, listenToCartLoop.Token);
                 using var streamReader = new StreamReader(stream);
                 StringBuilder currentData = new();
-                while (true) {
+                while (!listenToCartLoop.Token.IsCancellationRequested) {
                     var readTask = streamReader.ReadLineAsync();
-                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(RpcSettings.KeepAliveSeconds + RpcSettings.HttpTimeoutSeconds));
+                    var timeoutTask = Task.Delay(TimeSpan.FromSeconds(RpcSettings.KeepAliveSeconds + RpcSettings.HttpTimeoutSeconds), listenToCartLoop.Token);
                     await Task.WhenAny(readTask, timeoutTask);
+                    if (listenToCartLoop.Token.IsCancellationRequested)
+                        break;
                     if (timeoutTask.IsCompleted) {
                         Console.WriteLine("!!! Connection seems to be dead. Kill.");
                         throw new Exception("Connection dead");
@@ -126,12 +128,14 @@ public class CartServiceClient : ICartService {
                         } else if (message.Length == 0) {
                             // End of event. Fire event, if we have data.
                             if (currentData.Length > 0) {
-                                try {
-                                    var eventData = JsonUtils.Deserialize<Cart>(currentData.ToString());
-                                    if (eventData != null)
+                                var eventData = JsonUtils.Deserialize<Cart>(currentData.ToString());
+                                if (eventData != null) {
+                                    try {
                                         foreach (var listener in cartChangedListeners)
                                             listener(eventData);
-                                } catch {
+                                    } catch (Exception ex) {
+                                        Console.WriteLine("!!! Error in event handler: " + ex); // TODO: OnError / OnLog event to allow arbitrary logging binding ?
+                                    }
                                 }
                                 currentData.Clear();
                             }
@@ -144,12 +148,16 @@ public class CartServiceClient : ICartService {
                     }
                 }
             } catch (Exception ex) {
-                Console.WriteLine("!!! No connection to service. Try again in 5 seconds.");
-                await Task.Delay(5000);
+                Console.WriteLine("!!! No connection to service. Try again in 5 seconds. (" + ex.Message + ")"); // TODO: max retries? report service status ?
+                await Task.Delay(5000, listenToCartLoop.Token);
             }
         }
+
+        lock (listenToCartLock) {
+            listenToCartLoop = null;
+        }
     }
-    private bool isListingToCartChanged = false;
+
 
 
     // Code from NSwag (thanks!)
@@ -202,6 +210,6 @@ public class CartServiceClient : ICartService {
         }
     }
 
-    private object shortTimeLock = new();
+
 
 }

@@ -41,16 +41,29 @@ public class CartServiceController : ControllerBase {
     /// </summary>
     [HttpGet("cartchanged")]
     public async Task CartChanged(CancellationToken cancellationToken) {
+
+        // add listener early
+
         // Header for server-sent events
         Response.StatusCode = 200;
         Response.Headers.Add("Content-Type", "text/event-stream");
         SemaphoreSlim writeLock = new(1, 1);
         await WriteAndFlush(Response, "\n", writeLock);
+
+
+     
+        // start handler loop
+
         // Register event listener and send event, when fired
         CancellationTokenSource errorCancellation = new();
         Action<Cart> listener = async (Cart cart) => {
             try {
                 string json = JsonUtils.Serialize(cart);
+                // TODO: Make event handler synchronous and queue into ConcurrentQueue
+                // and add additional loop to handle that queue,
+                // in this way we guarantee the right order of the events.
+                // Allows us to collapse the queue to remove equal event data or
+                // send just the latest event, and so on... (future strategies)
                 await WriteAndFlush(Response, $"data:{json}\n\n", writeLock);
             } catch (Exception) {
                 errorCancellation.Cancel();
@@ -70,10 +83,11 @@ public class CartServiceController : ControllerBase {
             }
         }
         // When the connection closes, unregister the event listener
-        cartService.CartChanged -= listener;
+        cartService.CartChanged -= listener; 
     }
 
     private async Task WriteAndFlush(HttpResponse response, string text, SemaphoreSlim writeLock) {
+
         try {
             await writeLock.WaitAsync();
             await Response.WriteAsync(text);
