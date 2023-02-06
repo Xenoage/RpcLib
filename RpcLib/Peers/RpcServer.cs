@@ -52,60 +52,67 @@ namespace Xenoage.RpcLib.Peers {
         }
 
         private async Task ProcessClient(HttpListenerContext httpContext) {
-            string ip = httpContext.GetIP();
-
-            // Check authentication
-            var authResult = auth.Authenticate(httpContext.Request);
-            if (false == authResult.Success || authResult.ClientID == null) {
-                Log.Debug($"Connection from {ip} denied" +
-                    (authResult.ClientID != null ? $" (client ID {authResult.ClientID})" : ""));
-                httpContext.Close(HttpStatusCode.Unauthorized);
-                return;
-            }
-            string clientID = authResult.ClientID;
-
-            // Accept web socket
-            var clientInfo = RpcPeerInfo.Client(clientID, ip);
-            WebSocketContext context;
             try {
-                context = await httpContext.AcceptWebSocketAsync(subProtocol: null);
-                Log.Debug($"Connected {clientInfo}");
-            } catch (Exception ex) {
-                Log.Debug($"Could not accept WebSocket to {clientInfo}: {ex.Message}");
-                httpContext.Close(HttpStatusCode.InternalServerError);
-                return;
-            }
+                string ip = httpContext.GetIP();
 
-            // WebSocket loop
-            WebSocket webSocket = context.WebSocket;
-            try {
-                var connection = new WebSocketRpcConnection(clientInfo, webSocket);
-                var channel = await RpcChannel.Create(clientInfo, connection, this, Settings.Backlog);
-                if (channelsByClientID.TryGetValue(clientID, out var oldChannel)) {
-                    Log.Debug($"Channel for client {clientID} was already open; close it and open a new one after 3 seconds.");
-                    oldChannel.Stop();
-                    await Task.Delay(3000);
+                // Check authentication
+                var authResult = auth.Authenticate(httpContext.Request);
+                if (false == authResult.Success || authResult.ClientID == null) {
+                    Log.Debug($"Connection from {ip} denied" +
+                        (authResult.ClientID != null ? $" (client ID {authResult.ClientID})" : ""));
+                    httpContext.Close(HttpStatusCode.Unauthorized);
+                    return;
                 }
-                channelsByClientID[clientID] = channel;
-                await channel.Start();
-                Log.Debug($"Connection to {clientInfo} closed");
-            } catch (Exception ex) {
-                if (ex is WebSocketException wsEx)
-                    Log.Debug($"Connection to {clientInfo} unexpectedly closed: " + wsEx.WebSocketErrorCode);
-                else
-                    Log.Debug($"Connection to {clientInfo} unexpectedly closed: " + ex.Message);
+                string clientID = authResult.ClientID;
+
+                // Accept web socket
+                var clientInfo = RpcPeerInfo.Client(clientID, ip);
+                WebSocketContext context;
+                try {
+                    context = await httpContext.AcceptWebSocketAsync(subProtocol: null);
+                    Log.Debug($"Connected {clientInfo}");
+                } catch (Exception ex) {
+                    Log.Debug($"Could not accept WebSocket to {clientInfo}: {ex.Message}");
+                    httpContext.Close(HttpStatusCode.InternalServerError);
+                    return;
+                }
+
+                // WebSocket loop
+                WebSocket webSocket = context.WebSocket;
+                WebSocketRpcConnection? connection = null;
+                try {
+                    connection = new WebSocketRpcConnection(clientInfo, webSocket);
+                    var channel = await RpcChannel.Create(clientInfo, connection, this, Settings.Backlog);
+                    if (channelsByClientID.TryGetValue(clientID, out var oldChannel)) {
+                        Log.Debug($"Channel for client {clientID} was already open; close it and open a new one after 3 seconds.");
+                        oldChannel.Stop();
+                        await Task.Delay(3000);
+                    }
+                    channelsByClientID[clientID] = channel;
+                    await channel.Start();
+                    Log.Debug($"Connection to {clientInfo} closed");
+                } catch (Exception ex) {
+                    if (ex is WebSocketException wsEx)
+                        Log.Debug($"Connection to {clientInfo} unexpectedly closed: " + wsEx.WebSocketErrorCode);
+                    else
+                        Log.Debug($"Connection to {clientInfo} unexpectedly closed: " + ex.Message);
+                } finally {
+                    try { connection?.Close(); } catch { }
+                    try { webSocket?.Dispose(); } catch { }
+                }
+                channelsByClientID.Remove(clientID);
             } finally {
-                webSocket?.Dispose();
+                try { httpContext?.Close(HttpStatusCode.InternalServerError); } catch { }
             }
-            channelsByClientID.Remove(clientID);
         }
 
         public override void Stop() {
             Log.Info("Stop requested");
             stopper.Cancel();
-            httpListener?.Stop();
-            foreach (var channel in new List<RpcChannel>(channelsByClientID.Values))
+            try { httpListener?.Stop(); } catch { }
+            foreach (var channel in new List<RpcChannel>(channelsByClientID.Values)) {
                 channel.Stop();
+            }
         }
 
         protected override RpcChannel? GetChannel(string? remotePeerID) {

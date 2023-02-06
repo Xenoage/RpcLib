@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <PackageId>Xenoage.RpcLib</PackageId>
-    <Version>0.10.9</Version>
+    <Version>0.10.10</Version>
     <Authors>Andreas Wenger</Authors>
     <Company>Xenoage Software</Company>
     <RepositoryUrl>https://github.com/Xenoage/RpcLib</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <nullable>Enable</nullable>
-    <Copyright>Copyright © 2020 Xenoage Software</Copyright>
+    <Copyright>Copyright © 2020-2023 Xenoage Software</Copyright>
     <Product>Xenoage.RpcLib</Product>
     <AssemblyName>Xenoage.RpcLib</AssemblyName>
     <PackageProjectUrl>https://github.com/Xenoage/RpcLib</PackageProjectUrl>
