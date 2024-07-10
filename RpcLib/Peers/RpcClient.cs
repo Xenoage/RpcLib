@@ -45,19 +45,19 @@ namespace Xenoage.RpcLib.Peers {
                     webSocket = new ClientWebSocket();
                     auth.Authenticate(webSocket);
                     await webSocket.ConnectAsync(new Uri(ServerUrl), stopper.Token);
-                    Log.Debug($"Connection to server established");
+                    Log.Info($"Connection to server established");
                     serverInfo = RpcPeerInfo.Server(ServerUrl);
                     var connection = new WebSocketRpcConnection(serverInfo, webSocket);
                     channel = await RpcChannel.Create(serverInfo, connection, this, Settings.Backlog);
                     await channel.Start();
-                    Log.Debug($"Connection to server closed");
+                    Log.Info($"Connection to server closed");
                 } catch (Exception ex) {
                     if ((ex as WebSocketException)?.Message.Contains("401") ?? false)
-                        Log.Debug($"Connection to server denied: Unauthorized");
+                        Log.Info($"Connection to server denied: Unauthorized");
                     else if (ex is WebSocketException wsEx)
-                        Log.Debug($"Connection to server unexpectedly closed: " + wsEx.WebSocketErrorCode);
+                        Log.Info($"Connection to server unexpectedly closed: " + wsEx.WebSocketErrorCode);
                     else
-                        Log.Debug($"Connection to server unexpectedly closed: " + ex.Message);
+                        Log.Info($"Connection to server unexpectedly closed: " + ex.Message);
                 } finally {
                     webSocket?.Dispose();
                 }
